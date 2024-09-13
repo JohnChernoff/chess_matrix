@@ -1,5 +1,7 @@
 import 'dart:typed_data';
-import 'dart:ui';
+import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
+import 'client.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
@@ -10,19 +12,25 @@ enum ColorComponent {red,green,blue}
 enum PieceColor {none,white,black}
 enum PieceType {none,pawn,knight,bishop,rook,queen,king}
 
-class BoardMatrix {
-  String fen;
-  int width, height;
+class BoardState {
+  String id;
+  Player whitePlayer,blackPlayer;
   bool finished = false;
-  bool playing = false;
-  ColorArray edgeCol = ColorArray.fromFill(0);
-  bool blackPOV = false;
-  Image? image;
+  BoardState(this.id,this.whitePlayer,this.blackPlayer);
+}
+
+class BoardMatrix {
+  final String fen;
+  final int width, height;
+  final bool blackPOV;
   final List<List<Square>> elements = List<List<Square>>.generate(
       ranks, (i) => List<Square>.generate(
       files, (index) => Square(Piece(PieceType.none,PieceColor.none)), growable: false), growable: false);
+  late final ColorArray edgeCol;
+  ui.Image? image;
 
-  BoardMatrix(this.width,this.height,this.fen,imgCall) {
+  BoardMatrix(this.fen,this.width,this.height,imgCall,{this.blackPOV = false, edgeColor = Colors.black}) {
+    edgeCol = ColorArray(edgeColor.red,edgeColor.green,edgeColor.blue);
     List<String> fenRanks = fen.split(" ")[0].split("/");
     for (int rank = 0; rank < fenRanks.length; rank++) {
       int file = 0;
@@ -41,8 +49,9 @@ class BoardMatrix {
       }
     }
     updateControl();
-    decodeImageFromPixels(getLinearInterpolation(), width, height, PixelFormat.rgba8888, (Image img) {
-      image = img; imgCall();
+    ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
+      image = img;
+      imgCall();
     });
   }
 
@@ -298,7 +307,7 @@ class Coord {
 }
 
 class ColorArray {
-  List<int> values;
-  ColorArray.fromFill(int v) : values = List.filled(3, 0);
-  ColorArray(int red, int green, int blue) : values = List.of([red,green,blue]);
+  final List<int> values;
+  ColorArray.fromFill(final int v) : values = List.filled(3, 0);
+  ColorArray(final int red, final int green, final int blue) : values = List.of([red,green,blue]);
 }

@@ -1,12 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'board_widget.dart';
 import 'client.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp(MatrixClient("bullet",250,250)));
+  runApp(MyApp(MatrixClient("bullet",8,250,250)));
 }
 
 class MyApp extends StatelessWidget {
@@ -33,21 +32,23 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {  print("Building...");
-    var client = context.watch<MatrixClient>();
-    List<BoardWidget> boardList = client.boards.values.toList();
-    boardList.sort((a,b) => a.slot - b.slot);
-    print("Board List: $boardList");
+    MatrixClient client = context.watch<MatrixClient>();
+    print("Board List: ${client.boards.keys}");
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: Text(title),
         ),
-        body: GridView.count(
-            crossAxisCount: 4,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            children: List.generate(boardList.length,(index) => boardList[index]),
+        body: Container(
+          color: Colors.black,
+          child: GridView.count(
+              crossAxisCount: 4,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              children: List.generate(client.boards.keys.length,(index) => client.boards.keys.elementAt(index)!,
+              ),
         ),
+    )
     );
   }
 }
