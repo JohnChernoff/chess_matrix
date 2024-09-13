@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -16,24 +17,25 @@ class BoardState {
   String id;
   Player whitePlayer,blackPlayer;
   bool finished = false;
+  bool blackPOV = false;
   BoardState(this.id,this.whitePlayer,this.blackPlayer);
 }
 
 class BoardMatrix {
   final String fen;
-  final String lastMove;
   final int width, height;
   final List<List<Square>> squares = List<List<Square>>.generate(
       ranks, (i) => List<Square>.generate(
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
-  final bool blackPOV;
   final Color edgeColor;
   late final ChessColor turn;
+  late final Move lastMove;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,imgCall,{this.blackPOV = false, this.edgeColor = Colors.black}) {
+  BoardMatrix(this.fen,String lm,this.width,this.height,imgCall,{this.edgeColor = Colors.black}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
+    lastMove = Move(lm);
     _setPieces(fenStrs[0]);
     updateControl();
     ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
@@ -52,11 +54,7 @@ class BoardMatrix {
         if (piece.type == PieceType.none) {
           file += int.parse(char); //todo: try
         } else {
-          if (blackPOV) {
-            squares[7 - rank][7 - file++].piece = piece;
-          } else {
-            squares[rank][file++].piece = piece;
-          }
+          squares[file++][rank].piece = piece;
         }
       }
     }
@@ -124,11 +122,9 @@ class BoardMatrix {
             } else if (p1.isAdjacent(p2)) {
               if (piece.type == PieceType.king) {
                 control += colorVal(piece.color);
-              } else if (piece.type == PieceType.pawn &&
-                  (blackPOV ? p2.x < p1.x : p2.x > p1.x)) {
+              } else if (piece.type == PieceType.pawn && piece.color == ChessColor.white && p1.y < p2.y) {
                 control += colorVal(ChessColor.white);
-              } else if (piece.type == PieceType.pawn &&
-                  (blackPOV ? p2.x > p1.x : p2.x < p1.x)) {
+              } else if (piece.type == PieceType.pawn && piece.color == ChessColor.black && p1.y > p2.y) {
                 control += colorVal(ChessColor.black);
               }
             }
@@ -192,6 +188,7 @@ class BoardMatrix {
         ColorArray colorSW = coordSW.squareBounds(8) ? getSquare(coordSW).color : edgeCol;
         ColorArray colorSE = coordSE.squareBounds(8) ? getSquare(coordSE).color : edgeCol;
 
+        //TODO: unreverse this?
         int x = (((coordNW.y + 1) * squareWidth) + w2).floor();
         int y = (((coordNW.x + 1) * squareHeight) + h2).floor();
 
@@ -218,9 +215,9 @@ class BoardMatrix {
     }
 
     Uint8List imgData =  Uint8List(width * height * 4); //ctx.createImageData(board_dim.board_width,board_dim.board_height);
-    for (int px = 0; px < height; px++) {
-      for (int py = 0; py < width; py++) {
-        int off = ((px * width) + py) * 4;
+    for (int py = 0; py < height; py++) {
+      for (int px = 0; px < width; px++) {
+        int off = ((py * height) + px) * 4;
         int px2 = px + squareWidth;
         int py2 = py + squareHeight;
         imgData[off] = pixArray[px2][py2].values[0];
@@ -299,6 +296,17 @@ class Piece {
   }
 }
 
+class Move {
+  late final Coord from, to;
+  Move(String moveStr) {
+    from = Coord(moveStr.codeUnitAt(0) - "a".codeUnitAt(0),7 - (moveStr.codeUnitAt(1) - "1".codeUnitAt(0)));
+    to = Coord(moveStr.codeUnitAt(2) - "a".codeUnitAt(0),7 - (moveStr.codeUnitAt(3) - "1".codeUnitAt(0)));
+  }
+  bool eq(Move move) {
+    return from.eq(move.from) && to.eq(move.to);
+  }
+}
+
 class Coord {
   int x,y;
   Coord(this.x,this.y);
@@ -312,6 +320,13 @@ class Coord {
   bool isAdjacent(Coord p) {
     return (p.x - x).abs() < 2 && (p.y - y).abs() < 2;
   }
+  bool eq(Coord p) {
+    return x == p.x && y == p.y;
+  }
+  @override
+  String toString() {
+    return "[$x,$y]";
+  }
 }
 
 class ColorArray {
@@ -319,3 +334,8 @@ class ColorArray {
   ColorArray.fromFill(final int v) : values = List.filled(3, 0);
   ColorArray(final int red, final int green, final int blue) : values = List.of([red,green,blue]);
 }
+
+Color rndCol() {
+  return Colors.primaries[Random().nextInt(Colors.primaries.length)];
+}
+

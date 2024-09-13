@@ -72,14 +72,27 @@ class _BoardWidgetState extends State<BoardWidget> {
     }
   }
 
+  Text getPlayerBar(bool top) {
+    BoardState? boardState = getBoardState();
+    if (boardState != null) {
+      if (boardState?.blackPOV ?? false) top = !top;
+      ChessColor playerColor = top ? ChessColor.black : ChessColor.white;
+      Player player = playerColor == ChessColor.black ? boardState.blackPlayer : boardState.whitePlayer;
+      return Text(player.toString(), style: TextStyle(
+        color: board?.turn == playerColor ? Colors.yellowAccent : Colors.white
+      ));
+    }
+    return const Text("?");
+  }
+
   @override
   Widget build(BuildContext context) { //print("Board FEN: ${board?.fen}");
     TextStyle textStyle = const TextStyle(color: Colors.white);
     return Column(
       children: [
-        Text(getBoardState()?.blackPlayer.toString() ?? '?', style: textStyle),
+        getPlayerBar(true),
         Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard())),
-        Text(getBoardState()?.whitePlayer.toString() ?? '?', style: textStyle),
+        getPlayerBar(false),
     ]);
   }
 
@@ -97,23 +110,44 @@ class _BoardWidgetState extends State<BoardWidget> {
             board!.image != null ? CustomPaint(
               painter: BoardPainter(widget.client,board!),
             ) : const SizedBox.shrink(),
-            GridView.count(
-              crossAxisCount: 8,
-              children: List.generate(64,(index) {
-                Piece piece = board!.getSquare(
-                    Coord((index / 8).floor(),index % 8)).piece;
-                return Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(color: Colors.brown, width: 1)
-                  ),
-                  child: (piece.type != PieceType.none) ? Image.asset("assets/images/${piece.toString()}.png") : const SizedBox.shrink(),
-                );
-              }
-              ),
-            )
+            getBoardPieces(),
+            getBoardControl(),
           ],
         ) : const SizedBox.shrink(),
       ),
+    );
+  }
+
+  Widget getBoardPieces() {
+    return GridView.count(
+      crossAxisCount: 8,
+      children: List.generate(64, (index) {
+        Coord squareCoord = Coord(index % 8, (index / 8).floor());
+        Color borderColor = board?.lastMove.from.eq(squareCoord) ?? false
+            ? Colors.blue
+            : Colors.brown;
+        Piece piece = board!.getSquare(squareCoord).piece;
+        return Container(
+          decoration:
+              BoxDecoration(border: Border.all(color: borderColor, width: 1)),
+          child: (piece.type != PieceType.none)
+              ? Image.asset("assets/images/${piece.toString()}.png")
+              : const SizedBox.shrink(),
+        );
+      }),
+    );
+  }
+
+  Widget getBoardControl() {
+    return GridView.count(
+      crossAxisCount: 8,
+      children: List.generate(64, (index) {
+        Coord squareCoord = Coord(index % 8, (index / 8).floor());
+        return SizedBox(
+          child: Text(board!.getSquare(squareCoord).control.toString(),
+          style: const TextStyle(color: Colors.yellowAccent))
+        );
+      }),
     );
   }
 }

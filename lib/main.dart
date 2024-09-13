@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'client.dart';
@@ -52,8 +51,3 @@ class MyHomePage extends StatelessWidget {
     );
   }
 }
-
-Color rndCol() {
-  return Colors.primaries[Random().nextInt(Colors.primaries.length)];
-}
-
