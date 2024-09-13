@@ -8,8 +8,6 @@ import 'package:lichess_package/lichess_package.dart';
 import 'package:lichess_package/zug_sock.dart';
 import 'board_matrix.dart';
 
-const noAvailableSlot = -1;
-
 class MatrixClient extends ChangeNotifier {
   final int maxStreams;
   final int width, height;
@@ -58,7 +56,7 @@ class MatrixClient extends ChangeNotifier {
   }
 
   Future<void> loadPieces() async {
-    for (PieceColor c in PieceColor.values) {
+    for (ChessColor c in ChessColor.values) {
       for (PieceType t in PieceType.values) {
         String p = Piece(t, c).toString(); //print("Loading: $p.png...");
         ui.Image img = await loadImage("assets/images/$p.png");
@@ -120,9 +118,28 @@ class MatrixClient extends ChangeNotifier {
 class Player {
   final String name;
   final int rating;
+  int clock = 0;
+
   Player(dynamic data) : name = data['user']['name'], rating = int.parse(data['rating'].toString());
+
+  void nextTick() {
+    if (clock > 0) clock--;
+  }
+
+  String _formattedTime(int seconds) {
+    final int hour = (seconds / 3600).floor();
+    final int minute = ((seconds / 3600 - hour) * 60).floor();
+    final int second = ((((seconds / 3600 - hour) * 60) - minute) * 60).floor();
+    return [
+      if (hour > 0) hour.toString().padLeft(2, "0"),
+      minute.toString().padLeft(2, "0"),
+      second.toString().padLeft(2, '0'),
+    ].join(':');
+  }
+
   @override
-  String toString() {
-    return "$name: $rating";
+  String toString({bool showTime = true}) {
+    String info = "$name ($rating)";
+    return showTime ? "$info: ${_formattedTime(clock)}" : info;
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +21,7 @@ class BoardWidget extends StatefulWidget {
 class _BoardWidgetState extends State<BoardWidget> {
   bool active = false;
   BoardMatrix? board;
-  String? lastMove;
-  int? whiteClock;
-  int? blackClock;
+  Timer? clockTimer;
 
   @override
   void initState() {
@@ -29,9 +29,39 @@ class _BoardWidgetState extends State<BoardWidget> {
     widget.client.updaters.putIfAbsent(widget, () => updateBoard);
   }
 
+  BoardState? getBoardState() {
+    return widget.client.boards[widget];
+  }
+
+  Timer countDown() {
+    return Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+      }
+      else {
+        if (active) {
+          BoardState? boardState = getBoardState();
+          if (board?.turn == ChessColor.white) {
+            setState(() {
+              boardState?.whitePlayer.nextTick();
+            });
+          } else if (board?.turn == ChessColor.black) {
+            setState(() {
+              boardState?.blackPlayer.nextTick();
+            });
+          }
+        }
+      }
+    });
+  }
+
   void updateBoard(String fen, String lm, int wc, int bc) { //print("FEN: $fen");
-    whiteClock = wc; blackClock = bc; lastMove = lm;
-    board = BoardMatrix(fen,widget.client.width,widget.client.height,() => refreshBoard());
+    clockTimer?.cancel();
+    BoardState? boardState = getBoardState();
+    boardState?.whitePlayer.clock = wc;
+    boardState?.blackPlayer.clock = bc;
+    board = BoardMatrix(fen,lm,widget.client.width,widget.client.height,() => refreshBoard());
+    clockTimer = countDown();
   }
 
   void refreshBoard() {
@@ -44,20 +74,19 @@ class _BoardWidgetState extends State<BoardWidget> {
 
   @override
   Widget build(BuildContext context) { //print("Board FEN: ${board?.fen}");
-    BoardState? state = widget.client.boards[widget];
     TextStyle textStyle = const TextStyle(color: Colors.white);
     return Column(
       children: [
-        Text(state?.whitePlayer.toString() ?? "?", style: textStyle),
-        Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard(state))),
-        Text(state?.blackPlayer.toString() ?? "?", style: textStyle),
+        Text(getBoardState()?.blackPlayer.toString() ?? '?', style: textStyle),
+        Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard())),
+        Text(getBoardState()?.whitePlayer.toString() ?? '?', style: textStyle),
     ]);
   }
 
-  Widget getBoard(BoardState? state) {
+  Widget getBoard() {
     return InkWell(
       onTap: () {
-        state?.finished = true;
+        getBoardState()?.finished = true;
         widget.client.loadTVGames();
       },
       child: Container(

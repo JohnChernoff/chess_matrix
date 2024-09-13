@@ -9,7 +9,7 @@ const maxControl = 4;
 const ranks = 8, files = 8;
 
 enum ColorComponent {red,green,blue}
-enum PieceColor {none,white,black}
+enum ChessColor {none,white,black}
 enum PieceType {none,pawn,knight,bishop,rook,queen,king}
 
 class BoardState {
@@ -21,17 +21,29 @@ class BoardState {
 
 class BoardMatrix {
   final String fen;
+  final String lastMove;
   final int width, height;
-  final bool blackPOV;
-  final List<List<Square>> elements = List<List<Square>>.generate(
+  final List<List<Square>> squares = List<List<Square>>.generate(
       ranks, (i) => List<Square>.generate(
-      files, (index) => Square(Piece(PieceType.none,PieceColor.none)), growable: false), growable: false);
-  late final ColorArray edgeCol;
+      files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
+  final bool blackPOV;
+  final Color edgeColor;
+  late final ChessColor turn;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.width,this.height,imgCall,{this.blackPOV = false, edgeColor = Colors.black}) {
-    edgeCol = ColorArray(edgeColor.red,edgeColor.green,edgeColor.blue);
-    List<String> fenRanks = fen.split(" ")[0].split("/");
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,imgCall,{this.blackPOV = false, this.edgeColor = Colors.black}) {
+    List<String> fenStrs = fen.split(" ");
+    turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
+    _setPieces(fenStrs[0]);
+    updateControl();
+    ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
+      image = img;
+      imgCall();
+    });
+  }
+
+  void _setPieces(String boardStr) {
+    List<String> fenRanks = boardStr.split("/");
     for (int rank = 0; rank < fenRanks.length; rank++) {
       int file = 0;
       for (int i = 0; i < fenRanks[rank].length; i++) {
@@ -41,22 +53,17 @@ class BoardMatrix {
           file += int.parse(char); //todo: try
         } else {
           if (blackPOV) {
-            elements[7 - rank][7 - file++].piece = piece;
+            squares[7 - rank][7 - file++].piece = piece;
           } else {
-            elements[rank][file++].piece = piece;
+            squares[rank][file++].piece = piece;
           }
         }
       }
     }
-    updateControl();
-    ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
-      image = img;
-      imgCall();
-    });
   }
 
-  int colorVal(PieceColor color) {
-    return color == PieceColor.black ? -1 : color == PieceColor.white ? 1 : 0;
+  int colorVal(ChessColor color) {
+    return color == ChessColor.black ? -1 : color == ChessColor.white ? 1 : 0;
   }
 
   bool isPiece(Coord p, PieceType t) {
@@ -64,13 +71,13 @@ class BoardMatrix {
   }
 
   Square getSquare(Coord p) {
-    return elements[p.x][p.y];
+    return squares[p.x][p.y];
   }
 
   void updateControl() {
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
-        elements[x][y].setControl(calcControl(Coord(x,y)));
+        squares[x][y].setControl(calcControl(Coord(x,y)));
       }
     }
   }
@@ -119,10 +126,10 @@ class BoardMatrix {
                 control += colorVal(piece.color);
               } else if (piece.type == PieceType.pawn &&
                   (blackPOV ? p2.x < p1.x : p2.x > p1.x)) {
-                control += colorVal(PieceColor.white);
+                control += colorVal(ChessColor.white);
               } else if (piece.type == PieceType.pawn &&
                   (blackPOV ? p2.x > p1.x : p2.x < p1.x)) {
-                control += colorVal(PieceColor.black);
+                control += colorVal(ChessColor.black);
               }
             }
             clearLine = (piece.type == PieceType.none);
@@ -170,6 +177,7 @@ class BoardMatrix {
         paddedBoardHeight, (index) => ColorArray.fromFill(0), growable: false), growable: false);
 
     int w2 = (squareWidth/2).floor(), h2 = (squareHeight/2).floor();
+    ColorArray edgeCol = ColorArray(edgeColor.red,edgeColor.green,edgeColor.blue);
 
     for (int my = -1; my < ranks; my++) {
       for (int mx = -1; mx < files; mx++) {
@@ -260,15 +268,15 @@ class Square {
 
 class Piece {
   late final PieceType type;
-  late final PieceColor color;
+  late final ChessColor color;
 
   Piece(this.type,this.color);
   Piece.fromChar(String char) {
     type = _decodeChar(char);
-    color = char == char.toUpperCase() ? PieceColor.white : PieceColor.black;
+    color = char == char.toUpperCase() ? ChessColor.white : ChessColor.black;
   }
 
-  bool eq(PieceType t, PieceColor c) {
+  bool eq(PieceType t, ChessColor c) {
     return type == t && color == c;
   }
 
@@ -287,7 +295,7 @@ class Piece {
   @override
   String toString() {
     String pieceChar = (type == PieceType.knight) ? "n" : type.name[0];
-    return (color == PieceColor.white ? "w" : "b") + pieceChar.toLowerCase();
+    return (color == ChessColor.white ? "w" : "b") + pieceChar.toLowerCase();
   }
 }
 

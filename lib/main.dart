@@ -5,7 +5,7 @@ import 'client.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp(MatrixClient("bullet",8,250,250)));
+  runApp(MyApp(MatrixClient("rapid",8,250,250)));
 }
 
 class MyApp extends StatelessWidget {
