@@ -6,7 +6,7 @@ import 'client.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
-const maxControl = 4;
+const maxControl = 5;
 const ranks = 8, files = 8;
 
 enum ColorComponent {red,green,blue}
@@ -249,7 +249,7 @@ class Square {
   ColorArray getTwoColor(ColorComponent blackColor, ColorComponent voidColor,ColorComponent whiteColor) {
     List<int> colorMatrix = [0,0,0];
     double controlGrad = 256 / maxControl;
-    int c = (control * controlGrad).round();
+    int c = (min(max(control,-maxControl),maxControl) * controlGrad).round();
     if (c < 0) {
       colorMatrix[blackColor.index] = c.abs();
       colorMatrix[voidColor.index] = 0;

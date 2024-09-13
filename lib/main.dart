@@ -42,8 +42,8 @@ class MyHomePage extends StatelessWidget {
           color: Colors.black,
           child: GridView.count(
               crossAxisCount: 4,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 0,
               children: List.generate(client.boards.keys.length,(index) => client.boards.keys.elementAt(index)!,
               ),
         ),

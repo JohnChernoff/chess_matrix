@@ -110,22 +110,19 @@ class _BoardWidgetState extends State<BoardWidget> {
             board!.image != null ? CustomPaint(
               painter: BoardPainter(widget.client,board!),
             ) : const SizedBox.shrink(),
-            getBoardPieces(),
-            getBoardControl(),
+            getBoardPieces(Colors.brown),
+            widget.client.showControl ? getBoardControl() : const SizedBox.shrink(),
           ],
         ) : const SizedBox.shrink(),
       ),
     );
   }
 
-  Widget getBoardPieces() {
+  Widget getBoardPieces(Color borderColor) {
     return GridView.count(
       crossAxisCount: 8,
       children: List.generate(64, (index) {
         Coord squareCoord = Coord(index % 8, (index / 8).floor());
-        Color borderColor = board?.lastMove.from.eq(squareCoord) ?? false
-            ? Colors.blue
-            : Colors.brown;
         Piece piece = board!.getSquare(squareCoord).piece;
         return Container(
           decoration:

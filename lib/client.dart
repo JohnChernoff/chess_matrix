@@ -15,6 +15,8 @@ class MatrixClient extends ChangeNotifier {
   final Map<BoardWidget,dynamic> updaters = {};
   final Map<String,ui.Image> pieceImages = {};
   String gameType;
+  bool showControl = false;
+  bool showMove = false;
   late ZugSock lichSock;
 
   MatrixClient(this.gameType,this.maxStreams,this.width,this.height) {
