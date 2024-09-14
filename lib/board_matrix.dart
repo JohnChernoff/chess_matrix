@@ -28,11 +28,12 @@ class BoardMatrix {
       ranks, (i) => List<Square>.generate(
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
   final Color edgeColor;
+  final ColorStyle colorStyle;
   late final ChessColor turn;
   late final Move lastMove;
   ui.Image? image;
 
-  BoardMatrix(this.fen,String lm,this.width,this.height,imgCall,{this.edgeColor = Colors.black}) {
+  BoardMatrix(this.fen,String lm,this.width,this.height,imgCall,{this.colorStyle = ColorStyle.redBlue, this.edgeColor = Colors.black}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
     lastMove = Move(lm);
@@ -75,7 +76,7 @@ class BoardMatrix {
   void updateControl() {
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
-        squares[x][y].setControl(calcControl(Coord(x,y)));
+        squares[x][y].setControl(calcControl(Coord(x,y)),colorStyle);
       }
     }
   }
@@ -241,23 +242,27 @@ class Square {
   ColorArray color = ColorArray.fromFill(0);
   Square(this.piece);
 
-  void setControl(int c) {
+  void setControl(int c, ColorStyle colorStyle) {
     control = c;
-    color = getTwoColor(ColorComponent.red, ColorComponent.green, ColorComponent.blue);
+    color = switch(colorStyle) {
+      ColorStyle.redBlue => getTwoColor(ColorComponent.red, ColorComponent.green, ColorComponent.blue),
+      ColorStyle.redGreen => getTwoColor(ColorComponent.red, ColorComponent.blue, ColorComponent.green),
+      ColorStyle.greenBlue => getTwoColor(ColorComponent.blue, ColorComponent.red, ColorComponent.green),
+    };
   }
 
-  ColorArray getTwoColor(ColorComponent blackColor, ColorComponent voidColor,ColorComponent whiteColor) {
+  ColorArray getTwoColor(ColorComponent blackComponent, ColorComponent voidComponent,ColorComponent whiteComponent) {
     List<int> colorMatrix = [0,0,0];
     double controlGrad = 256 / maxControl;
     int c = (min(max(control,-maxControl),maxControl) * controlGrad).round();
     if (c < 0) {
-      colorMatrix[blackColor.index] = c.abs();
-      colorMatrix[voidColor.index] = 0;
-      colorMatrix[whiteColor.index] = 0;
+      colorMatrix[blackComponent.index] = c.abs();
+      colorMatrix[voidComponent.index] = 0;
+      colorMatrix[whiteComponent.index] = 0;
     } else {
-      colorMatrix[blackColor.index] = 0;
-      colorMatrix[voidColor.index] = 0;
-      colorMatrix[whiteColor.index] = c.abs();
+      colorMatrix[blackComponent.index] = 0;
+      colorMatrix[voidComponent.index] = 0;
+      colorMatrix[whiteComponent.index] = c.abs();
     }
     return ColorArray(colorMatrix[0], colorMatrix[1], colorMatrix[2]);
   }
@@ -290,9 +295,9 @@ class Piece {
   }
 
   @override
-  String toString() {
+  String toString({bool white = false}) {
     String pieceChar = (type == PieceType.knight) ? "n" : type.name[0];
-    return (color == ChessColor.white ? "w" : "b") + pieceChar.toLowerCase();
+    return (white || color == ChessColor.white ? "w" : "b") + pieceChar.toUpperCase();
   }
 }
 

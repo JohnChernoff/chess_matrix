@@ -34,11 +34,9 @@ dependencies:
   flutter:
     sdk: flutter
 
-
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  chess: ^0.8.1
 
 dev_dependencies:
   flutter_test:
@@ -95,3 +93,40 @@ flutter:
   assets:
     - assets/
     - assets/images/
+    - assets/images/pieces/
+    - assets/images/pieces/alpha/
+    - assets/images/pieces/anarcandy/
+    - assets/images/pieces/california/
+    - assets/images/pieces/caliente/
+    - assets/images/pieces/cardinal/
+    - assets/images/pieces/cburnett/
+    - assets/images/pieces/celtic/
+    - assets/images/pieces/chess7/
+    - assets/images/pieces/chessnut/
+    - assets/images/pieces/companion/
+    - assets/images/pieces/disguised/
+    - assets/images/pieces/dubrovny/
+    - assets/images/pieces/fantasy/
+    - assets/images/pieces/fresca/
+    - assets/images/pieces/gioco/
+    - assets/images/pieces/governor/
+    - assets/images/pieces/horsey/
+    - assets/images/pieces/icpieces/
+    - assets/images/pieces/kiwen-suwi/
+    - assets/images/pieces/kosal/
+    - assets/images/pieces/leipzig/
+    - assets/images/pieces/letter/
+    - assets/images/pieces/libra/
+    - assets/images/pieces/maestro/
+    - assets/images/pieces/merida/
+    - assets/images/pieces/mono/
+    - assets/images/pieces/mpchess/
+    - assets/images/pieces/pirouetti/
+    - assets/images/pieces/pixel/
+    - assets/images/pieces/reillycraig/
+    - assets/images/pieces/riohacha/
+    - assets/images/pieces/shapes/
+    - assets/images/pieces/spatial/
+    - assets/images/pieces/staunty/
+    - assets/images/pieces/symmetric/
+    - assets/images/pieces/tatiana/

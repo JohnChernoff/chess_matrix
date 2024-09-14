@@ -2,11 +2,56 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:chess_matrix/board_widget.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:lichess_package/zug_sock.dart';
 import 'board_matrix.dart';
+
+enum PieceStyle  {
+  cburnett,
+  merida,
+  pirouetti,
+  chessnut,
+  chess7,
+  alpha,
+  reillycraig,
+  companion,
+  riohacha,
+  kosal,
+  leipzig,
+  fantasy,
+  spatial,
+  celtic,
+  california,
+  caliente,
+  pixel,
+  maestro,
+  fresca,
+  cardinal,
+  gioco,
+  tatiana,
+  staunty,
+  governor,
+  dubrovny,
+  icpieces,
+  libra,
+  mpchess,
+  shapes,
+  kiwenSuwi,
+  horsey,
+  anarcandy,
+  letter,
+  disguised,
+  symmetric;
+}
+
+enum GameStyle {
+  bullet,blitz,rapid,classical
+}
+
+enum ColorStyle {
+  redBlue,redGreen,greenBlue
+}
 
 class MatrixClient extends ChangeNotifier {
   final int maxStreams;
@@ -14,17 +59,37 @@ class MatrixClient extends ChangeNotifier {
   final Map<BoardWidget?,BoardState?> boards = {};
   final Map<BoardWidget,dynamic> updaters = {};
   final Map<String,ui.Image> pieceImages = {};
-  String gameType;
   bool showControl = false;
   bool showMove = false;
+  PieceStyle pieceStyle = PieceStyle.horsey;
+  GameStyle gameStyle = GameStyle.blitz;
+  ColorStyle colorStyle = ColorStyle.redBlue;
+  Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
   late ZugSock lichSock;
 
-  MatrixClient(this.gameType,this.maxStreams,this.width,this.height) {
-    loadPieces();
+  MatrixClient(this.maxStreams,this.width,this.height) {
     for (int i = 0; i < maxStreams; i++) {
       boards.putIfAbsent(BoardWidget(this,i), () => null);
     }
     lichSock = ZugSock('wss://socket.lichess.org/api/socket', connected, handleMsg, disconnected);
+  }
+
+  void setColorStyle(ColorStyle style) {
+    colorStyle = style;
+    notifyListeners(); //TODO: call each updater
+  }
+
+  void setPieceStyle(PieceStyle style) {
+    pieceStyle = style;
+    notifyListeners();
+  }
+
+  void setGameStyle(GameStyle style) {
+    gameStyle = style;
+    for (var state in boards.values) {
+      state?.finished = true;
+    }
+    loadTVGames();
   }
 
   void connected() {
@@ -57,18 +122,8 @@ class MatrixClient extends ChangeNotifier {
     print("Disconnected");
   }
 
-  Future<void> loadPieces() async {
-    for (ChessColor c in ChessColor.values) {
-      for (PieceType t in PieceType.values) {
-        String p = Piece(t, c).toString(); //print("Loading: $p.png...");
-        ui.Image img = await loadImage("assets/images/$p.png");
-        pieceImages.putIfAbsent(p, () => img);
-      }
-    }
-  }
-
-  void loadTVGames({String? type}) async {
-    List<dynamic> games = await Lichess.getTV(type ?? gameType);
+  void loadTVGames() async {
+    List<dynamic> games = await Lichess.getTV(gameStyle.name);
     for (int i = 0; i < min(maxStreams,games.length); i++) {
       addBoard(games[i]);
     } //print(boards.keys);
@@ -103,17 +158,6 @@ class MatrixClient extends ChangeNotifier {
         );
       }
     }
-  }
-
-  Future<ui.Image> loadImage(String imageAssetPath) async {
-    final ByteData data = await rootBundle.load(imageAssetPath);
-    final codec = await ui.instantiateImageCodec(
-      data.buffer.asUint8List(),
-      targetHeight: (height / 10).round(),
-      targetWidth: (width / 10).round(),
-    );
-    var frame = await codec.getNextFrame();
-    return frame.image;
   }
 }
 

@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
@@ -60,7 +59,7 @@ class _BoardWidgetState extends State<BoardWidget> {
     BoardState? boardState = getBoardState();
     boardState?.whitePlayer.clock = wc;
     boardState?.blackPlayer.clock = bc;
-    board = BoardMatrix(fen,lm,widget.client.width,widget.client.height,() => refreshBoard());
+    board = BoardMatrix(fen,lm,widget.client.width,widget.client.height,() => refreshBoard(),colorStyle: widget.client.colorStyle);
     clockTimer = countDown();
   }
 
@@ -75,7 +74,7 @@ class _BoardWidgetState extends State<BoardWidget> {
   Text getPlayerBar(bool top) {
     BoardState? boardState = getBoardState();
     if (boardState != null) {
-      if (boardState?.blackPOV ?? false) top = !top;
+      if (boardState.blackPOV) top = !top;
       ChessColor playerColor = top ? ChessColor.black : ChessColor.white;
       Player player = playerColor == ChessColor.black ? boardState.blackPlayer : boardState.whitePlayer;
       return Text(player.toString(), style: TextStyle(
@@ -87,7 +86,6 @@ class _BoardWidgetState extends State<BoardWidget> {
 
   @override
   Widget build(BuildContext context) { //print("Board FEN: ${board?.fen}");
-    TextStyle textStyle = const TextStyle(color: Colors.white);
     return Column(
       children: [
         getPlayerBar(true),
@@ -124,11 +122,13 @@ class _BoardWidgetState extends State<BoardWidget> {
       children: List.generate(64, (index) {
         Coord squareCoord = Coord(index % 8, (index / 8).floor());
         Piece piece = board!.getSquare(squareCoord).piece;
+        BlendMode? blendMode = piece.color == ChessColor.white ? null : BlendMode.modulate;
+        Color? color = piece.color == ChessColor.white ? null : widget.client.blackPieceColor;
         return Container(
           decoration:
               BoxDecoration(border: Border.all(color: borderColor, width: 1)),
           child: (piece.type != PieceType.none)
-              ? Image.asset("assets/images/${piece.toString()}.png")
+              ? Image.asset("assets/images/pieces/${widget.client.pieceStyle.name}/${piece.toString(white: true)}.png",colorBlendMode: blendMode, color: color)
               : const SizedBox.shrink(),
         );
       }),
@@ -169,7 +169,7 @@ class BoardPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     if (oldDelegate is BoardPainter) {
-      return oldDelegate.board.image != null && oldDelegate.board.fen != board.fen;
+      return oldDelegate.board.image != null && (oldDelegate.board.fen != board.fen || oldDelegate.board.colorStyle != board.colorStyle);
     }
     return false;
   }

@@ -4,7 +4,7 @@ import 'client.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp(MatrixClient("rapid",8,250,250)));
+  runApp(MyApp(MatrixClient(8,250,250)));
 }
 
 class MyApp extends StatelessWidget {
@@ -38,16 +38,33 @@ class MyHomePage extends StatelessWidget {
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: Text(title),
         ),
-        body: Container(
-          color: Colors.black,
-          child: GridView.count(
-              crossAxisCount: 4,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 0,
-              children: List.generate(client.boards.keys.length,(index) => client.boards.keys.elementAt(index)!,
+        body: Column(
+          children: [
+            Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              DropdownButton(value: client.colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
+                  DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text(ColorStyle.values.elementAt(index).name))),
+                  onChanged: (ColorStyle? value) => client.setColorStyle(value!)),
+              DropdownButton(value: client.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
+                  DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text(GameStyle.values.elementAt(index).name))),
+                  onChanged: (GameStyle? value) => client.setGameStyle(value!)),
+              DropdownButton(value: client.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
+                DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text(PieceStyle.values.elementAt(index).name))),
+                onChanged: (PieceStyle? value) => client.setPieceStyle(value!)),
+            ]),
+            Expanded(child: Container(
+              color: Colors.black,
+              child: GridView.count(
+                crossAxisCount: 4,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 0,
+                children: List.generate(client.boards.keys.length,(index) => client.boards.keys.elementAt(index)!,
+                ),
               ),
-        ),
-    )
+            ))
+        ],)
     );
   }
+
 }
