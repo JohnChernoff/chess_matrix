@@ -56,13 +56,14 @@ class _BoardWidgetState extends State<BoardWidget> {
     });
   }
 
-  void updateBoard(String fen,Move? lastMove, int wc, int bc) { //print("FEN: $fen");
+  BoardMatrix? updateBoard(String fen,Move? lastMove, int wc, int bc) { //print("FEN: $fen");
     clockTimer?.cancel();
     BoardState? boardState = getBoardState();
     boardState?.whitePlayer.clock = wc;
     boardState?.blackPlayer.clock = bc;
     board = BoardMatrix(fen,lastMove,widget.client.width,widget.client.height,() => refreshBoard(),colorStyle: widget.client.colorStyle);
     clockTimer = countDown();
+    return board;
   }
 
   void refreshBoard() {
@@ -99,7 +100,7 @@ class _BoardWidgetState extends State<BoardWidget> {
   Widget getBoard() {
     return InkWell(
       onTap: () {
-        widget.client.sonifier.playNote(InstrumentType.moveMelody, 80, 8, .5);
+        widget.client.sonifier.playNote(InstrumentType.pawnMelody, 80, 8, .5);
         getBoardState()?.finished = true;
         widget.client.loadTVGames();
       },
@@ -152,6 +153,7 @@ class _BoardWidgetState extends State<BoardWidget> {
   }
 }
 
+//TODO: draw last move
 class BoardPainter extends CustomPainter {
   final MatrixClient client;
   final BoardMatrix board;

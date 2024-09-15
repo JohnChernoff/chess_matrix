@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -38,46 +37,51 @@ class MyHomePage extends StatelessWidget {
   Widget build(BuildContext context) {  print("Building...");
     MatrixClient client = context.watch<MatrixClient>();
     print("Board List: ${client.boards.keys}");
+    TextStyle textStyle = const TextStyle(color: Colors.deepPurpleAccent); //Colors.grey); //
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: Text(title),
         ),
-        body: Column(
-          children: [
-            TextButton(onPressed: () => client.toggleAudio(), child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})")),
-            client.sonifier.audioReady ? Container(color: client.sonifier.muted ? Colors.brown : Colors.green, height: 80, child:
+        body: Container(color: Colors.black, child: Column(children: [
+            TextButton(onPressed: () => client.toggleAudio(), child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: textStyle)),
+            client.sonifier.audioReady ? Center(child: SizedBox(height: 80, child:
             ListView(scrollDirection: Axis.horizontal, shrinkWrap: true,
-              //mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(InstrumentType.values.length, (i) => DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i).name], //itemHeight: 80,
-                items: List.generate(MidiInstrument.values.length, (index) => DropdownMenuItem(value: MidiInstrument.values.elementAt(index),
-                    child: Text("${InstrumentType.values.elementAt(i).name}: ${MidiInstrument.values.elementAt(index).name}"))),
-                onChanged: (value) => client.loadInstrument(InstrumentType.values.elementAt(i),value!)))
-            )) : const SizedBox.shrink(),
+                children: List.generate(InstrumentType.values.length, (i) => Container(
+                    color: client.sonifier.muted ? Colors.brown : InstrumentType.values.elementAt(i).color,
+                    child: Column(children: [
+                  Text(InstrumentType.values.elementAt(i).name),
+                  DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i).name]?.patch, alignment: AlignmentDirectional.center,
+                    items: List.generate(MidiInstrument.values.length, (index) => DropdownMenuItem(alignment: AlignmentDirectional.center,value: MidiInstrument.values.elementAt(index),
+                    child: Text(MidiInstrument.values.elementAt(index).name))),
+                    onChanged: (value) => client.loadInstrument(InstrumentType.values.elementAt(i),value!))
+                  ],
+                )))
+            ))) : const SizedBox.shrink(),
             Row(
             mainAxisAlignment: MainAxisAlignment.center,
                 children: [
               DropdownButton(value: client.colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
-                  DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text(ColorStyle.values.elementAt(index).name))),
+                  DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text(ColorStyle.values.elementAt(index).name,style: textStyle,))),
                   onChanged: (ColorStyle? value) => client.setColorStyle(value!)),
               DropdownButton(value: client.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
-                  DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text(GameStyle.values.elementAt(index).name))),
+                  DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text(GameStyle.values.elementAt(index).name,style: textStyle))),
                   onChanged: (GameStyle? value) => client.setGameStyle(value!)),
               DropdownButton(value: client.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
-                DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text(PieceStyle.values.elementAt(index).name))),
+                DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text(PieceStyle.values.elementAt(index).name,style: textStyle))),
                 onChanged: (PieceStyle? value) => client.setPieceStyle(value!)),
             ]),
             Expanded(child: Container(
               color: Colors.black,
               child: GridView.count(
-                crossAxisCount: 4,
+                crossAxisCount: 4, //TODO: adjust for mobile
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 0,
                 children: List.generate(client.boards.keys.length,(index) => client.boards.keys.elementAt(index)!,
                 ),
               ),
             ))
-        ],)
+        ],))
     );
   }
 }

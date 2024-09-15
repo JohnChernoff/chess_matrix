@@ -4,6 +4,7 @@ let audio_player; //= new WebAudioFontPlayer();
 const orchestra = [], drum_kit = [];
 let max_volume = .75, tempo = .4;
 let note_queue = [];
+let envelopes = [];
 function setTempo(t) { tempo = t/100; console.log("Tempo: " + tempo); }
 function initAudio(callback) {
   audioContext = new AudioContextFunc();
@@ -30,14 +31,19 @@ function setDrumKit(set) {
 }
 
 function playNote(i,t,p,d,volume) {
-  //console.log("Instrument: " + i);
-  //console.log("Playing note: " + p);
-  //console.log("Orchestra: " + orchestra[i].midi);
   if (volume > 0) {
     return audio_player.queueWaveTable(audioContext, audioContext.destination, orchestra[i],
       audioContext.currentTime + t, p,tempo * d,volume > max_volume ? max_volume : volume);
   }
   else return null;
+}
+
+function playMelody(i,t,p,volume) {
+  if (volume > 0) {
+    if (envelopes[i]) envelopes[i].cancel();
+    envelopes[i] = audio_player.queueWaveTable(audioContext, audioContext.destination, orchestra[i],
+        audioContext.currentTime + t, p,999,volume > max_volume ? max_volume : volume);
+  }
 }
 
 function playChord(i,t,pitches,d,volume) {

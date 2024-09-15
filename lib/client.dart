@@ -66,7 +66,7 @@ class MatrixClient extends ChangeNotifier {
   }
 
   void loadInstrument(InstrumentType type, MidiInstrument patch) async {
-    await sonifier.loadInstrument(type, patch);
+    await sonifier.loadInstrument(type, patch); //TODO: levels
     notifyListeners(); //todo: avoid redundancy when calling via initAudio?
   }
 
@@ -97,20 +97,33 @@ class MatrixClient extends ChangeNotifier {
       int blackClock = int.parse(data['bc'].toString());
       Move lastMove = Move(data['lm']);
       String fen = data['fen'];
-      updateBoardWidget(id, fen, lastMove, whiteClock, blackClock);
-      int toPitch = minPitch + (lastMove.to.y * 8) + lastMove.to.x;
-      sonifier.playNote(InstrumentType.moveRhythm, toPitch, 2, .25);
+      BoardMatrix? matrix = updateBoardWidget(id, fen, lastMove, whiteClock, blackClock);
+      Piece? piece = matrix?.getSquare(lastMove.to).piece;
+      InstrumentType? instType = switch(piece?.type) {
+        null => null,
+        PieceType.none => null,
+        PieceType.pawn => InstrumentType.pawnMelody,
+        PieceType.knight => InstrumentType.knightMelody,
+        PieceType.bishop => InstrumentType.bishopMelody,
+        PieceType.rook => InstrumentType.rookMelody,
+        PieceType.queen => InstrumentType.queenMelody,
+        PieceType.king => InstrumentType.kingMelody,
+      };
+      int toPitch = (lastMove.to.y * 8) + lastMove.to.x;
+      if (matrix?.turn == ChessColor.black) toPitch = 64 - toPitch;
+      sonifier.playMelody(instType, minPitch + toPitch, sonifier.orchMap[instType?.name]?.level ?? .5);
     } else if (type == 'finish') {
       getBoardStateByID(id)?.finished = true;
       loadTVGames();
     }
   }
 
-  void updateBoardWidget(String id, String fen, Move? lastMove, int whiteClock, int blackClock) {
+  BoardMatrix? updateBoardWidget(String id, String fen, Move? lastMove, int whiteClock, int blackClock) {
     BoardWidget? w = getWidgetByID(id);
     if (w != null) {
-      updaters[w](fen,lastMove,whiteClock,blackClock);
+      return updaters[w](fen,lastMove,whiteClock,blackClock);
     }
+    return null;
   }
 
   BoardWidget? getWidgetByID(String id) {
