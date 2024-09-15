@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:js' as js;
+import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
 import 'matrix_fields.dart';
 
 enum InstrumentType {
-  //moveRhythm(Colors.deepPurple),captureHarmony(Colors.green),check(Colors.redAccent),
   pawnMelody(Colors.white),
   knightMelody(Colors.orange),
   bishopMelody(Colors.pink),
@@ -20,12 +20,9 @@ const octave = 12;
 const int minPitch = octave * 2;
 const int maxPitch = octave * 7;
 
-class BoardSonifier {
+class BoardSonifier extends ChangeNotifier {
   static List<List<DefaultInstrument>> defaultEnsembles = [
     [
-      //DefaultInstrument(InstrumentType.moveRhythm,MidiInstrument.electricGuitarMuted,.50),
-      //DefaultInstrument(InstrumentType.captureHarmony,MidiInstrument.choirAahs,.25),
-      //DefaultInstrument(InstrumentType.check,MidiInstrument.orchHit,.50),
       DefaultInstrument(InstrumentType.pawnMelody,MidiInstrument.pizzStrings,.25),
       DefaultInstrument(InstrumentType.knightMelody,MidiInstrument.glockenspiel,.25),
       DefaultInstrument(InstrumentType.bishopMelody,MidiInstrument.kalimba,.25),
@@ -34,9 +31,6 @@ class BoardSonifier {
       DefaultInstrument(InstrumentType.kingMelody,MidiInstrument.ocarina,.25)
     ],
     [
-      //DefaultInstrument(InstrumentType.moveRhythm,MidiInstrument.synthDrum,.50),
-      //DefaultInstrument(InstrumentType.captureHarmony,MidiInstrument.acousticGrandPiano,.25),
-      //DefaultInstrument(InstrumentType.check,MidiInstrument.pizzStrings,.50),
       DefaultInstrument(InstrumentType.pawnMelody,MidiInstrument.flute,0),
       DefaultInstrument(InstrumentType.knightMelody,MidiInstrument.viola,0),
       DefaultInstrument(InstrumentType.bishopMelody,MidiInstrument.clarinet,0),
@@ -52,8 +46,10 @@ class BoardSonifier {
   Completer? loadingInstrument;
   Completer? initializing;
   Map<String,Instrument> orchMap = {};
+  List<String> soloList = [];
+  MatrixClient client;
 
-  BoardSonifier();
+  BoardSonifier(this.client);
 
   Future<void> init(int ensembleNum) async {
     initializing = Completer();
@@ -70,15 +66,14 @@ class BoardSonifier {
 
   Future<void> loadEnsemble(List<DefaultInstrument> ensemble) async {
     for (DefaultInstrument defInst in ensemble) { //print("Loading from ensemble: ${defInst.type.name},${defInst.patch.index}");
-      await loadInstrument(defInst.type,defInst.instrument.patch,level : defInst.instrument.level);
+      await loadInstrument(defInst.type,Instrument(defInst.instrument.patch,level : defInst.instrument.level));
     }
   }
 
-  Future<void> loadInstrument(InstrumentType type, MidiInstrument patch, {double level = .25}) async {
-    Instrument i = Instrument(patch, level);
+  Future<void> loadInstrument(InstrumentType type, Instrument i) async {
     orchMap.update(type.name, (value) => i, ifAbsent: () => i);
     loadingInstrument = Completer();
-    js.context.callMethod("setInstrument",[type.name,patch.index,loaded]);
+    js.context.callMethod("setInstrument",[type.name,i.patch.index,loaded]);
     return loadingInstrument?.future;
   }
 
@@ -90,15 +85,34 @@ class BoardSonifier {
   }
 
   void playNote(InstrumentType? type,int pitch,int duration,double volume) {
-    if (type != null && audioReady && !muted) {
+    if (type != null && audioReady && !muted && !isMuted(type) && isSoloed(type)) {
       js.context.callMethod("playNote",[type.name,0,pitch,duration,volume * masterVolume]);
     }
   }
 
   void playMelody(InstrumentType? type,int pitch,double volume) {
-    if (type != null && audioReady && !muted) {
-      js.context.callMethod("playMelody",[type.name,0,pitch,volume * masterVolume]); //orchMap[type.name].]);
+    if (type != null && audioReady && !muted && !isMuted(type) && isSoloed(type)) {
+      js.context.callMethod("playMelody",[type.name,0,pitch,volume * masterVolume]);
     }
+  }
+
+  void toggleSolo(InstrumentType type) {
+    orchMap[type.name]?.solo = !(orchMap[type.name]?.solo ?? false);
+    soloList = orchMap.keys.where((t) => orchMap[t]?.solo ?? false).toList(growable: false);
+    client.notifyListeners();
+  }
+
+  void toggleMute(InstrumentType type) {
+    orchMap[type.name]?.mute = !(orchMap[type.name]?.mute ?? false);
+    client.notifyListeners();
+  }
+
+  bool isSoloed(InstrumentType type) {
+     return soloList.isEmpty || soloList.contains(type.name);
+  }
+
+  bool isMuted(InstrumentType type) {
+    return orchMap[type.name]?.mute ?? false;
   }
 
 }
@@ -106,11 +120,13 @@ class BoardSonifier {
 class DefaultInstrument {
   InstrumentType type;
   Instrument instrument;
-  DefaultInstrument(this.type,MidiInstrument patch,double level) : instrument = Instrument(patch,level);
+  DefaultInstrument(this.type,MidiInstrument defPatch,double defLevel) : instrument = Instrument(defPatch,level : defLevel);
 }
 
 class Instrument {
   MidiInstrument patch;
   double level;
-  Instrument(this.patch,this.level);
+  bool mute = false;
+  bool solo = false;
+  Instrument(this.patch,{ this.level = .5 });
 }

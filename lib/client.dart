@@ -22,10 +22,11 @@ class MatrixClient extends ChangeNotifier {
   GameStyle gameStyle = GameStyle.blitz;
   ColorStyle colorStyle = ColorStyle.redBlue;
   Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
-  BoardSonifier sonifier = BoardSonifier();
-  late ZugSock lichSock;
+  late final BoardSonifier sonifier;
+  late final ZugSock lichSock;
 
   MatrixClient(this.maxStreams,this.width,this.height) {
+    sonifier = BoardSonifier(this);
     for (int i = 0; i < maxStreams; i++) {
       boards.putIfAbsent(BoardWidget(this,i), () => null);
     }
@@ -66,7 +67,7 @@ class MatrixClient extends ChangeNotifier {
   }
 
   void loadInstrument(InstrumentType type, MidiInstrument patch) async {
-    await sonifier.loadInstrument(type, patch); //TODO: levels
+    await sonifier.loadInstrument(type, Instrument(patch)); //TODO: levels
     notifyListeners(); //todo: avoid redundancy when calling via initAudio?
   }
 

@@ -45,16 +45,21 @@ class MyHomePage extends StatelessWidget {
         ),
         body: Container(color: Colors.black, child: Column(children: [
             TextButton(onPressed: () => client.toggleAudio(), child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: textStyle)),
-            client.sonifier.audioReady ? Center(child: SizedBox(height: 80, child:
+            client.sonifier.audioReady ? Center(child: SizedBox(height: 120, child:
             ListView(scrollDirection: Axis.horizontal, shrinkWrap: true,
                 children: List.generate(InstrumentType.values.length, (i) => Container(
                     color: client.sonifier.muted ? Colors.brown : InstrumentType.values.elementAt(i).color,
                     child: Column(children: [
+                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        ElevatedButton(style: ElevatedButton.styleFrom(shape: const BeveledRectangleBorder()), onPressed: () => client.sonifier.toggleSolo(InstrumentType.values.elementAt(i)), child: Text("solo",style: textStyle)),
+                        ElevatedButton(style: ElevatedButton.styleFrom(shape: const BeveledRectangleBorder()), onPressed: () => client.sonifier.toggleMute(InstrumentType.values.elementAt(i)), child: Text("mute",style: textStyle)),
+                      ]
+                      ),
                   Text(InstrumentType.values.elementAt(i).name),
                   DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i).name]?.patch, alignment: AlignmentDirectional.center,
                     items: List.generate(MidiInstrument.values.length, (index) => DropdownMenuItem(alignment: AlignmentDirectional.center,value: MidiInstrument.values.elementAt(index),
                     child: Text(MidiInstrument.values.elementAt(index).name))),
-                    onChanged: (value) => client.loadInstrument(InstrumentType.values.elementAt(i),value!))
+                    onChanged: (value) => client.loadInstrument(InstrumentType.values.elementAt(i),value!)),
                   ],
                 )))
             ))) : const SizedBox.shrink(),
