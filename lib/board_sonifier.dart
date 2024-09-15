@@ -12,10 +12,10 @@ const int minPitch = octave * 2;
 const int maxPitch = octave * 7;
 
 class BoardSonifier {
-  static List<List<DefaultInstrument>> ensembles = [
+  static List<List<DefaultInstrument>> defaultEnsembles = [
     [
-      DefaultInstrument(InstrumentType.moveMelody,MidiInstrument.electricGuitarClean,50),
-      DefaultInstrument(InstrumentType.moveRhythm,MidiInstrument.fx3Crystal,0),
+      DefaultInstrument(InstrumentType.moveMelody,MidiInstrument.fx3Crystal,0),
+      DefaultInstrument(InstrumentType.moveRhythm,MidiInstrument.electricGuitarMuted,50),
       DefaultInstrument(InstrumentType.captureHarmony,MidiInstrument.electricPiano1,50),
       DefaultInstrument(InstrumentType.castling,MidiInstrument.choirAahs,0),
       DefaultInstrument(InstrumentType.check,MidiInstrument.pizzStrings,50),
@@ -36,7 +36,7 @@ class BoardSonifier {
     ]
   ];
   bool audioReady = false;
-  bool muted = false;
+  bool muted = true;
   int drumBoard = 0;
   bool drums = false;
   Completer? loadingInstrument;
@@ -53,7 +53,7 @@ class BoardSonifier {
     initializing = Completer();
     js.context.callMethod("initAudio", [initialized]);
     await initializing?.future;
-    await loadEnsemble(ensembles[ensembleNum]);
+    await loadEnsemble(defaultEnsembles[ensembleNum]);
     audioReady = true;
   }
 

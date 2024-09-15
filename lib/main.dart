@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +25,7 @@ class MyApp extends StatelessWidget {
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,
             ),
+            scrollBehavior: ZugScrollBehavior(),
             home: const MyHomePage('Chess Matrix')));
   }
 }
@@ -42,13 +45,15 @@ class MyHomePage extends StatelessWidget {
         ),
         body: Column(
           children: [
-            TextButton(onPressed: () => client.initAudio(), child: const Text("Audio")),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(InstrumentType.values.length, (i) => DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i).name],
-                items: List.generate(MidiInstrument.values.length, (index) => DropdownMenuItem(value: MidiInstrument.values.elementAt(index),child: Text(MidiInstrument.values.elementAt(index).name))),
+            TextButton(onPressed: () => client.toggleAudio(), child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})")),
+            client.sonifier.audioReady ? Container(color: client.sonifier.muted ? Colors.brown : Colors.green, height: 80, child:
+            ListView(scrollDirection: Axis.horizontal, shrinkWrap: true,
+              //mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(InstrumentType.values.length, (i) => DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i).name], //itemHeight: 80,
+                items: List.generate(MidiInstrument.values.length, (index) => DropdownMenuItem(value: MidiInstrument.values.elementAt(index),
+                    child: Text("${InstrumentType.values.elementAt(i).name}: ${MidiInstrument.values.elementAt(index).name}"))),
                 onChanged: (value) => client.loadInstrument(InstrumentType.values.elementAt(i),value!)))
-            ),
+            )) : const SizedBox.shrink(),
             Row(
             mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -75,5 +80,13 @@ class MyHomePage extends StatelessWidget {
         ],)
     );
   }
+}
 
+class ZugScrollBehavior extends MaterialScrollBehavior {
+  // Override behavior methods and getters like dragDevices
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+  };
 }

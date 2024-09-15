@@ -56,7 +56,7 @@ class _BoardWidgetState extends State<BoardWidget> {
     });
   }
 
-  void updateBoard(String fen,Move lastMove, int wc, int bc) { //print("FEN: $fen");
+  void updateBoard(String fen,Move? lastMove, int wc, int bc) { //print("FEN: $fen");
     clockTimer?.cancel();
     BoardState? boardState = getBoardState();
     boardState?.whitePlayer.clock = wc;

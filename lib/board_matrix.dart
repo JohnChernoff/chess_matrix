@@ -30,7 +30,7 @@ class BoardMatrix {
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
   final Color edgeColor;
   final ColorStyle colorStyle;
-  final Move lastMove;
+  final Move? lastMove;
   late final ChessColor turn;
   ui.Image? image;
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:chess/chess.dart' as dc;
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:chess_matrix/board_widget.dart';
 import 'package:flutter/cupertino.dart';
@@ -49,6 +50,15 @@ class MatrixClient extends ChangeNotifier {
     loadTVGames();
   }
 
+  void toggleAudio() {
+    sonifier.muted = !sonifier.muted;
+    if (!sonifier.muted && !sonifier.audioReady) {
+      initAudio();
+    } else {
+      notifyListeners();
+    }
+  }
+
   Future<void> initAudio() async {
     print("Loading audio");
     await sonifier.init(0);
@@ -57,34 +67,12 @@ class MatrixClient extends ChangeNotifier {
 
   void loadInstrument(InstrumentType type, MidiInstrument patch) async {
     await sonifier.loadInstrument(type, patch);
-    notifyListeners();
+    notifyListeners(); //todo: avoid redundancy when calling via initAudio?
   }
 
   void connected() {
     print("Connected");
     loadTVGames();
-  }
-
-  void handleMsg(String msg) { //print("Message: $msg");
-    dynamic json = jsonDecode(msg);
-    String type = json['t'];
-    dynamic data = json['d'];
-    String id = data['id'] ?? "";
-    if (type == "fen") {
-      int whiteClock = int.parse(data['wc'].toString());
-      int blackClock = int.parse(data['bc'].toString());
-      Move lastMove = Move(data['lm']);
-      String fen = data['fen'];
-      BoardWidget? w = getWidgetByID(id);
-      if (w != null) {
-        updaters[w](fen,lastMove,whiteClock,blackClock);
-      }
-      int toPitch = minPitch + (lastMove.to.y * 8) + lastMove.to.x;
-      sonifier.playNote(InstrumentType.moveRhythm, toPitch, 2, .25);
-    } else if (type == 'finish') {
-      getBoardStateByID(id)?.finished = true;
-      loadTVGames();
-    }
   }
 
   void disconnected() {
@@ -97,6 +85,32 @@ class MatrixClient extends ChangeNotifier {
       addBoard(games[i]);
     } //print(boards.keys);
     notifyListeners();
+  }
+
+  void handleMsg(String msg) { //print("Message: $msg");
+    dynamic json = jsonDecode(msg);
+    String type = json['t'];
+    dynamic data = json['d'];
+    String id = data['id'] ?? "";
+    if (type == "fen") {
+      int whiteClock = int.parse(data['wc'].toString());
+      int blackClock = int.parse(data['bc'].toString());
+      Move lastMove = Move(data['lm']);
+      String fen = data['fen'];
+      updateBoardWidget(id, fen, lastMove, whiteClock, blackClock);
+      int toPitch = minPitch + (lastMove.to.y * 8) + lastMove.to.x;
+      sonifier.playNote(InstrumentType.moveRhythm, toPitch, 2, .25);
+    } else if (type == 'finish') {
+      getBoardStateByID(id)?.finished = true;
+      loadTVGames();
+    }
+  }
+
+  void updateBoardWidget(String id, String fen, Move? lastMove, int whiteClock, int blackClock) {
+    BoardWidget? w = getWidgetByID(id);
+    if (w != null) {
+      updaters[w](fen,lastMove,whiteClock,blackClock);
+    }
   }
 
   BoardWidget? getWidgetByID(String id) {
@@ -114,6 +128,12 @@ class MatrixClient extends ChangeNotifier {
     return null;
   }
 
+  String getFen(String moves) {
+    dc.Chess chess = dc.Chess();
+    chess.load_pgn(moves);
+    return chess.fen;
+  }
+
   void addBoard(dynamic game) {
     String id = game['id'];
     Player whitePlayer = Player(game['players']['white']);
@@ -122,6 +142,7 @@ class MatrixClient extends ChangeNotifier {
       BoardWidget? widget = getOpenBoard();
       if (widget != null) { //print("Adding: $game");
         boards.update(widget, (state) => BoardState(id,whitePlayer,blackPlayer));
+        updateBoardWidget(id, getFen(game['moves']), null, 0, 0);
         lichSock.send(
             jsonEncode({ 't': 'startWatching', 'd': id })
         );
