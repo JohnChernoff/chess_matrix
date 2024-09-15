@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'client.dart';
+import 'matrix_fields.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
@@ -29,14 +30,13 @@ class BoardMatrix {
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
   final Color edgeColor;
   final ColorStyle colorStyle;
+  final Move lastMove;
   late final ChessColor turn;
-  late final Move lastMove;
   ui.Image? image;
 
-  BoardMatrix(this.fen,String lm,this.width,this.height,imgCall,{this.colorStyle = ColorStyle.redBlue, this.edgeColor = Colors.black}) {
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,imgCall,{this.colorStyle = ColorStyle.redBlue, this.edgeColor = Colors.black}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
-    lastMove = Move(lm);
     _setPieces(fenStrs[0]);
     updateControl();
     ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {

@@ -1,6 +1,8 @@
+import 'package:chess_matrix/board_sonifier.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'client.dart';
+import 'matrix_fields.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,9 +42,16 @@ class MyHomePage extends StatelessWidget {
         ),
         body: Column(
           children: [
+            TextButton(onPressed: () => client.initAudio(), child: const Text("Audio")),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(InstrumentType.values.length, (i) => DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i).name],
+                items: List.generate(MidiInstrument.values.length, (index) => DropdownMenuItem(value: MidiInstrument.values.elementAt(index),child: Text(MidiInstrument.values.elementAt(index).name))),
+                onChanged: (value) => client.loadInstrument(InstrumentType.values.elementAt(i),value!)))
+            ),
             Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+                children: [
               DropdownButton(value: client.colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
                   DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text(ColorStyle.values.elementAt(index).name))),
                   onChanged: (ColorStyle? value) => client.setColorStyle(value!)),

@@ -3,6 +3,8 @@ import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
 
+import 'board_sonifier.dart';
+
 class BoardWidget extends StatefulWidget {
   final MatrixClient client;
   final int slot;
@@ -54,12 +56,12 @@ class _BoardWidgetState extends State<BoardWidget> {
     });
   }
 
-  void updateBoard(String fen, String lm, int wc, int bc) { //print("FEN: $fen");
+  void updateBoard(String fen,Move lastMove, int wc, int bc) { //print("FEN: $fen");
     clockTimer?.cancel();
     BoardState? boardState = getBoardState();
     boardState?.whitePlayer.clock = wc;
     boardState?.blackPlayer.clock = bc;
-    board = BoardMatrix(fen,lm,widget.client.width,widget.client.height,() => refreshBoard(),colorStyle: widget.client.colorStyle);
+    board = BoardMatrix(fen,lastMove,widget.client.width,widget.client.height,() => refreshBoard(),colorStyle: widget.client.colorStyle);
     clockTimer = countDown();
   }
 
@@ -97,6 +99,7 @@ class _BoardWidgetState extends State<BoardWidget> {
   Widget getBoard() {
     return InkWell(
       onTap: () {
+        widget.client.sonifier.playNote(InstrumentType.moveMelody, 80, 8, .5);
         getBoardState()?.finished = true;
         widget.client.loadTVGames();
       },

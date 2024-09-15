@@ -1,57 +1,13 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:chess_matrix/board_sonifier.dart';
 import 'package:chess_matrix/board_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:lichess_package/zug_sock.dart';
 import 'board_matrix.dart';
-
-enum PieceStyle  {
-  cburnett,
-  merida,
-  pirouetti,
-  chessnut,
-  chess7,
-  alpha,
-  reillycraig,
-  companion,
-  riohacha,
-  kosal,
-  leipzig,
-  fantasy,
-  spatial,
-  celtic,
-  california,
-  caliente,
-  pixel,
-  maestro,
-  fresca,
-  cardinal,
-  gioco,
-  tatiana,
-  staunty,
-  governor,
-  dubrovny,
-  icpieces,
-  libra,
-  mpchess,
-  shapes,
-  kiwenSuwi,
-  horsey,
-  anarcandy,
-  letter,
-  disguised,
-  symmetric;
-}
-
-enum GameStyle {
-  bullet,blitz,rapid,classical
-}
-
-enum ColorStyle {
-  redBlue,redGreen,greenBlue
-}
+import 'matrix_fields.dart';
 
 class MatrixClient extends ChangeNotifier {
   final int maxStreams;
@@ -65,6 +21,7 @@ class MatrixClient extends ChangeNotifier {
   GameStyle gameStyle = GameStyle.blitz;
   ColorStyle colorStyle = ColorStyle.redBlue;
   Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
+  BoardSonifier sonifier = BoardSonifier();
   late ZugSock lichSock;
 
   MatrixClient(this.maxStreams,this.width,this.height) {
@@ -92,6 +49,17 @@ class MatrixClient extends ChangeNotifier {
     loadTVGames();
   }
 
+  Future<void> initAudio() async {
+    print("Loading audio");
+    await sonifier.init(0);
+    notifyListeners();
+  }
+
+  void loadInstrument(InstrumentType type, MidiInstrument patch) async {
+    await sonifier.loadInstrument(type, patch);
+    notifyListeners();
+  }
+
   void connected() {
     print("Connected");
     loadTVGames();
@@ -105,17 +73,18 @@ class MatrixClient extends ChangeNotifier {
     if (type == "fen") {
       int whiteClock = int.parse(data['wc'].toString());
       int blackClock = int.parse(data['bc'].toString());
-      String lastMove = data['lm'];
+      Move lastMove = Move(data['lm']);
       String fen = data['fen'];
       BoardWidget? w = getWidgetByID(id);
       if (w != null) {
         updaters[w](fen,lastMove,whiteClock,blackClock);
       }
+      int toPitch = minPitch + (lastMove.to.y * 8) + lastMove.to.x;
+      sonifier.playNote(InstrumentType.moveRhythm, toPitch, 2, .25);
     } else if (type == 'finish') {
       getBoardStateByID(id)?.finished = true;
       loadTVGames();
     }
-
   }
 
   void disconnected() {
