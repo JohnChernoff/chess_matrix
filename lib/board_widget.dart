@@ -37,7 +37,7 @@ class _BoardWidgetState extends State<BoardWidget> {
   Timer countDown() {
     return Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
-        timer.cancel();
+        clockTimer?.cancel();
       }
       else {
         if (active) {

@@ -162,10 +162,11 @@ class Player {
     if (clock > 0) clock--;
   }
 
+  //TODO: improve?
   String _formattedTime(int seconds) {
     final int hour = (seconds / 3600).floor();
     final int minute = ((seconds / 3600 - hour) * 60).floor();
-    final int second = ((((seconds / 3600 - hour) * 60) - minute) * 60).floor();
+    final int second = ((((seconds / 3600 - hour) * 60) - minute) * 60).round();
     return [
       if (hour > 0) hour.toString().padLeft(2, "0"),
       minute.toString().padLeft(2, "0"),
