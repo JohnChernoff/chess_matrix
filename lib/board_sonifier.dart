@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'dart:js' as js;
+import 'dart:async';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
 import 'matrix_fields.dart';

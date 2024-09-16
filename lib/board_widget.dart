@@ -26,6 +26,7 @@ class _BoardWidgetState extends State<BoardWidget> {
 
   @override
   void initState() {
+    print("Initializing: ${widget.slot}");
     super.initState();
     widget.client.updaters.putIfAbsent(widget, () => updateBoard);
   }
@@ -36,10 +37,7 @@ class _BoardWidgetState extends State<BoardWidget> {
 
   Timer countDown() {
     return Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        clockTimer?.cancel();
-      }
-      else {
+      if (mounted && widget.client.boards.containsKey(widget)) {
         if (active) {
           BoardState? boardState = getBoardState();
           if (board?.turn == ChessColor.white) {
@@ -53,6 +51,10 @@ class _BoardWidgetState extends State<BoardWidget> {
           }
         }
       }
+      else {
+        clockTimer?.cancel();
+        //dispose();
+      }
     });
   }
 
@@ -61,6 +63,7 @@ class _BoardWidgetState extends State<BoardWidget> {
     BoardState? boardState = getBoardState();
     boardState?.whitePlayer.clock = wc;
     boardState?.blackPlayer.clock = bc;
+    print("Updating: ${getBoardState()?.id}");
     board = BoardMatrix(fen,lastMove,widget.client.width,widget.client.height,() => refreshBoard(),colorStyle: widget.client.colorStyle);
     clockTimer = countDown();
     return board;
