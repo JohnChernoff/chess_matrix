@@ -2,154 +2,94 @@ import 'dart:async';
 import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
 import 'board_sonifier.dart';
 
-class BoardWidget extends StatefulWidget {
+class BoardWidget extends StatelessWidget {
   final MatrixClient client;
   final int slot;
-  const BoardWidget(this.client, this.slot, {super.key});
+  final BoardState state;
+  const BoardWidget(this.client, this.state, this.slot, {super.key});
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return "[$slot : ${client.boards[this]?.id}]";
-  }
-
-  @override
-  State<StatefulWidget> createState() => _BoardWidgetState();
-}
-
-class _BoardWidgetState extends State<BoardWidget> {
-  bool active = false;
-  BoardMatrix? board;
-  Timer? clockTimer;
-
-  @override
-  void initState() {
-    print("Initializing: ${widget.slot}");
-    super.initState();
-    widget.client.updaters.putIfAbsent(widget, () => updateBoard);
-  }
-
-  BoardState? getBoardState() {
-    return widget.client.boards[widget];
-  }
-
-  Timer countDown() {
-    return Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted && widget.client.boards.containsKey(widget)) {
-        if (active) {
-          BoardState? boardState = getBoardState();
-          if (board?.turn == ChessColor.white) {
-            setState(() {
-              boardState?.whitePlayer.nextTick();
-            });
-          } else if (board?.turn == ChessColor.black) {
-            setState(() {
-              boardState?.blackPlayer.nextTick();
-            });
-          }
-        }
-      }
-      else {
-        clockTimer?.cancel();
-        //dispose();
-      }
-    });
-  }
-
-  BoardMatrix? updateBoard(String fen,Move? lastMove, int wc, int bc) { //print("FEN: $fen");
-    clockTimer?.cancel();
-    BoardState? boardState = getBoardState();
-    boardState?.whitePlayer.clock = wc;
-    boardState?.blackPlayer.clock = bc;
-    print("Updating: ${getBoardState()?.id}");
-    board = BoardMatrix(fen,lastMove,widget.client.width,widget.client.height,() => refreshBoard(),colorStyle: widget.client.colorStyle);
-    clockTimer = countDown();
-    return board;
-  }
-
-  void refreshBoard() {
-    if (mounted) {
-      setState(() {
-        active = true;
-      });
-    }
+    return "[$slot : ${state.id}]";
   }
 
   Text getPlayerBar(bool top) {
-    BoardState? boardState = getBoardState();
-    if (boardState != null) {
-      if (boardState.blackPOV) top = !top;
-      ChessColor playerColor = top ? ChessColor.black : ChessColor.white;
-      Player player = playerColor == ChessColor.black ? boardState.blackPlayer : boardState.whitePlayer;
-      return Text(player.toString(), style: TextStyle(
-        color: board?.turn == playerColor ? Colors.yellowAccent : Colors.white
-      ));
-    }
-    return const Text("?");
+    if (state.blackPOV) top = !top;
+    ChessColor playerColor = top ? ChessColor.black : ChessColor.white;
+    Player? player = playerColor == ChessColor.black ? state.blackPlayer : state.whitePlayer;
+    return Text(player.toString(), style: TextStyle(
+        color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
+    ));
   }
 
   @override
-  Widget build(BuildContext context) { //print("Board FEN: ${board?.fen}");
-    return Column(
-      children: [
-        getPlayerBar(true),
-        Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard())),
-        getPlayerBar(false),
-    ]);
+  Widget build(BuildContext context) {
+    if (!context.mounted) return const SizedBox.shrink();
+    context.watch<BoardState>();
+    print("Board FEN: ${state.board?.fen}");
+    return state.board == null || state.finished || !state.active
+        ? const SizedBox.shrink()
+        : Column(children: [
+            getPlayerBar(true),
+            Expanded(
+                child: AspectRatio(aspectRatio: 1, child: getBoard(state.board!))),
+            getPlayerBar(false),
+          ]);
   }
 
-  Widget getBoard() {
+  Widget getBoard(BoardMatrix board) {
     return InkWell(
       onTap: () {
-        widget.client.sonifier.playNote(InstrumentType.pawnMelody, 80, 8, .5);
-        getBoardState()?.finished = true;
-        widget.client.loadTVGames();
+        client.sonifier.playNote(InstrumentType.pawnMelody, 80, 8, .5);
+        state.finished = true;
+        client.loadTVGames();
       },
       child: Container(
         color: Colors.black,
-        child: board != null ? Stack(
+        child: Stack(
           fit: StackFit.expand,
           children: [
-            board!.image != null ? CustomPaint(
-              painter: BoardPainter(widget.client,board!),
+            board.image != null ? CustomPaint(
+              painter: BoardPainter(client,board),
             ) : const SizedBox.shrink(),
-            getBoardPieces(Colors.brown),
-            widget.client.showControl ? getBoardControl() : const SizedBox.shrink(),
+            getBoardPieces(board,Colors.brown),
+            client.showControl ? getBoardControl(board) : const SizedBox.shrink(),
           ],
-        ) : const SizedBox.shrink(),
+        ),
       ),
     );
   }
 
-  Widget getBoardPieces(Color borderColor) {
+  Widget getBoardPieces(BoardMatrix board, Color borderColor) {
     return GridView.count(
       crossAxisCount: 8,
       children: List.generate(64, (index) {
         Coord squareCoord = Coord(index % 8, (index / 8).floor());
-        Piece piece = board!.getSquare(squareCoord).piece;
+        Piece piece = board.getSquare(squareCoord).piece;
         BlendMode? blendMode = piece.color == ChessColor.white ? null : BlendMode.modulate;
-        Color? color = piece.color == ChessColor.white ? null : widget.client.blackPieceColor;
+        Color? color = piece.color == ChessColor.white ? null : client.blackPieceColor;
         return Container(
           decoration:
-              BoxDecoration(border: Border.all(color: borderColor, width: 1)),
+          BoxDecoration(border: Border.all(color: borderColor, width: 1)),
           child: (piece.type != PieceType.none)
-              ? Image.asset("assets/images/pieces/${widget.client.pieceStyle.name}/${piece.toString(white: true)}.png",colorBlendMode: blendMode, color: color)
+              ? Image.asset("assets/images/pieces/${client.pieceStyle.name}/${piece.toString(white: true)}.png",colorBlendMode: blendMode, color: color)
               : const SizedBox.shrink(),
         );
       }),
     );
   }
 
-  Widget getBoardControl() {
+  Widget getBoardControl(BoardMatrix board) {
     return GridView.count(
       crossAxisCount: 8,
       children: List.generate(64, (index) {
         Coord squareCoord = Coord(index % 8, (index / 8).floor());
         return SizedBox(
-          child: Text(board!.getSquare(squareCoord).control.toString(),
-          style: const TextStyle(color: Colors.yellowAccent))
+            child: Text(board.getSquare(squareCoord).control.toString(),
+                style: const TextStyle(color: Colors.yellowAccent))
         );
       }),
     );
@@ -182,5 +122,57 @@ class BoardPainter extends CustomPainter {
     return false;
   }
 
+}
+
+class BoardState extends ChangeNotifier {
+  String? id;
+  Player? whitePlayer,blackPlayer;
+  bool finished = false;
+  bool active = false;
+  bool blackPOV = false;
+  BoardMatrix? board;
+  Timer? clockTimer;
+  MatrixClient client;
+
+  BoardState(this.client,this.id,this.whitePlayer,this.blackPlayer) {
+    print("Initializing: $id");
+  }
+
+  void updateState(id,whitePlayer,blackPlayer) {
+    this.id = id;
+    this.whitePlayer = whitePlayer;
+    this.blackPlayer = blackPlayer;
+    active = true;
+  }
+
+  Timer countDown() {
+    return Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (active) {
+        if (board?.turn == ChessColor.white) {
+          whitePlayer?.nextTick();
+        } else if (board?.turn == ChessColor.black) {
+          blackPlayer?.nextTick();
+        }
+        updateWidget();
+      }
+      else {
+        clockTimer?.cancel();
+      }
+    });
+  }
+
+  void updateWidget() {
+    notifyListeners();
+  }
+
+  BoardMatrix? updateBoard(String fen,Move? lastMove, int wc, int bc) { //print("Updating: $id");
+    clockTimer?.cancel();
+    whitePlayer?.clock = wc;
+    blackPlayer?.clock = bc;
+    board = BoardMatrix(fen,lastMove,client.width,client.height,() => updateWidget(),colorStyle: client.colorStyle);
+    clockTimer = countDown();
+    return board;
+  }
 
 }
+

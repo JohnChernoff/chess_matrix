@@ -2,7 +2,6 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'client.dart';
 import 'matrix_fields.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -13,14 +12,6 @@ const ranks = 8, files = 8;
 enum ColorComponent {red,green,blue}
 enum ChessColor {none,white,black}
 enum PieceType {none,pawn,knight,bishop,rook,queen,king}
-
-class BoardState {
-  String id;
-  Player whitePlayer,blackPlayer;
-  bool finished = false;
-  bool blackPOV = false;
-  BoardState(this.id,this.whitePlayer,this.blackPlayer);
-}
 
 class BoardMatrix {
   final String fen;

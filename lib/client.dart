@@ -11,10 +11,10 @@ import 'board_matrix.dart';
 import 'matrix_fields.dart';
 
 class MatrixClient extends ChangeNotifier {
-  int maxStreams = 8;
+  final int maxBoards = 30;
+  int numBoards = 8;
   final int width, height;
-  final Map<BoardWidget?,BoardState?> boards = {};
-  final Map<BoardWidget,dynamic> updaters = {};
+  final List<BoardWidget> boards = [];
   final Map<String,ui.Image> pieceImages = {};
   bool showControl = false;
   bool showMove = false;
@@ -26,17 +26,12 @@ class MatrixClient extends ChangeNotifier {
   late final ZugSock lichSock;
 
   MatrixClient(this.width,this.height) {
-    initBoards();
+    for (int i = 0; i < maxBoards; i++) {
+      boards.add(BoardWidget(this,BoardState(this,null,null,null),i));
+    }
     sonifier = BoardSonifier(this);
     lichSock = ZugSock('wss://socket.lichess.org/api/socket', connected, handleMsg, disconnected);
-  }
 
-  void initBoards() {
-    boards.clear();
-    updaters.clear();
-    for (int i = 0; i < maxStreams; i++) {
-      boards.putIfAbsent(BoardWidget(this,i), () => null);
-    }
   }
 
   void setColorStyle(ColorStyle style) {
@@ -51,10 +46,7 @@ class MatrixClient extends ChangeNotifier {
 
   void setGameStyle(GameStyle style) {
     gameStyle = style;
-    for (var state in boards.values) {
-      state?.finished = true;
-    }
-    loadTVGames();
+    loadTVGames(reset: true);
   }
 
   void toggleAudio() {
@@ -86,17 +78,22 @@ class MatrixClient extends ChangeNotifier {
     print("Disconnected");
   }
 
-  void setMaxGames(int n) {
-    maxStreams = n;
+  void setNumGames(int n) {
+    numBoards = n;
+    boards.where((board) => board.slot < numBoards).forEach((widget) => widget.state.active = true);
+    boards.where((board) => board.slot >= numBoards).forEach((widget) => widget.state.active = false);
+    boards.forEach((board) => board.state.updateWidget());
     notifyListeners();
   }
 
   void loadTVGames({reset = false}) async {
     if (reset) {
-      initBoards();
+      for (var board in boards) {
+        board.state.finished = true;
+      }
     }
     List<dynamic> games = await Lichess.getTV(gameStyle.name);
-    for (int i = 0; i < min(maxStreams,games.length); i++) {
+    for (int i = 0; i < min(numBoards,games.length); i++) {
       addBoard(games[i]);
     } //print(boards.keys);
     notifyListeners();
@@ -112,7 +109,7 @@ class MatrixClient extends ChangeNotifier {
       int blackClock = int.parse(data['bc'].toString());
       Move lastMove = Move(data['lm']);
       String fen = data['fen'];
-      BoardMatrix? matrix = updateBoardWidget(getWidgetByID(id), fen, lastMove, whiteClock, blackClock);
+      BoardMatrix? matrix = getWidgetByID(id)?.state.updateBoard(fen, lastMove, whiteClock, blackClock);
       Piece? piece = matrix?.getSquare(lastMove.to).piece;
       InstrumentType? instType = switch(piece?.type) {
         null => null,
@@ -128,26 +125,17 @@ class MatrixClient extends ChangeNotifier {
       if (matrix?.turn == ChessColor.black) toPitch = 64 - toPitch;
       sonifier.playMelody(instType, minPitch + toPitch, sonifier.orchMap[instType?.name]?.level ?? .5);
     } else if (type == 'finish') {
-      getBoardStateByID(id)?.finished = true;
+      getWidgetByID(id)?.state.finished = true;
       loadTVGames();
     }
   }
 
-  BoardMatrix? updateBoardWidget(BoardWidget? widget, String fen, Move? lastMove, int whiteClock, int blackClock) {
-    print("Updating: ${widget?.slot}");
-    return updaters.containsKey(widget) ? updaters[widget](fen,lastMove,whiteClock,blackClock) : null;
-  }
-
   BoardWidget? getWidgetByID(String id) {
-    return boards.keys.firstWhere((widget) => boards[widget]?.id == id, orElse: () => null);
-  }
-
-  BoardState? getBoardStateByID(String id) {
-    return boards.values.firstWhere((state) => state?.id == id, orElse: () => null);
+    return boards.where((widget) => widget.state.id == id).firstOrNull;
   }
 
   BoardWidget? getOpenBoard() {
-    return boards.keys.firstWhere((widget) => boards[widget]?.finished ?? true);
+    return boards.where((widget) => widget.state.finished || !widget.state.active).firstOrNull;
   }
 
   String getFen(String moves) {
@@ -160,11 +148,11 @@ class MatrixClient extends ChangeNotifier {
     String id = game['id'];
     Player whitePlayer = Player(game['players']['white']);
     Player blackPlayer = Player(game['players']['black']);
-    if (getBoardStateByID(id) == null) {
+    if (getWidgetByID(id) == null) {
       BoardWidget? widget = getOpenBoard();
-      if (widget != null) { //print("Adding: $game");
-        boards.update(widget, (state) => BoardState(id,whitePlayer,blackPlayer));
-        updateBoardWidget(widget, getFen(game['moves']), null, 0, 0);
+      if (widget != null) { print("Adding: $game");
+        widget.state.updateState(id,whitePlayer,blackPlayer);
+        widget.state.updateBoard(getFen(game['moves']), null, 0, 0);
         lichSock.send(
             jsonEncode({ 't': 'startWatching', 'd': id })
         );

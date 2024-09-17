@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:chess_matrix/board_sonifier.dart';
+import 'package:chess_matrix/board_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'client.dart';
@@ -36,7 +37,7 @@ class MatrixHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    MatrixClient client = context.watch<MatrixClient>(); print("Building Board List: ${client.boards.keys}");
+    MatrixClient client = context.watch<MatrixClient>(); //print("Building Board List: ${client.boards.keys}");
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -65,7 +66,11 @@ class MatrixHomePage extends StatelessWidget {
         crossAxisCount: 4, //TODO: adjust for mobile
         mainAxisSpacing: 16,
         crossAxisSpacing: 0,
-        children: List.generate(client.boards.keys.length,(index) => client.boards.keys.elementAt(index)!,
+        children: List.generate(client.boards.length,(index) {
+            BoardWidget? widget = client.boards.elementAt(index);
+            print("${widget.slot} ->  ${widget.state.id}");
+            return ChangeNotifierProvider(create: (context) => widget.state, child: widget);
+          },
         ),
       ),
     );
@@ -112,8 +117,8 @@ class MatrixHomePage extends StatelessWidget {
     return Column(children: [
       Row(
         children: [
-          ElevatedButton(onPressed: () => client.loadTVGames(reset: true), child: const Text("Reload TV Games")),
-          Slider(value: client.maxStreams as double, min: 1, max: 30, label: "Boards",  onChanged: (double value) => client.setMaxGames(value.round())),
+          ElevatedButton(onPressed: () => client.loadTVGames(reset: false), child: const Text("Reload TV Games")),
+          Slider(value: client.numBoards as double, min: 1, max: 30, label: "Boards",  onChanged: (double value) => client.setNumGames(value.round())),
         ],
       ),
       Row(
