@@ -8,6 +8,7 @@ import 'board_sonifier.dart';
 class BoardWidget extends StatelessWidget {
   final int slot;
   final textStyle = const TextStyle(color: Colors.white);
+  final bool showID = false;
   const BoardWidget(this.slot, {super.key});
 
   @override
@@ -21,7 +22,7 @@ class BoardWidget extends StatelessWidget {
     return state.board == null
           ? const SizedBox.shrink()
           : Column(children: [
-              Text("$slot: ${state.id}",style: textStyle),
+              showID ? Text("$slot: ${state.id}",style: textStyle) : const SizedBox.shrink(),
               getPlayerBar(state, true),
               Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard(context, state))),
               getPlayerBar(state, false),

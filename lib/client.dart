@@ -75,16 +75,15 @@ class MatrixClient extends ChangeNotifier {
   void setNumGames(int n) {
     int prevBoards = boards.length;
     boards = boards.removeWhere((board) => board.slot > n);
-    int diff = n - boards.length;
-    if (diff > 0) {
-      print("Adding $diff extra boards...");
+    int diff = n - (boards.length - 1);
+    if (diff > 0) { //print("Adding $diff extra boards...");
       boards = boards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
     }
   }
 
   void loadTVGames({reset = false, int? numBoards}) async {
     if (numBoards != null) {
-      setNumGames(numBoards-1);
+      setNumGames(numBoards);
     }
     if (reset) {
       for (var board in boards) {

@@ -1,11 +1,26 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:chess_matrix/board_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:zug_utils/zug_utils.dart';
 import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
+
+enum MediaBreakpoint {mobile,tablet,laptop,desktop}
+Map<MediaBreakpoint,List<int>> gridMap = {
+  MediaBreakpoint.mobile: [1,1,2,2],
+  MediaBreakpoint.tablet: [2,2,4,4],
+  MediaBreakpoint.laptop: [3,3,4,6],
+  MediaBreakpoint.desktop: [4,4,6,8]
+};
+Map<ColorStyle,List<Color>> colorStyleList = {
+  ColorStyle.redBlue : [Colors.red,Colors.blue],
+  ColorStyle.redGreen : [Colors.red,Colors.green],
+  ColorStyle.greenBlue : [Colors.green,Colors.blue],
+};
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,8 +56,10 @@ class MatrixHomePage extends StatefulWidget {
 }
 
 class _MatrixHomePageState extends State<MatrixHomePage> {
-  TextStyle textStyle = const TextStyle(color: Colors.grey, fontSize: 20); //deepPurpleAccent
-  TextStyle buttonTextStyle = const TextStyle(color: Colors.purple, fontSize: 20); //deepPurpleAccent
+  double fontSize = 20;
+  Color color1 = Colors.grey;
+  Color color2 = Colors.white;
+  Color color3 = Colors.black; //Colors.purple;
   int numBoards = 8;
 
   @override
@@ -50,63 +67,79 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     super.initState();
   }
 
+  TextStyle getTextStyle(Color color) {
+    return TextStyle(color: color, fontSize: fontSize);
+  }
+
   @override
   Widget build(BuildContext context) {
     MatrixClient client = context.watch<MatrixClient>(); //print("Building Board List: ${client.boards.keys}");
+    ScreenDim dim = ZugUtils.getScreenDimensions(context);
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: Text(widget.title),
         ),
         body: Container(color: Colors.black, child: Column(children: [
-          Row(
-            children: [
-              Text("Boards: $numBoards",style: textStyle),
-              Slider(
-                  value: numBoards as double,
-                  min: 1,
-                  max: 30,
-                  label: "Boards",
-                  onChanged: (double value) {
-                    setState(() {
-                      numBoards = value.round();
-                    });
-                  }),
-              ElevatedButton(onPressed: () => client.loadTVGames(numBoards: numBoards, reset: false), child: Text("Reload", style: buttonTextStyle)),
-              const SizedBox(width: 20),
-              ElevatedButton(
-                  onPressed: () => client.toggleAudio(),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                  child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: buttonTextStyle)),
-            ],
-          ),
-          //const SizedBox(height: 32),
-
+          SizedBox(width: dim.width, height: 40, child: getGeneralControls(client)),
           const SizedBox(height: 32),
           client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
-          getMatrixControls(client),
+          Container(color: Colors.black, width: dim.width, height: 40, child: Center(child: getMatrixControls(client))),
           const SizedBox(height: 32),
-          Expanded(child: getMatrixView(client),
+          Expanded(child: getMatrixView(client,dim),
           )
         ]))
     );
   }
 
-  Widget getMatrixView(MatrixClient client) {
+  Widget getMatrixView(MatrixClient client, ScreenDim screenDimensions, {int minBoardSize = 200}) {
+    int i = max(min(3, ((client.boards.length / 4) - 1).floor()),0);
+    int horizonalBoards = 1;
+    int n = client.boards.length + 1;
+    for (int i=n; i>0; i--) {
+      if (min(screenDimensions.width / i,screenDimensions.height / i).floor() > minBoardSize) {
+        horizonalBoards = i;
+        break;
+      }
+    }
     return Container(
       color: Colors.black,
       child: GridView.count(
-        crossAxisCount: 4, //TODO: adjust for mobile
+        crossAxisCount: horizonalBoards,
         mainAxisSpacing: 16,
         crossAxisSpacing: 0,
-        children: List.generate(client.boards.length,(index) {
-          BoardState? state = client.boards.elementAt(index); //print("Viewing: $state");
-          return ChangeNotifierProvider.value(value: state,
-              child: BoardWidget(key: ObjectKey(state), index));
-        },
+        children: List.generate(
+          client.boards.length, (index) {
+            BoardState? state = client.boards.elementAt(index); //print("Viewing: $state");
+            return ChangeNotifierProvider.value(
+                value: state, child: BoardWidget(key: ObjectKey(state), index));
+          },
         ),
       ),
     );
+  }
+
+  Widget getGeneralControls(MatrixClient client) {
+    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
+      children: [
+        Text("Boards: $numBoards",style: getTextStyle(color2)),
+        Slider(
+            value: numBoards as double,
+            min: 1,
+            max: 30,
+            onChanged: (double value) {
+              setState(() {
+                numBoards = value.round();
+              });
+            }),
+        ElevatedButton(onPressed: () => client.loadTVGames(numBoards: numBoards-1, reset: false), child: Text("Reload", style: getTextStyle(color3))),
+        const SizedBox(width: 20),
+        ElevatedButton(
+            onPressed: () => client.toggleAudio(),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+            child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
+      ],
+    ));
   }
 
   Widget getAudioControls(MatrixClient client) {
@@ -147,24 +180,34 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   }
 
   Widget getMatrixControls(MatrixClient client) {
-    return Column(children: [
-
-      Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+    Decoration decoration = BoxDecoration(
+      color: Colors.greenAccent,
+      gradient: LinearGradient(
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+        colors: colorStyleList[MatrixClient.colorStyle] ?? [],
+      ), //borderRadius: BorderRadius.all(Radius.circular(40)),
+    );
+    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            DecoratedBox(decoration: decoration, child:
             DropdownButton(value: MatrixClient.colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
-                DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text("Color Style: ${ColorStyle.values.elementAt(index).name}",style: textStyle))),
-                onChanged: (ColorStyle? value) => client.setColorStyle(value!)),
+                DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text("Color Style: ${ColorStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
+                onChanged: (ColorStyle? value) => client.setColorStyle(value!))),
+            const SizedBox(width: 24),
+            DecoratedBox(decoration: decoration, child:
             DropdownButton(value: MatrixClient.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
-                DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text("Game Style: ${GameStyle.values.elementAt(index).name}",style: textStyle))),
-                onChanged: (GameStyle? value) => client.setGameStyle(value!)),
-            DropdownButton(value: MatrixClient.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
-                DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text("Piece Style: ${PieceStyle.values.elementAt(index).name}",style: textStyle))),
-                onChanged: (PieceStyle? value) => client.setPieceStyle(value!)),
+                DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text("Game Style: ${GameStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
+                onChanged: (GameStyle? value) => client.setGameStyle(value!))),
+            const SizedBox(width: 24),
+            DecoratedBox(decoration: decoration, child: DropdownButton(value: MatrixClient.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
+                DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text("Piece Style: ${PieceStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
+                onChanged: (PieceStyle? value) => client.setPieceStyle(value!))),
           ]),
-    ]);
-
+    );
   }
+
 }
 
 class WebScrollBehavior extends MaterialScrollBehavior {
