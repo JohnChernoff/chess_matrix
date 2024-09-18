@@ -5,10 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'client.dart';
 import 'matrix_fields.dart';
+import 'board_state.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MatrixApp(MatrixClient(250,250)));
+  runApp(MatrixApp(MatrixClient('wss://socket.lichess.org/api/socket')));
 }
 
 class MatrixApp extends StatelessWidget {
@@ -66,10 +67,9 @@ class MatrixHomePage extends StatelessWidget {
         crossAxisCount: 4, //TODO: adjust for mobile
         mainAxisSpacing: 16,
         crossAxisSpacing: 0,
-        children: List.generate(client.boards.length,(index) {
-            BoardWidget? widget = client.boards.elementAt(index);
-            print("${widget.slot} ->  ${widget.state.id}");
-            return ChangeNotifierProvider(create: (context) => widget.state, child: widget);
+        children: List.generate(client.visibleBoards.length,(index) {
+            BoardState? state = client.visibleBoards.elementAt(index); //print("${state.slot} ->  ${state.id}");
+            return ChangeNotifierProvider(create: (context) => state, child: BoardWidget(state.slot));
           },
         ),
       ),
@@ -124,13 +124,13 @@ class MatrixHomePage extends StatelessWidget {
       Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            DropdownButton(value: client.colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
+            DropdownButton(value: MatrixClient.colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
                 DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text("Color Style: ${ColorStyle.values.elementAt(index).name}",style: textStyle))),
                 onChanged: (ColorStyle? value) => client.setColorStyle(value!)),
-            DropdownButton(value: client.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
+            DropdownButton(value: MatrixClient.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
                 DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text("Game Style: ${GameStyle.values.elementAt(index).name}",style: textStyle))),
                 onChanged: (GameStyle? value) => client.setGameStyle(value!)),
-            DropdownButton(value: client.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
+            DropdownButton(value: MatrixClient.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
                 DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text("Piece Style: ${PieceStyle.values.elementAt(index).name}",style: textStyle))),
                 onChanged: (PieceStyle? value) => client.setPieceStyle(value!)),
           ]),

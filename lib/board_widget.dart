@@ -1,22 +1,20 @@
-import 'dart:async';
 import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'board_state.dart';
 import 'board_sonifier.dart';
 
 class BoardWidget extends StatelessWidget {
-  final MatrixClient client;
   final int slot;
-  final BoardState state;
-  const BoardWidget(this.client, this.state, this.slot, {super.key});
+  const BoardWidget(this.slot, {super.key});
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return "[$slot : ${state.id}]";
+    return "[Widget: $slot]";
   }
 
-  Text getPlayerBar(bool top) {
+  Text getPlayerBar(BoardState state, bool top) {
     if (state.blackPOV) top = !top;
     ChessColor playerColor = top ? ChessColor.black : ChessColor.white;
     Player? player = playerColor == ChessColor.black ? state.blackPlayer : state.whitePlayer;
@@ -27,24 +25,24 @@ class BoardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!context.mounted) return const SizedBox.shrink();
-    context.watch<BoardState>();
-    print("Board FEN: ${state.board?.fen}");
-    return state.board == null || state.finished || !state.active
+    BoardState state = context.watch<BoardState>();
+    return state.board == null || !state.visible
         ? const SizedBox.shrink()
         : Column(children: [
-            getPlayerBar(true),
+            getPlayerBar(state,true),
             Expanded(
-                child: AspectRatio(aspectRatio: 1, child: getBoard(state.board!))),
-            getPlayerBar(false),
+                child: AspectRatio(aspectRatio: 1, child: getBoard(context,state))),
+            getPlayerBar(state,false),
           ]);
   }
 
-  Widget getBoard(BoardMatrix board) {
+  Widget getBoard(BuildContext context,BoardState state) {
+    //print("$slot -> Board FEN: ${state.board?.fen}");
+    MatrixClient client = Provider.of(context,listen: false);
     return InkWell(
       onTap: () {
         client.sonifier.playNote(InstrumentType.pawnMelody, 80, 8, .5);
-        state.finished = true;
+        state.replacable = true;
         client.loadTVGames();
       },
       child: Container(
@@ -52,30 +50,30 @@ class BoardWidget extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            board.image != null ? CustomPaint(
-              painter: BoardPainter(client,board),
+            state.board?.image != null ? CustomPaint(
+              painter: BoardPainter(client,state.board!),
             ) : const SizedBox.shrink(),
-            getBoardPieces(board,Colors.brown),
-            client.showControl ? getBoardControl(board) : const SizedBox.shrink(),
+            getBoardPieces(state.board!,Colors.brown,client.blackPieceColor,MatrixClient.pieceStyle.name),
+            client.showControl ? getBoardControl(state.board!) : const SizedBox.shrink(),
           ],
         ),
       ),
     );
   }
 
-  Widget getBoardPieces(BoardMatrix board, Color borderColor) {
+  Widget getBoardPieces(BoardMatrix board, Color borderColor, Color blackPieceColor, String pieceStyle) {
     return GridView.count(
       crossAxisCount: 8,
       children: List.generate(64, (index) {
         Coord squareCoord = Coord(index % 8, (index / 8).floor());
         Piece piece = board.getSquare(squareCoord).piece;
         BlendMode? blendMode = piece.color == ChessColor.white ? null : BlendMode.modulate;
-        Color? color = piece.color == ChessColor.white ? null : client.blackPieceColor;
+        Color? color = piece.color == ChessColor.white ? null : blackPieceColor;
         return Container(
           decoration:
           BoxDecoration(border: Border.all(color: borderColor, width: 1)),
           child: (piece.type != PieceType.none)
-              ? Image.asset("assets/images/pieces/${client.pieceStyle.name}/${piece.toString(white: true)}.png",colorBlendMode: blendMode, color: color)
+              ? Image.asset("assets/images/pieces/$pieceStyle/${piece.toString(white: true)}.png",colorBlendMode: blendMode, color: color)
               : const SizedBox.shrink(),
         );
       }),
@@ -120,58 +118,6 @@ class BoardPainter extends CustomPainter {
       return oldDelegate.board.image != null && (oldDelegate.board.fen != board.fen || oldDelegate.board.colorStyle != board.colorStyle);
     }
     return false;
-  }
-
-}
-
-class BoardState extends ChangeNotifier {
-  String? id;
-  Player? whitePlayer,blackPlayer;
-  bool finished = false;
-  bool active = false;
-  bool blackPOV = false;
-  BoardMatrix? board;
-  Timer? clockTimer;
-  MatrixClient client;
-
-  BoardState(this.client,this.id,this.whitePlayer,this.blackPlayer) {
-    print("Initializing: $id");
-  }
-
-  void updateState(id,whitePlayer,blackPlayer) {
-    this.id = id;
-    this.whitePlayer = whitePlayer;
-    this.blackPlayer = blackPlayer;
-    active = true;
-  }
-
-  Timer countDown() {
-    return Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (active) {
-        if (board?.turn == ChessColor.white) {
-          whitePlayer?.nextTick();
-        } else if (board?.turn == ChessColor.black) {
-          blackPlayer?.nextTick();
-        }
-        updateWidget();
-      }
-      else {
-        clockTimer?.cancel();
-      }
-    });
-  }
-
-  void updateWidget() {
-    notifyListeners();
-  }
-
-  BoardMatrix? updateBoard(String fen,Move? lastMove, int wc, int bc) { //print("Updating: $id");
-    clockTimer?.cancel();
-    whitePlayer?.clock = wc;
-    blackPlayer?.clock = bc;
-    board = BoardMatrix(fen,lastMove,client.width,client.height,() => updateWidget(),colorStyle: client.colorStyle);
-    clockTimer = countDown();
-    return board;
   }
 
 }
