@@ -15,14 +15,10 @@ class MatrixClient extends ChangeNotifier {
   static ColorStyle colorStyle = ColorStyle.redBlue;
   static PieceStyle pieceStyle = PieceStyle.horsey;
   static GameStyle gameStyle = GameStyle.blitz;
-  final int maxBoards = 30;
-  int numBoards = 8;
   bool showControl = false;
   bool showMove = false;
   final Map<String,ui.Image> pieceImages = {};
-  late IList<BoardState> boards = IList(List.generate(maxBoards, (slot) => BoardState(this,slot)));
-  Iterable<BoardState> get visibleBoards => boards.where((board) => board.slot < numBoards);
-  Iterable<BoardState> get invisibleBoards => boards.where((board) => board.slot >= numBoards);
+  late IList<BoardState> boards = IList(List.generate(8, (slot) => BoardState(slot)));
   Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
   late final BoardSonifier sonifier;
   late final ZugSock lichSock;
@@ -77,8 +73,12 @@ class MatrixClient extends ChangeNotifier {
   }
 
   void setNumGames(int n) {
-    numBoards = n;
-    //for (var board in visibleBoards) { board.notifyListeners(); }
+    int prevBoards = boards.length;
+    boards = boards.removeWhere((board) => board.slot > n);
+    int diff = n - boards.length;
+    if (diff > 0) {
+      boards = boards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
+    }
     notifyListeners();
   }
 
@@ -88,37 +88,24 @@ class MatrixClient extends ChangeNotifier {
         board.replacable = true;
       }
     }
-    List<dynamic> games = await Lichess.getTV(gameStyle.name,numBoards);
-    Iterable<dynamic> newGames = games.where((game) => visibleBoards.where((vb) => vb.id == game['id']).isEmpty);
-    List<BoardState> openBoards = visibleBoards.where((board) => board.replacable).toList();
+    List<dynamic> games = await Lichess.getTV(gameStyle.name,boards.length);
+    List<BoardState> openBoards = boards.where((board) => board.replacable).toList();
     openBoards.sort(); //probably unnecessary
     for (BoardState board in openBoards) {
-      for (dynamic game in newGames) {
-        String id = game['id'];
-        BoardState? swappableBoard = invisibleBoards.where((board) => board.id == id).firstOrNull;
-        if (swappableBoard != null) {
-            int slot = board.slot;
-            board.slot = swappableBoard.slot;
-            swappableBoard.slot = slot;
-        }
-        else {
-          newBoard(board, game);
-        }
+      dynamic game = games.where((game) => boards.where((vb) => vb.id == game['id']).isEmpty).firstOrNull;
+      if (game != null) {
+        String id = game['id']; //print("Adding: $id");
+        boards = boards.put(board.slot, BoardState.fromTV(board.slot, id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black'])));
+        lichSock.send(
+            jsonEncode({ 't': 'startWatching', 'd': id })
+        );
+      } else {
+        break;
       }
     }
     boards = boards.sort();
-    //for (int i = 0; i < min(numBoards,games.length); i++) {  addBoard(games[i]); }
+    print(boards);
     notifyListeners();
-  }
-
-  void newBoard(BoardState board,dynamic game) {
-    String id = game['id'];
-    Player whitePlayer = Player(game['players']['white']);
-    Player blackPlayer = Player(game['players']['black']);
-    board.updateState(id,getFen(game['moves']),whitePlayer,blackPlayer);
-    lichSock.send(
-        jsonEncode({ 't': 'startWatching', 'd': id })
-    );
   }
 
   void handleMsg(String msg) { //print("Message: $msg");
@@ -153,7 +140,7 @@ class MatrixClient extends ChangeNotifier {
   }
 
   BoardState? getBoardByID(String id) {
-    return visibleBoards.where((state) => state.id == id).firstOrNull;
+    return boards.where((state) => state.id == id).firstOrNull;
   }
 
   String getFen(String moves) {

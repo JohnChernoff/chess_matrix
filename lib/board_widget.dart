@@ -25,15 +25,22 @@ class BoardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    BoardState state = context.watch<BoardState>();
-    return state.board == null || !state.visible
-        ? const SizedBox.shrink()
-        : Column(children: [
-            getPlayerBar(state,true),
-            Expanded(
-                child: AspectRatio(aspectRatio: 1, child: getBoard(context,state))),
-            getPlayerBar(state,false),
-          ]);
+    //BoardState state = context.watch<BoardState>();
+    print("Building: $this");
+    return Consumer<BoardState>(
+        builder: (BuildContext context, BoardState state, Widget? child) {
+          print(state);
+          print(state.board);
+      return state.board == null
+          ? const SizedBox.shrink()
+          : Column(children: [
+              getPlayerBar(state, true),
+              Expanded(
+                  child: AspectRatio(
+                      aspectRatio: 1, child: getBoard(context, state))),
+              getPlayerBar(state, false),
+            ]);
+    });
   }
 
   Widget getBoard(BuildContext context,BoardState state) {

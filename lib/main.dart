@@ -67,9 +67,9 @@ class MatrixHomePage extends StatelessWidget {
         crossAxisCount: 4, //TODO: adjust for mobile
         mainAxisSpacing: 16,
         crossAxisSpacing: 0,
-        children: List.generate(client.visibleBoards.length,(index) {
-            BoardState? state = client.visibleBoards.elementAt(index); //print("${state.slot} ->  ${state.id}");
-            return ChangeNotifierProvider(create: (context) => state, child: BoardWidget(state.slot));
+        children: List.generate(client.boards.length,(index) {
+            BoardState? state = client.boards.elementAt(index); print("Viewing: $state");
+            return ChangeNotifierProvider(create: (context) => state, child: BoardWidget(index));
           },
         ),
       ),
@@ -118,7 +118,7 @@ class MatrixHomePage extends StatelessWidget {
       Row(
         children: [
           ElevatedButton(onPressed: () => client.loadTVGames(reset: false), child: const Text("Reload TV Games")),
-          Slider(value: client.numBoards as double, min: 1, max: 30, label: "Boards",  onChanged: (double value) => client.setNumGames(value.round())),
+          Slider(value: client.boards.length as double, min: 1, max: 30, label: "Boards",  onChanged: (double value) => client.setNumGames(value.round())),
         ],
       ),
       Row(

@@ -11,39 +11,40 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   bool blackPOV = false;
   BoardMatrix? board;
   Timer? clockTimer;
-  final MatrixClient client;
   int slot;
-  bool get visible => client.visibleBoards.contains(this);
 
-  BoardState(this.client,this.slot) {
-    print("Initializing: $slot");
+  BoardState(this.slot);
+  BoardState.fromTV(this.slot,this.id,String fen,this.whitePlayer,this.blackPlayer) {
+    updateBoard(fen, null, 0, 0);
   }
 
-  void updateState(id,String fen,whitePlayer,blackPlayer) {
-    this.id = id;
-    this.whitePlayer = whitePlayer;
-    this.blackPlayer = blackPlayer;
-    updateBoard(fen, null, 0, 0);
+  @override
+  String toString() {
+      return "$slot: $id";
   }
 
   Timer countDown() {
     return Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (visible) {
+      if (hasListeners) {
         if (board?.turn == ChessColor.white) {
           whitePlayer?.nextTick();
         } else if (board?.turn == ChessColor.black) {
           blackPlayer?.nextTick();
         }
+
         updateWidget();
       }
       else {
         clockTimer?.cancel();
+        //dispose();
       }
     });
   }
 
   void updateWidget() {
-    if (visible) notifyListeners();
+    //print("Updating: $id");
+    //print("Has listeners: $hasListeners");
+    notifyListeners();
   }
 
   BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc) { //print("Updating: $id");
@@ -57,7 +58,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
 
   @override
   int compareTo(BoardState other) {
-    return other.slot - slot;
+    return  slot - other.slot;
   }
 
 }
