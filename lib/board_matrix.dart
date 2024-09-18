@@ -20,12 +20,13 @@ class BoardMatrix {
       ranks, (i) => List<Square>.generate(
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
   final Color edgeColor;
+  final Color? voidColor;
   final ColorStyle colorStyle;
   final Move? lastMove;
   late final ChessColor turn;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,imgCall,{this.colorStyle = ColorStyle.redBlue, this.edgeColor = Colors.black}) {
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,imgCall,{this.colorStyle = ColorStyle.redBlue, this.edgeColor = Colors.black, this.voidColor}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
     _setPieces(fenStrs[0]);
@@ -67,7 +68,7 @@ class BoardMatrix {
   void updateControl() {
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
-        squares[x][y].setControl(calcControl(Coord(x,y)),colorStyle);
+        squares[x][y].setControl(calcControl(Coord(x,y)),colorStyle,voidColor);
       }
     }
   }
@@ -228,17 +229,20 @@ class BoardMatrix {
 }
 
 class Square {
+  final Color bigRed = const Color.fromARGB(255, 255, 0, 0);
+  final Color bigGreen = const Color.fromARGB(255, 0,255, 0);
+  final Color bigBlue = const Color.fromARGB(255, 0,0, 255);
   Piece piece;
   int control = 0;
   ColorArray color = ColorArray.fromFill(0);
   Square(this.piece);
 
-  void setControl(int c, ColorStyle colorStyle) {
+  void setControl(int c, ColorStyle colorStyle, Color? voidColor) {
     control = c;
     color = switch(colorStyle) {
-      ColorStyle.redBlue => getTwoColor(ColorComponent.red, ColorComponent.green, ColorComponent.blue),
-      ColorStyle.redGreen => getTwoColor(ColorComponent.red, ColorComponent.blue, ColorComponent.green),
-      ColorStyle.greenBlue => getTwoColor(ColorComponent.blue, ColorComponent.red, ColorComponent.green),
+      ColorStyle.redBlue => getTriColor(bigRed,bigBlue,voidColor ?? Colors.black), // : getTwoColor(ColorComponent.red, ColorComponent.green, ColorComponent.blue),
+      ColorStyle.redGreen => getTriColor(bigRed,bigGreen,voidColor ?? Colors.black), //getTwoColor(ColorComponent.red, ColorComponent.blue, ColorComponent.green),
+      ColorStyle.greenBlue => getTriColor(bigBlue,bigGreen,voidColor ?? Colors.black), //getTwoColor(ColorComponent.blue, ColorComponent.red, ColorComponent.green),
     };
   }
 
@@ -256,6 +260,22 @@ class Square {
       colorMatrix[whiteComponent.index] = c.abs();
     }
     return ColorArray(colorMatrix[0], colorMatrix[1], colorMatrix[2]);
+  }
+
+  ColorArray getTriColor(Color blackColor, Color whiteColor, Color voidColor) {
+    ColorArray colorMatrix = ColorArray.fromColor(voidColor);
+    double controlGrad = control.abs() / maxControl;
+    if (control > 0) {
+      colorMatrix.addRed = ((whiteColor.red - voidColor.red) * controlGrad).floor();
+      colorMatrix.addGreen = ((whiteColor.green - voidColor.green) * controlGrad).floor();
+      colorMatrix.addBlue = ((whiteColor.blue - voidColor.blue) * controlGrad).floor();
+    } else if (control < 0) {
+      colorMatrix.addRed = ((blackColor.red - voidColor.red) * controlGrad).floor();
+      colorMatrix.addGreen = ((blackColor.green - voidColor.green) * controlGrad).floor();
+      colorMatrix.addBlue = ((blackColor.blue - voidColor.blue) * controlGrad).floor();
+    }
+    //if (control != 0) print("${voidColor.red},${voidColor.green},${voidColor.blue} -> ${colorMatrix.values}");
+    return colorMatrix;
   }
 }
 
@@ -327,7 +347,11 @@ class Coord {
 
 class ColorArray {
   final List<int> values;
+  int get red => values[0]; set addRed(int i) => values[0] += i;
+  int get green => values[1]; set addGreen(int i) => values[1] += i;
+  int get blue => values[2]; set addBlue(int i) => values[2] += i;
   ColorArray.fromFill(final int v) : values = List.filled(3, 0);
+  ColorArray.fromColor(Color c) : values = [c.red,c.green,c.blue];
   ColorArray(final int red, final int green, final int blue) : values = List.of([red,green,blue]);
 }
 

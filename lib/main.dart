@@ -9,13 +9,6 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
-enum MediaBreakpoint {mobile,tablet,laptop,desktop}
-Map<MediaBreakpoint,List<int>> gridMap = {
-  MediaBreakpoint.mobile: [1,1,2,2],
-  MediaBreakpoint.tablet: [2,2,4,4],
-  MediaBreakpoint.laptop: [3,3,4,6],
-  MediaBreakpoint.desktop: [4,4,6,8]
-};
 Map<ColorStyle,List<Color>> colorStyleList = {
   ColorStyle.redBlue : [Colors.red,Colors.blue],
   ColorStyle.redGreen : [Colors.red,Colors.green],
@@ -93,7 +86,6 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   }
 
   Widget getMatrixView(MatrixClient client, ScreenDim screenDimensions, {int minBoardSize = 200}) {
-    int i = max(min(3, ((client.boards.length / 4) - 1).floor()),0);
     int horizonalBoards = 1;
     int n = client.boards.length + 1;
     for (int i=n; i>0; i--) {
