@@ -7,11 +7,25 @@ import 'board_sonifier.dart';
 
 class BoardWidget extends StatelessWidget {
   final int slot;
+  final textStyle = const TextStyle(color: Colors.white);
   const BoardWidget(this.slot, {super.key});
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return "[Widget: $slot]";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    BoardState state = context.watch<BoardState>(); //print(state); print(state.board); print("Building: $this");
+    return state.board == null
+          ? const SizedBox.shrink()
+          : Column(children: [
+              Text("$slot: ${state.id}",style: textStyle),
+              getPlayerBar(state, true),
+              Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard(context, state))),
+              getPlayerBar(state, false),
+            ]);
   }
 
   Text getPlayerBar(BoardState state, bool top) {
@@ -21,26 +35,6 @@ class BoardWidget extends StatelessWidget {
     return Text(player.toString(), style: TextStyle(
         color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
     ));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    //BoardState state = context.watch<BoardState>();
-    print("Building: $this");
-    return Consumer<BoardState>(
-        builder: (BuildContext context, BoardState state, Widget? child) {
-          print(state);
-          print(state.board);
-      return state.board == null
-          ? const SizedBox.shrink()
-          : Column(children: [
-              getPlayerBar(state, true),
-              Expanded(
-                  child: AspectRatio(
-                      aspectRatio: 1, child: getBoard(context, state))),
-              getPlayerBar(state, false),
-            ]);
-    });
   }
 
   Widget getBoard(BuildContext context,BoardState state) {

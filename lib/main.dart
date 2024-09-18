@@ -9,17 +9,17 @@ import 'board_state.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MatrixApp(MatrixClient('wss://socket.lichess.org/api/socket')));
+  runApp(const MatrixApp());
 }
 
 class MatrixApp extends StatelessWidget {
-  final MatrixClient client;
-  const MatrixApp(this.client,{super.key});
+
+  const MatrixApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-        create: (context) => client,
+        create: (context) => MatrixClient('wss://socket.lichess.org/api/socket'),
         child: MaterialApp(
             title: 'Flutter Demo',
             theme: ThemeData(
@@ -31,10 +31,24 @@ class MatrixApp extends StatelessWidget {
   }
 }
 
-class MatrixHomePage extends StatelessWidget {
+class MatrixHomePage extends StatefulWidget {
   final String title;
-  final TextStyle textStyle = const TextStyle(color: Colors.grey, fontSize: 20); //deepPurpleAccent
   const MatrixHomePage(this.title,{super.key});
+
+  @override
+  State<StatefulWidget> createState() => _MatrixHomePageState();
+
+}
+
+class _MatrixHomePageState extends State<MatrixHomePage> {
+  TextStyle textStyle = const TextStyle(color: Colors.grey, fontSize: 20); //deepPurpleAccent
+  TextStyle buttonTextStyle = const TextStyle(color: Colors.purple, fontSize: 20); //deepPurpleAccent
+  int numBoards = 8;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,20 +56,38 @@ class MatrixHomePage extends StatelessWidget {
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-          title: Text(title),
+          title: Text(widget.title),
         ),
         body: Container(color: Colors.black, child: Column(children: [
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () => client.toggleAudio(),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-              child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: const TextStyle(fontSize: 20))),
-            const SizedBox(height: 32),
-            client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
-            getMatrixControls(client),
-            const SizedBox(height: 32),
-            Expanded(child: getMatrixView(client),
-            )
+          Row(
+            children: [
+              Text("Boards: $numBoards",style: textStyle),
+              Slider(
+                  value: numBoards as double,
+                  min: 1,
+                  max: 30,
+                  label: "Boards",
+                  onChanged: (double value) {
+                    setState(() {
+                      numBoards = value.round();
+                    });
+                  }),
+              ElevatedButton(onPressed: () => client.loadTVGames(numBoards: numBoards, reset: false), child: Text("Reload", style: buttonTextStyle)),
+              const SizedBox(width: 20),
+              ElevatedButton(
+                  onPressed: () => client.toggleAudio(),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+                  child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: buttonTextStyle)),
+            ],
+          ),
+          //const SizedBox(height: 32),
+
+          const SizedBox(height: 32),
+          client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
+          getMatrixControls(client),
+          const SizedBox(height: 32),
+          Expanded(child: getMatrixView(client),
+          )
         ]))
     );
   }
@@ -68,9 +100,10 @@ class MatrixHomePage extends StatelessWidget {
         mainAxisSpacing: 16,
         crossAxisSpacing: 0,
         children: List.generate(client.boards.length,(index) {
-            BoardState? state = client.boards.elementAt(index); print("Viewing: $state");
-            return ChangeNotifierProvider(create: (context) => state, child: BoardWidget(index));
-          },
+          BoardState? state = client.boards.elementAt(index); //print("Viewing: $state");
+          return ChangeNotifierProvider.value(value: state,
+              child: BoardWidget(key: ObjectKey(state), index));
+        },
         ),
       ),
     );
@@ -115,12 +148,7 @@ class MatrixHomePage extends StatelessWidget {
 
   Widget getMatrixControls(MatrixClient client) {
     return Column(children: [
-      Row(
-        children: [
-          ElevatedButton(onPressed: () => client.loadTVGames(reset: false), child: const Text("Reload TV Games")),
-          Slider(value: client.boards.length as double, min: 1, max: 30, label: "Boards",  onChanged: (double value) => client.setNumGames(value.round())),
-        ],
-      ),
+
       Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [

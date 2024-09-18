@@ -77,34 +77,40 @@ class MatrixClient extends ChangeNotifier {
     boards = boards.removeWhere((board) => board.slot > n);
     int diff = n - boards.length;
     if (diff > 0) {
+      print("Adding $diff extra boards...");
       boards = boards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
     }
-    notifyListeners();
   }
 
-  void loadTVGames({reset = false}) async {
+  void loadTVGames({reset = false, int? numBoards}) async {
+    if (numBoards != null) {
+      setNumGames(numBoards-1);
+    }
     if (reset) {
       for (var board in boards) {
         board.replacable = true;
       }
     }
     List<dynamic> games = await Lichess.getTV(gameStyle.name,boards.length);
+    List<dynamic> availableGames = games.where((game) => boards.where((b) => b.id == game['id']).isEmpty).toList(); //remove pre-existing games
+    boards.where((board) => games.where((game) => game['id'] == board.id).isNotEmpty).forEach((board) => board.replacable = false); //preserve existing boards
     List<BoardState> openBoards = boards.where((board) => board.replacable).toList();
     openBoards.sort(); //probably unnecessary
     for (BoardState board in openBoards) {
-      dynamic game = games.where((game) => boards.where((vb) => vb.id == game['id']).isEmpty).firstOrNull;
-      if (game != null) {
+      if (availableGames.isNotEmpty) {
+        dynamic game = availableGames.removeAt(0);
         String id = game['id']; //print("Adding: $id");
-        boards = boards.put(board.slot, BoardState.fromTV(board.slot, id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black'])));
+        board.initState(id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black']));
         lichSock.send(
             jsonEncode({ 't': 'startWatching', 'd': id })
         );
       } else {
+        print("Error: no available game for slot: ${board.slot}");
         break;
       }
     }
     boards = boards.sort();
-    print(boards);
+    print("Loaded: $boards");
     notifyListeners();
   }
 

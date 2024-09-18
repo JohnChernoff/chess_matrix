@@ -14,7 +14,11 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   int slot;
 
   BoardState(this.slot);
-  BoardState.fromTV(this.slot,this.id,String fen,this.whitePlayer,this.blackPlayer) {
+
+  void initState(String id,String fen, Player whitePlayer,Player blackPlayer) {
+    this.id = id;
+    this.whitePlayer = whitePlayer;
+    this.blackPlayer = blackPlayer;
     updateBoard(fen, null, 0, 0);
   }
 
@@ -42,8 +46,6 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   }
 
   void updateWidget() {
-    //print("Updating: $id");
-    //print("Has listeners: $hasListeners");
     notifyListeners();
   }
 
