@@ -15,11 +15,11 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
 
   BoardState(this.slot);
 
-  void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixColorScheme colorScheme ) {
+  void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixColorScheme colorScheme, int maxControl) {
     this.id = id;
     this.whitePlayer = whitePlayer;
     this.blackPlayer = blackPlayer;
-    updateBoard(fen, null, 0, 0, colorScheme);
+    updateBoard(fen, null, 0, 0, colorScheme,maxControl);
   }
 
   @override
@@ -49,11 +49,11 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     notifyListeners();
   }
 
-  BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixColorScheme colorScheme) { //print("Updating: $id");
+  BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixColorScheme colorScheme, int maxControl) { //print("Updating: $id");
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
-    board = BoardMatrix(fen,lastMove,MatrixClient.matrixWidth,MatrixClient.matrixHeight,colorScheme,() => updateWidget());
+    board = BoardMatrix(fen,lastMove,MatrixClient.matrixWidth,MatrixClient.matrixHeight,colorScheme,() => updateWidget(),maxControl: maxControl);
     clockTimer = countDown();
     return board;
   }

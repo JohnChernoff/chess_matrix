@@ -6,7 +6,7 @@ import 'client.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
-const maxControl = 5;
+
 const ranks = 8, files = 8;
 
 enum ColorComponent {red,green,blue}
@@ -16,6 +16,7 @@ enum PieceType {none,pawn,knight,bishop,rook,queen,king}
 class BoardMatrix {
   final String fen;
   final int width, height;
+  final int maxControl;
   final List<List<Square>> squares = List<List<Square>>.generate(
       ranks, (i) => List<Square>.generate(
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
@@ -25,7 +26,7 @@ class BoardMatrix {
   late final ChessColor turn;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,imgCall,{this.edgeColor = Colors.black}) {
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,imgCall,{this.maxControl = 5, this.edgeColor = Colors.black}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
     _setPieces(fenStrs[0]);
@@ -67,7 +68,7 @@ class BoardMatrix {
   void updateControl() {
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
-        squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme);
+        squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme,maxControl);
       }
     }
   }
@@ -236,14 +237,14 @@ class Square {
   ColorArray color = ColorArray.fromFill(0);
   Square(this.piece);
 
-  void setControl(int c, MatrixColorScheme colorScheme) {
+  void setControl(int c, MatrixColorScheme colorScheme, int maxControl) {
     control = c;
-    color = getTriColor(colorScheme);
+    color = getTriColor(colorScheme, maxControl);
   }
 
-  ColorArray getTriColor(MatrixColorScheme colorScheme) {
+  ColorArray getTriColor(MatrixColorScheme colorScheme, int maxControl) {
     ColorArray colorMatrix = ColorArray.fromColor(colorScheme.voidColor);
-    double controlGrad = control.abs() / maxControl;
+    double controlGrad =  min(control.abs(),maxControl) / maxControl;
     if (control > 0) {
       colorMatrix.addRed = ((colorScheme.whiteColor.red - colorScheme.voidColor.red) * controlGrad).floor();
       colorMatrix.addGreen = ((colorScheme.whiteColor.green - colorScheme.voidColor.green) * controlGrad).floor();

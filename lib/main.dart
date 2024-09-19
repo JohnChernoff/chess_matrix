@@ -10,6 +10,8 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
+//TODO: lichess ping, rhythm tracks, pixel depth
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MatrixApp());
@@ -73,7 +75,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             SizedBox(width: constraints.maxWidth, height: 40, child: getGeneralControls(client)),
             const SizedBox(height: 32),
             client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
-            Container(color: Colors.black, width: constraints.maxWidth, height: 40, child: Center(child: getMatrixControls(client))),
+            Container(color: Colors.black, width: constraints.maxWidth, height: 40, child: Center(child: getMatrixMenus(client))),
             const SizedBox(height: 32),
             Expanded(child: getMatrixView(client),
             )
@@ -112,14 +114,16 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
       children: [
         Text("Boards: $numBoards",style: getTextStyle(color2)),
-        Slider(
-            value: numBoards as double,
-            min: 1,
-            max: 30,
+        Slider(value: numBoards as double, min: 1, max: 30,
             onChanged: (double value) {
               setState(() {
                 numBoards = value.round();
               });
+            }),
+        Text("Intensity",style: getTextStyle(color2)),
+        Slider(value: (client.maxControl-6).abs() as double, min: 1, max: 5,
+            onChanged: (double value) {
+              client.setMaxControl((value.round() - 6).abs());
             }),
         ElevatedButton(onPressed: () => client.loadTVGames(numBoards: numBoards-1, reset: false), child: Text("Reload", style: getTextStyle(color3))),
         const SizedBox(width: 20),
@@ -127,7 +131,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             onPressed: () => client.toggleAudio(),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
             child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
-        const SizedBox(width: 24),
+        const SizedBox(width: 20),
         ElevatedButton(onPressed: () => getColorDialog(client), child: Text("Colors",style: getTextStyle(color3))),
       ],
     ));
@@ -170,7 +174,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     )));
   }
 
-  Widget getMatrixControls(MatrixClient client) {
+  Widget getMatrixMenus(MatrixClient client) {
     Decoration decoration = BoxDecoration(
       color: Colors.greenAccent,
       gradient: LinearGradient(
@@ -238,7 +242,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
           )
         ],
       )),
-      dialogType: DialogType.infoReverse,
+      dialogType: DialogType.info,
       borderSide: const BorderSide(
         color: Colors.green,
         width: 2,
@@ -259,7 +263,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
       },
       headerAnimationLoop: false,
       animType: AnimType.bottomSlide,
-      title: 'INFO',
+      title: 'COLOR MENU',
       desc: 'This Dialog can be dismissed touching outside',
       showCloseIcon: true,
       btnCancelOnPress: () {},
