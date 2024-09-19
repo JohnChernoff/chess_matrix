@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'matrix_fields.dart';
+import 'client.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
@@ -20,13 +20,12 @@ class BoardMatrix {
       ranks, (i) => List<Square>.generate(
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
   final Color edgeColor;
-  final Color? voidColor;
-  final ColorStyle colorStyle;
+  final MatrixColorScheme colorScheme;
   final Move? lastMove;
   late final ChessColor turn;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,imgCall,{this.colorStyle = ColorStyle.redBlue, this.edgeColor = Colors.black, this.voidColor}) {
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,imgCall,{this.edgeColor = Colors.black}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
     _setPieces(fenStrs[0]);
@@ -68,7 +67,7 @@ class BoardMatrix {
   void updateControl() {
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
-        squares[x][y].setControl(calcControl(Coord(x,y)),colorStyle,voidColor);
+        squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme);
       }
     }
   }
@@ -237,42 +236,22 @@ class Square {
   ColorArray color = ColorArray.fromFill(0);
   Square(this.piece);
 
-  void setControl(int c, ColorStyle colorStyle, Color? voidColor) {
+  void setControl(int c, MatrixColorScheme colorScheme) {
     control = c;
-    color = switch(colorStyle) {
-      ColorStyle.redBlue => getTriColor(bigRed,bigBlue,voidColor ?? Colors.black), // : getTwoColor(ColorComponent.red, ColorComponent.green, ColorComponent.blue),
-      ColorStyle.redGreen => getTriColor(bigRed,bigGreen,voidColor ?? Colors.black), //getTwoColor(ColorComponent.red, ColorComponent.blue, ColorComponent.green),
-      ColorStyle.greenBlue => getTriColor(bigBlue,bigGreen,voidColor ?? Colors.black), //getTwoColor(ColorComponent.blue, ColorComponent.red, ColorComponent.green),
-    };
+    color = getTriColor(colorScheme);
   }
 
-  ColorArray getTwoColor(ColorComponent blackComponent, ColorComponent voidComponent,ColorComponent whiteComponent) {
-    List<int> colorMatrix = [0,0,0];
-    double controlGrad = 256 / maxControl;
-    int c = (min(max(control,-maxControl),maxControl) * controlGrad).round();
-    if (c < 0) {
-      colorMatrix[blackComponent.index] = c.abs();
-      colorMatrix[voidComponent.index] = 0;
-      colorMatrix[whiteComponent.index] = 0;
-    } else {
-      colorMatrix[blackComponent.index] = 0;
-      colorMatrix[voidComponent.index] = 0;
-      colorMatrix[whiteComponent.index] = c.abs();
-    }
-    return ColorArray(colorMatrix[0], colorMatrix[1], colorMatrix[2]);
-  }
-
-  ColorArray getTriColor(Color blackColor, Color whiteColor, Color voidColor) {
-    ColorArray colorMatrix = ColorArray.fromColor(voidColor);
+  ColorArray getTriColor(MatrixColorScheme colorScheme) {
+    ColorArray colorMatrix = ColorArray.fromColor(colorScheme.voidColor);
     double controlGrad = control.abs() / maxControl;
     if (control > 0) {
-      colorMatrix.addRed = ((whiteColor.red - voidColor.red) * controlGrad).floor();
-      colorMatrix.addGreen = ((whiteColor.green - voidColor.green) * controlGrad).floor();
-      colorMatrix.addBlue = ((whiteColor.blue - voidColor.blue) * controlGrad).floor();
+      colorMatrix.addRed = ((colorScheme.whiteColor.red - colorScheme.voidColor.red) * controlGrad).floor();
+      colorMatrix.addGreen = ((colorScheme.whiteColor.green - colorScheme.voidColor.green) * controlGrad).floor();
+      colorMatrix.addBlue = ((colorScheme.whiteColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
     } else if (control < 0) {
-      colorMatrix.addRed = ((blackColor.red - voidColor.red) * controlGrad).floor();
-      colorMatrix.addGreen = ((blackColor.green - voidColor.green) * controlGrad).floor();
-      colorMatrix.addBlue = ((blackColor.blue - voidColor.blue) * controlGrad).floor();
+      colorMatrix.addRed = ((colorScheme.blackColor.red - colorScheme.voidColor.red) * controlGrad).floor();
+      colorMatrix.addGreen = ((colorScheme.blackColor.green - colorScheme.voidColor.green) * controlGrad).floor();
+      colorMatrix.addBlue = ((colorScheme.blackColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
     }
     //if (control != 0) print("${voidColor.red},${voidColor.green},${voidColor.blue} -> ${colorMatrix.values}");
     return colorMatrix;

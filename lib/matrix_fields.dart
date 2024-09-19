@@ -40,10 +40,6 @@ enum GameStyle {
   bullet,blitz,rapid,classical
 }
 
-enum ColorStyle {
-  redBlue,redGreen,greenBlue
-}
-
 enum MidiBank {
   piano,chromaticPerc,organ,guitar,bass,strings,ensemble,brass,reed,pipe,synthLead,synthPad,synthFX,ethnic,perc,soundFX
 }

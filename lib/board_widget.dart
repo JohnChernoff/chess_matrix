@@ -117,7 +117,7 @@ class BoardPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     if (oldDelegate is BoardPainter) {
-      return oldDelegate.board.image != null && (oldDelegate.board.fen != board.fen || oldDelegate.board.colorStyle != board.colorStyle);
+      return oldDelegate.board.image != null && (oldDelegate.board.fen != board.fen || oldDelegate.board.colorScheme != board.colorScheme);
     }
     return false;
   }

@@ -1,19 +1,14 @@
-import 'dart:math';
 import 'dart:ui';
+import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:chess_matrix/board_widget.dart';
+import 'package:cyclop/cyclop.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
-
-Map<ColorStyle,List<Color>> colorStyleList = {
-  ColorStyle.redBlue : [Colors.red,Colors.blue],
-  ColorStyle.redGreen : [Colors.red,Colors.green],
-  ColorStyle.greenBlue : [Colors.green,Colors.blue],
-};
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,47 +62,49 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   @override
   Widget build(BuildContext context) {
     MatrixClient client = context.watch<MatrixClient>(); //print("Building Board List: ${client.boards.keys}");
-    ScreenDim dim = ZugUtils.getScreenDimensions(context);
+
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
           title: Text(widget.title),
         ),
-        body: Container(color: Colors.black, child: Column(children: [
-          SizedBox(width: dim.width, height: 40, child: getGeneralControls(client)),
-          const SizedBox(height: 32),
-          client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
-          Container(color: Colors.black, width: dim.width, height: 40, child: Center(child: getMatrixControls(client))),
-          const SizedBox(height: 32),
-          Expanded(child: getMatrixView(client,dim),
-          )
-        ]))
+        body: LayoutBuilder(builder: (BuildContext context, BoxConstraints constraints) {
+          return Container(color: Colors.black, child: Column(children: [
+            SizedBox(width: constraints.maxWidth, height: 40, child: getGeneralControls(client)),
+            const SizedBox(height: 32),
+            client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
+            Container(color: Colors.black, width: constraints.maxWidth, height: 40, child: Center(child: getMatrixControls(client))),
+            const SizedBox(height: 32),
+            Expanded(child: getMatrixView(client),
+            )
+          ]));
+        })
     );
   }
 
-  Widget getMatrixView(MatrixClient client, ScreenDim screenDimensions, {int minBoardSize = 200}) {
-    int horizonalBoards = 1;
-    int n = client.boards.length + 1;
-    for (int i=n; i>0; i--) {
-      if (min(screenDimensions.width / i,screenDimensions.height / i).floor() > minBoardSize) {
-        horizonalBoards = i;
-        break;
-      }
-    }
-    return Container(
-      color: Colors.black,
-      child: GridView.count(
-        crossAxisCount: horizonalBoards,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 0,
-        children: List.generate(
-          client.boards.length, (index) {
-            BoardState? state = client.boards.elementAt(index); //print("Viewing: $state");
-            return ChangeNotifierProvider.value(
-                value: state, child: BoardWidget(key: ObjectKey(state), index));
-          },
-        ),
-      ),
+  Widget getMatrixView(MatrixClient client, {int minBoardSize = 200}) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        double maxSize = ZugUtils.getMaxSizeOfSquaresInRect(client.boards.length + 1, constraints.maxWidth, constraints.maxHeight);
+        int horizonalBoards = (constraints.maxWidth / maxSize).floor();
+        return Container(
+          color: Colors.black,
+          child: GridView.count(
+            crossAxisCount: horizonalBoards,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 0,
+            children: List.generate(
+              client.boards.length, (index) {
+              BoardState? state = client.boards.elementAt(
+                  index); //print("Viewing: $state");
+              return ChangeNotifierProvider.value(
+                  value: state,
+                  child: BoardWidget(key: ObjectKey(state), index));
+            },
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -130,6 +127,8 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             onPressed: () => client.toggleAudio(),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
             child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
+        const SizedBox(width: 24),
+        ElevatedButton(onPressed: () => getColorDialog(client), child: Text("Colors",style: getTextStyle(color3))),
       ],
     ));
   }
@@ -177,17 +176,12 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
       gradient: LinearGradient(
         begin: Alignment.topRight,
         end: Alignment.bottomLeft,
-        colors: colorStyleList[MatrixClient.colorStyle] ?? [],
+        colors: [client.colorScheme.whiteColor,client.colorScheme.blackColor],
       ), //borderRadius: BorderRadius.all(Radius.circular(40)),
     );
     return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            DecoratedBox(decoration: decoration, child:
-            DropdownButton(value: MatrixClient.colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
-                DropdownMenuItem(value: ColorStyle.values.elementAt(index), child: Text("Color Style: ${ColorStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
-                onChanged: (ColorStyle? value) => client.setColorStyle(value!))),
-            const SizedBox(width: 24),
             DecoratedBox(decoration: decoration, child:
             DropdownButton(value: MatrixClient.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
                 DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text("Game Style: ${GameStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
@@ -200,7 +194,82 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     );
   }
 
+  void getColorDialog(MatrixClient client) {
+    AwesomeDialog(
+      context: context,
+      body: Container(color: Colors.green, child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Column(
+            children: [
+              Text("White Color: ",style: getTextStyle(Colors.white)),
+              ColorPicker(onColorSelected: (Color color) {
+                client.setColorScheme(whiteColor: color);
+              },
+                selectedColor: client.colorScheme.whiteColor,
+                config: const ColorPickerConfig(),
+                onClose: () {},
+              ),
+            ],
+          ),
+          Column(
+            children: [
+              Text("Black Color: ",style: getTextStyle(Colors.black)),
+              ColorPicker(onColorSelected: (Color color) {
+                client.setColorScheme(blackColor: color);
+              },
+                selectedColor: client.colorScheme.blackColor,
+                config: const ColorPickerConfig(),
+                onClose: () {},
+              ),
+            ],
+          ),
+          Column(
+            children: [
+              Text("Void Color: ",style: getTextStyle(Colors.black)),
+              ColorPicker(onColorSelected: (Color color) {
+                client.setColorScheme(voidColor: color);
+              },
+                selectedColor: client.colorScheme.voidColor,
+                config: const ColorPickerConfig(),
+                onClose: () {},
+              ),
+            ],
+          )
+        ],
+      )),
+      dialogType: DialogType.infoReverse,
+      borderSide: const BorderSide(
+        color: Colors.green,
+        width: 2,
+      ),
+      //width: 280,
+      buttonsBorderRadius: const BorderRadius.all(
+        Radius.circular(2),
+      ),
+      dismissOnTouchOutside: true,
+      dismissOnBackKeyPress: false,
+      onDismissCallback: (type) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Dismissed by $type'),
+          ),
+
+        );
+      },
+      headerAnimationLoop: false,
+      animType: AnimType.bottomSlide,
+      title: 'INFO',
+      desc: 'This Dialog can be dismissed touching outside',
+      showCloseIcon: true,
+      btnCancelOnPress: () {},
+      btnOkOnPress: () {},
+    ).show();
+  }
+
 }
+
+//class MatrixColorDialog extends St
 
 class WebScrollBehavior extends MaterialScrollBehavior {
   // Override behavior methods and getters like dragDevices

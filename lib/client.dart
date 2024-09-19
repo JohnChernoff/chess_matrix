@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:chess/chess.dart' as dc;
 import 'package:chess_matrix/board_sonifier.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:lichess_package/zug_sock.dart';
 import 'board_state.dart';
@@ -12,7 +12,6 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 class MatrixClient extends ChangeNotifier {
   static int matrixWidth = 250, matrixHeight = 250;
-  static ColorStyle colorStyle = ColorStyle.redBlue;
   static PieceStyle pieceStyle = PieceStyle.horsey;
   static GameStyle gameStyle = GameStyle.blitz;
   bool showControl = false;
@@ -20,6 +19,7 @@ class MatrixClient extends ChangeNotifier {
   final Map<String,ui.Image> pieceImages = {};
   late IList<BoardState> boards = IList(List.generate(8, (slot) => BoardState(slot)));
   Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
+  MatrixColorScheme colorScheme = MatrixColorScheme(Colors.blue, Colors.red, Colors.black);
   late final BoardSonifier sonifier;
   late final ZugSock lichSock;
 
@@ -28,8 +28,11 @@ class MatrixClient extends ChangeNotifier {
     lichSock = ZugSock(matrixURL, connected, handleMsg, disconnected);
   }
 
-  void setColorStyle(ColorStyle style) {
-    colorStyle = style;
+  void setColorScheme({Color? whiteColor, Color? blackColor, Color? voidColor}) {
+    colorScheme = MatrixColorScheme(
+        whiteColor ?? colorScheme.whiteColor,
+        blackColor ?? colorScheme.blackColor,
+        voidColor ?? colorScheme.voidColor);
     notifyListeners(); //TODO: call each updater
   }
 
@@ -99,7 +102,7 @@ class MatrixClient extends ChangeNotifier {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);
         String id = game['id']; //print("Adding: $id");
-        board.initState(id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black']));
+        board.initState(id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black']),colorScheme);
         lichSock.send(
             jsonEncode({ 't': 'startWatching', 'd': id })
         );
@@ -123,7 +126,7 @@ class MatrixClient extends ChangeNotifier {
       int blackClock = int.parse(data['bc'].toString());
       Move lastMove = Move(data['lm']);
       String fen = data['fen'];
-      BoardMatrix? matrix = getBoardByID(id)?.updateBoard(fen, lastMove, whiteClock, blackClock);
+      BoardMatrix? matrix = getBoardByID(id)?.updateBoard(fen, lastMove, whiteClock, blackClock, colorScheme);
       Piece? piece = matrix?.getSquare(lastMove.to).piece;
       InstrumentType? instType = switch(piece?.type) {
         null => null,
@@ -184,4 +187,11 @@ class Player {
     String info = "$name ($rating)";
     return showTime ? "$info: ${_formattedTime(clock)}" : info;
   }
+}
+
+class MatrixColorScheme {
+  Color whiteColor = Colors.blue;
+  Color blackColor = Colors.red;
+  Color voidColor = Colors.black;
+  MatrixColorScheme(this.whiteColor,this.blackColor,this.voidColor);
 }
