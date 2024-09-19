@@ -15,7 +15,7 @@ enum InstrumentType {
   const InstrumentType(this.color);
 }
 
-const drums = [35,40,42,51,50,48,41,19];
+//const drums = [35,40,42,51,50,48,41,19];
 const octave = 12;
 const int minPitch = octave * 2;
 const int maxPitch = octave * 7;
@@ -39,11 +39,11 @@ class BoardSonifier extends ChangeNotifier {
       DefaultInstrument(InstrumentType.kingMelody,MidiInstrument.ocarina,0)
     ],
   ];
+  final drums = [MidiDrum.bassDrum1,MidiDrum.snareDrum2,MidiDrum.closedHiHat,MidiDrum.rideCymbal1,MidiDrum.highTom1,MidiDrum.highTom2,MidiDrum.lowTom2,MidiDrum.tambourine];
   bool audioReady = false;
   bool muted = true;
-  bool drums = false;
   double masterVolume = .25;
-  Completer? loadingInstrument;
+  Completer? loadingPatch;
   Completer? initializing;
   Map<String,Instrument> orchMap = {};
   List<String> soloList = [];
@@ -56,6 +56,7 @@ class BoardSonifier extends ChangeNotifier {
     js.context.callMethod("initAudio", [initialized]);
     await initializing?.future;
     await loadEnsemble(defaultEnsembles[ensembleNum]);
+    await loadDrumKit(drums);
     audioReady = true;
   }
 
@@ -72,21 +73,37 @@ class BoardSonifier extends ChangeNotifier {
 
   Future<void> loadInstrument(InstrumentType type, Instrument i) async {
     orchMap.update(type.name, (value) => i, ifAbsent: () => i);
-    loadingInstrument = Completer();
-    js.context.callMethod("setInstrument",[type.name,i.patch.index,loaded]);
-    return loadingInstrument?.future;
+    loadingPatch = Completer();
+    js.context.callMethod("setInstrument",[type.name,i.patch.index,loadedInstrument]);
+    return loadingPatch?.future;
   }
 
-  void loaded(String type,int patch) {
+  void loadedInstrument(String type,int patch) {
     MidiInstrument i = MidiInstrument.values.elementAt(patch);
-    print("Loaded: $type: ${i.name}");
-    //orchMap.update(type, (value) => i, ifAbsent: () => i);
-    loadingInstrument?.complete(type);
+    print("Loaded: $type: ${i.name}"); //orchMap.update(type, (value) => i, ifAbsent: () => i);
+    loadingPatch?.complete(type);
   }
 
-  void playNote(InstrumentType? type,int pitch,int duration,double volume) {
+  Future<void> loadDrumKit(List<MidiDrum> kit) async {
+    for (MidiDrum drum in kit) {
+      await loadDrum(drum);
+    }
+  }
+
+  Future<void> loadDrum(MidiDrum drum) async {
+    loadingPatch = Completer();
+    js.context.callMethod("setDrumKit",[drum.name,drum.patchNum,loadedDrum]);
+    return loadingPatch?.future;
+  }
+
+  void loadedDrum(String type,int patch) {
+    print("Loaded: $type");
+    loadingPatch?.complete(type);
+  }
+
+  void playNote(InstrumentType? type,int t, int pitch,int duration,double volume) {
     if (type != null && audioReady && !muted && !isMuted(type) && isSoloed(type)) {
-      js.context.callMethod("playNote",[type.name,0,pitch,duration,volume * masterVolume]);
+      js.context.callMethod("playNote",[type.name,t,pitch,duration,volume * masterVolume]);
     }
   }
 

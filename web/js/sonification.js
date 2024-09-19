@@ -16,18 +16,20 @@ function setInstrument(type,patch,callback) {
   let info = audio_player.loader.instrumentInfo(audio_player.loader.findInstrument(patch));
   console.log("Info: " + JSON.stringify(info));
   audio_player.loader.startLoad(audioContext, info.url, info.variable);
-  audio_player.loader.waitLoad(function () { orchestra[type] = window[info.variable]; callback(type,patch); });
+  audio_player.loader.waitLoad(function () {
+    orchestra[type] = window[info.variable];
+    callback(type,patch);
+  });
 }
 
-function setDrumKit(set) {
-  for (let i=0;i<set.length;i++) {
-    let info = audio_player.loader.drumInfo(set[i]);
-    console.log(JSON.stringify(info));
-    audio_player.loader.startLoad(audioContext, info.url, info.variable);
-    audio_player.loader.waitLoad(function () {
-      drum_kit[i] = { pitch: info.pitch, preset: window[info.variable] };
-    });
-  }
+function setDrumKit(type,patch,callback) {
+  let info = audio_player.loader.drumInfo(audio_player.loader.findDrum(patch));
+  console.log(JSON.stringify(info));
+  audio_player.loader.startLoad(audioContext, info.url, info.variable);
+  audio_player.loader.waitLoad(function () {
+    drum_kit[type] = { pitch: info.pitch, preset: window[info.variable] };
+    callback(type,patch);
+  });
 }
 
 function playNote(i,t,p,d,volume) {

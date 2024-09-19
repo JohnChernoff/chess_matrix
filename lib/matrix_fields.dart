@@ -176,3 +176,56 @@ enum MidiInstrument {
     const MidiInstrument(this.bank);
   }
 
+  enum MidiDrum {
+    bassDrum1(35),
+    bassDrum2(36),
+    rimshot(37),
+    snareDrum1(38),
+    handClap(39),
+    snareDrum2(40),
+    lowTom2(41),
+    closedHiHat(42),
+    lowTom1(43),
+    pedalHiHat(44),
+    midTom2(45),
+    openHiHat(46),
+    midTom1(47),
+    highTom2(48),
+    crashCymbal1(49),
+    highTom1(50),
+    rideCymbal1(51),
+    chineseCymbal(52),
+    rideBell(53),
+    tambourine(54),
+    splashCymbal(55),
+    cowBell(56),
+    crashCymbal2(57),
+    vibraSlap(58),
+    rideCymbal2(59),
+    highBongo(60),
+    lowBongo(61),
+    muteHighConga(62),
+    openHighConga(63),
+    lowConga(64),
+    highTimbale(65),
+    lowTimbale(66),
+    highAgogo(67),
+    lowAgogo(68),
+    cabasa(69),
+    meracas(70),
+    shortWhistle(71),
+    longWhistle(72),
+    shortGuiro(73),
+    longGuiro(74),
+    claves(75),
+    highWoodBlock(76),
+    lowWoodBlock(77),
+    muteCuica(78),
+    openCuica(79),
+    muteTriangle(80),
+    openTriangle(81);
+  final int patchNum;
+  const MidiDrum(this.patchNum);
+}
+
+

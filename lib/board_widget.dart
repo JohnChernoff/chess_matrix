@@ -43,7 +43,7 @@ class BoardWidget extends StatelessWidget {
     MatrixClient client = Provider.of(context,listen: false);
     return InkWell(
       onTap: () {
-        client.sonifier.playNote(InstrumentType.pawnMelody, 80, 8, .5);
+        client.sonifier.playNote(InstrumentType.pawnMelody, 0, 80, 8, .5);
         state.replacable = true;
         client.loadTVGames();
       },
