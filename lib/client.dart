@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:chess/chess.dart' as dc;
@@ -16,6 +17,7 @@ class MatrixClient extends ChangeNotifier {
   static GameStyle gameStyle = GameStyle.blitz;
   bool showControl = false;
   bool showMove = false;
+  bool realTime = false;
   final Map<String,ui.Image> pieceImages = {};
   late IList<BoardState> boards = IList(List.generate(8, (slot) => BoardState(slot)));
   Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
@@ -63,7 +65,7 @@ class MatrixClient extends ChangeNotifier {
 
   Future<void> initAudio() async {
     print("Loading audio");
-    await sonifier.init(0);
+    await sonifier.init(1);
     notifyListeners();
   }
 
@@ -101,7 +103,7 @@ class MatrixClient extends ChangeNotifier {
     }
     List<dynamic> games = await Lichess.getTV(gameStyle.name,boards.length);
     List<dynamic> availableGames = games.where((game) => boards.where((b) => b.id == game['id']).isEmpty).toList(); //remove pre-existing games
-    boards.where((board) => games.where((game) => game['id'] == board.id).isNotEmpty).forEach((board) => board.replacable = false); //preserve existing boards
+    boards.where((board) => games.where((game) => game['id'] == board.id && !board.finished).isNotEmpty).forEach((board) => board.replacable = false); //preserve existing boards
     List<BoardState> openBoards = boards.where((board) => board.replacable).toList();
     openBoards.sort(); //probably unnecessary
     for (BoardState board in openBoards) {
@@ -127,30 +129,52 @@ class MatrixClient extends ChangeNotifier {
     String type = json['t'];
     dynamic data = json['d'];
     String id = data['id'] ?? "";
-    if (type == "fen") {
-      int whiteClock = int.parse(data['wc'].toString());
-      int blackClock = int.parse(data['bc'].toString());
-      Move lastMove = Move(data['lm']);
-      String fen = data['fen'];
-      BoardMatrix? matrix = getBoardByID(id)?.updateBoard(fen, lastMove, whiteClock, blackClock, colorScheme,maxControl);
-      Piece? piece = matrix?.getSquare(lastMove.to).piece;
-      InstrumentType? instType = switch(piece?.type) {
-        null => null,
-        PieceType.none => null,
-        PieceType.pawn => InstrumentType.pawnMelody,
-        PieceType.knight => InstrumentType.knightMelody,
-        PieceType.bishop => InstrumentType.bishopMelody,
-        PieceType.rook => InstrumentType.rookMelody,
-        PieceType.queen => InstrumentType.queenMelody,
-        PieceType.king => InstrumentType.kingMelody,
-      };
-      int toPitch = (lastMove.to.y * 8) + lastMove.to.x;
-      if (matrix?.turn == ChessColor.black) toPitch = 64 - toPitch;
-      sonifier.playMelody(instType, minPitch + toPitch, sonifier.orchMap[instType?.name]?.level ?? .5);
-    } else if (type == 'finish') {
-      getBoardByID(id)?.finished = true;
-      loadTVGames();
+    BoardState? board = getBoardByID(id);
+    if (board != null) {
+      if (type == "fen") {
+        int whiteClock = int.parse(data['wc'].toString());
+        int blackClock = int.parse(data['bc'].toString());
+        Move lastMove = Move(data['lm']);
+        String fen = data['fen'];
+        BoardMatrix? matrix = board.updateBoard(fen, lastMove, whiteClock, blackClock, colorScheme, maxControl);
+        Piece? piece = matrix?.getSquare(lastMove.to).piece;
+        InstrumentType? instType = switch(piece?.type) {
+          null => null,
+          PieceType.none => null,
+          PieceType.pawn => InstrumentType.pawnMelody,
+          PieceType.knight => InstrumentType.knightMelody,
+          PieceType.bishop => InstrumentType.bishopMelody,
+          PieceType.rook => InstrumentType.rookMelody,
+          PieceType.queen => InstrumentType.queenMelody,
+          PieceType.king => InstrumentType.kingMelody,
+        };
+        if (realTime && !sonifier.playing) {
+          int toPitch = (lastMove.to.y * 8) + lastMove.to.x;
+          if (matrix?.turn == ChessColor.black) toPitch = 64 - toPitch;
+          sonifier.playMelody(instType, minPitch + toPitch, sonifier.orchMap[instType?.name]?.level ?? .5);
+        }
+        int lastPitch = sonifier.tracks[instType]?.currentPitch ?? 60;
+        int distance = calcMoveDistance(lastMove).round();
+        int newPitch = piece?.color == ChessColor.black ? lastPitch - distance : lastPitch + distance;
+        int yDist = piece?.color == ChessColor.black ? lastMove.to.y : ranks - (lastMove.to.y);
+        double dur = (yDist+1)/8; //rhythmMap[yDist]; double dur2 = (lastMove.to.x+1)/8;
+        sonifier.tracks[instType]?.addNoteEvent(newPitch,dur, .5); //print("${lastMove.to}, $instType: $lastPitch -> $newPitch, rhythm: $dur");
+      } else if (type == 'finish') {
+        print("Finished: $id");
+        board.finished = true;
+        board.replacable = true;
+        loadTVGames();
+      }
     }
+  }
+
+  void handleMidiComplete() {
+    print("Track finished");
+    //sonifier.playAllTracks();
+  }
+
+  double calcMoveDistance(Move move) {
+    return sqrt(pow((move.from.x - move.to.x),2) + pow((move.from.y - move.to.y),2));
   }
 
   BoardState? getBoardByID(String id) {
@@ -161,6 +185,14 @@ class MatrixClient extends ChangeNotifier {
     dc.Chess chess = dc.Chess();
     chess.load_pgn(moves);
     return chess.fen;
+  }
+
+  void playDrums() {
+    for (BoardState state in boards) {
+      if (state.board != null) {
+        sonifier.playDrumTrack(state.board!,offset: state.slot);
+      }
+    }
   }
 
 }

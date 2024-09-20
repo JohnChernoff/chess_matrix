@@ -3,12 +3,11 @@ import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'board_state.dart';
-import 'board_sonifier.dart';
 
 class BoardWidget extends StatelessWidget {
   final int slot;
   final textStyle = const TextStyle(color: Colors.white);
-  final bool showID = false;
+  final bool showID = true;
   const BoardWidget(this.slot, {super.key});
 
   @override
@@ -42,8 +41,12 @@ class BoardWidget extends StatelessWidget {
     //print("$slot -> Board FEN: ${state.board?.fen}");
     MatrixClient client = Provider.of(context,listen: false);
     return InkWell(
+      onDoubleTap: () {
+        //client.sonifier.playDrumTrack(state.board!);
+        //client.playDrums();
+        client.sonifier.playAllTracks();
+      },
       onTap: () {
-        client.sonifier.playNote(InstrumentType.pawnMelody, 0, 80, 8, .5);
         state.replacable = true;
         client.loadTVGames();
       },
