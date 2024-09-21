@@ -10,7 +10,7 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
-//TODO: lichess ping, rhythm tracks, pixel depth
+//TODO: lichess ping, rhythm tracks, pixel depth, color combinations
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

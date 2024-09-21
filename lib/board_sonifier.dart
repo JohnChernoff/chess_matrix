@@ -18,7 +18,6 @@ enum InstrumentType {
   const InstrumentType(this.color);
 }
 
-//const drums = [35,40,42,51,50,48,41,19];
 const octave = 12;
 const int minPitch = octave * 2;
 const int maxPitch = octave * 7;
@@ -63,11 +62,11 @@ class BoardSonifier extends ChangeNotifier {
     js.context.callMethod("initAudio", [initialized]);
     await initializing?.future;
     await loadEnsemble(defaultEnsembles[ensembleNum]);
-    await loadDrumKit(drums);
+    //await loadDrumKit(drums);
     audioReady = true;
   }
 
-  void initialized() {
+  void initialized() { //
       print("Audio Initialized");
       initializing?.complete();
   }
@@ -164,8 +163,7 @@ class BoardSonifier extends ChangeNotifier {
     }
     int playLength = tracks.values.reduce((value,element) => value._currentTime > element._currentTime ? value : element)._currentTime.round();
     for (MidiTrack track in tracks.values) { track.clearTrack(); }
-    Future.delayed(Duration(seconds: playLength), () { playing = false; client.handleMidiComplete(); });
-    print("Waiting $playLength seconds");
+    Future.delayed(Duration(seconds: playLength), () { playing = false; client.handleMidiComplete(); }); //print("Waiting $playLength seconds");
   }
 
   void initTracks() {
