@@ -7,7 +7,7 @@ let note_queue = [];
 let envelopes = [];
 function setTempo(t) { tempo = t/100; console.log("Tempo: " + tempo); }
 function initAudio(callback) {
-  audioContext = new AudioContextFunc();
+  audioContext = new AudioContextFunc(); //console.log("AudioContext: " + audioContext);
   audio_player = new WebAudioFontPlayer();
   callback();
 }

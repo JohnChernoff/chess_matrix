@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:chess_matrix/board_widget.dart';
+import 'package:chess_matrix/tests.dart';
 import 'package:cyclop/cyclop.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -133,6 +134,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
         const SizedBox(width: 20),
         ElevatedButton(onPressed: () => getColorDialog(client), child: Text("Colors",style: getTextStyle(color3))),
+        ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: getTextStyle(color3))),
       ],
     ));
   }
@@ -142,25 +144,25 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     ListView(scrollDirection: Axis.horizontal, shrinkWrap: true,
         children: List.generate(InstrumentType.values.length, (i) {
           InstrumentType track = InstrumentType.values.elementAt(i);
-          Instrument? instrument = client.sonifier.orchMap[track.name];
+          Instrument? instrument = client.sonifier.orchMap[track];
           return instrument != null ? Container(
               color: client.sonifier.muted ? Colors.brown : InstrumentType.values.elementAt(i).color,
               child: Column(children: [
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.brown, shape: const BeveledRectangleBorder()),
-                      onPressed: () => client.sonifier.toggleSolo(track),
+                      onPressed: () => client.sonifier.toggleSolo(instrument),
                       child: Text("solo",style: TextStyle(backgroundColor: Colors.black, color: instrument.solo ? Colors.amberAccent : Colors.cyan))
                   ),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.brown, shape: const BeveledRectangleBorder()),
-                      onPressed: () => client.sonifier.toggleMute(track),
+                      onPressed: () => client.sonifier.toggleMute(instrument),
                       child: Text("mute",style:TextStyle(backgroundColor: Colors.black, color: instrument.mute ? Colors.amberAccent : Colors.cyan))
                   ),
                 ]
                 ),
                 Text(InstrumentType.values.elementAt(i).name),
-                DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i).name]?.patch, alignment: AlignmentDirectional.center,
+                DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i)]?.patch, alignment: AlignmentDirectional.center,
                     items: List.generate(MidiInstrument.values.length, (index) {
                       MidiInstrument patch = MidiInstrument.values.elementAt(index);
                       return DropdownMenuItem(

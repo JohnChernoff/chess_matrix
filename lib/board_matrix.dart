@@ -53,6 +53,16 @@ class BoardMatrix {
     }
   }
 
+  List<Square> getSquares() {
+    List<Square> squareList = [];
+    for (int y = 0; y < ranks; y++) {
+      for (int x = 0; x < files; x++) {
+        squareList.add(squares[x][y]);
+      }
+    }
+    return squareList;
+  }
+
   int colorVal(ChessColor color) {
     return color == ChessColor.black ? -1 : color == ChessColor.white ? 1 : 0;
   }
