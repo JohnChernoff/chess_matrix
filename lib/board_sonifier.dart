@@ -62,16 +62,13 @@ class BoardSonifier extends ChangeNotifier {
   Completer? loadingPatch;
   Completer? initializing;
   Map<InstrumentType,Instrument> orchMap = {};
-  Map<InstrumentType,MidiTrack> tracks = {};
-  MidiTrack rhythmTrack = MidiTrack("rhythm");
+  MidiTrack masterTrack = MidiTrack("Master");
   InstrumentType lead = InstrumentType.mainMelody;
   InstrumentType rhythm = InstrumentType.pawnMelody;
   MatrixClient client;
   KeyChord currentChord = KeyChord(MidiNote.noteA, MidiScale.majorScale);
 
-  BoardSonifier(this.client) {
-    initTracks();
-  }
+  BoardSonifier(this.client);
 
   Future<void> init(int ensembleNum) async {
     initializing = Completer();
@@ -179,24 +176,6 @@ class BoardSonifier extends ChangeNotifier {
     }
   }
 
-  void playAllTracks() {
-    playing = true;
-    //rhythmTrack.playTrack(this);
-    for (MidiTrack track in tracks.values) {
-      track.play(this,(track) {});
-    }
-    int playLength = tracks.values.reduce((value,element) => value.currentTime > element.currentTime ? value : element).currentTime.round();
-    for (MidiTrack track in tracks.values) { track.clearTrack(); }
-    Future.delayed(Duration(seconds: playLength), () { playing = false; client.handleMidiComplete(); }); //print("Waiting $playLength seconds");
-  }
-
-  void initTracks() {
-    tracks.clear();
-    for (InstrumentType it in InstrumentType.values) {
-      tracks.putIfAbsent(it, () => MidiTrack(it.name));
-    }
-  }
-
   static int calcScaleDegree(int pitch, KeyChord chord) { //int degreeInC = pitch % octave;
      for (int degree=0,p=chord.key.index; degree < chord.scale.intervals.length; p+=chord.scale.intervals[degree++]) { //print("Comparing: $pitch,$p");
        if (samePitch(pitch,p)) return degree;
@@ -236,8 +215,15 @@ class BoardSonifier extends ChangeNotifier {
     return newPitch;
   }
 
-  void looper(MidiTrack track) {
-    track.play(this, (track) => looper(track));
+  void looper(MidiTrack track, int maxLen, { MidiTrack? sourceTrack }) { //if (sourceTrack != null) print("Looping ${track.name}");
+    MidiTrack loopTrack = sourceTrack == null ? MidiTrack("${track.name}(copy)",rhythmCopy: track) : track; //only copy original
+    MidiTrack originalTrack = sourceTrack ?? track;
+    track.play(this, (t) => originalTrack._currentTime >= maxLen ? looper(originalTrack,maxLen) : looper(loopTrack,maxLen,sourceTrack: originalTrack));
+    if (sourceTrack == null) track.clearTrack(); //only clear original
+  }
+
+  void loopTrack(MidiTrack track, int maxLen) { //if (sourceTrack != null) print("Looping ${track.name}");
+    track.play(this, (t) => loopTrack(track,maxLen));
   }
 
 }
@@ -248,72 +234,88 @@ class KeyChord {
   KeyChord(this.key,this.scale);
 }
 
+enum MusicalElement {melody, harmony, rhythm}
+
 class MidiTrack implements Comparable<MidiTrack> {
   String name;
   bool playing = false;
-  List<MidiEvent> track = [];
-  MidiTrack(this.name);
-  double currentTime = 0;
-  int? currentPitch;
+  Map<MusicalElement,List<MidiEvent>> subTracks = {};
+  double _currentTime = 0;
+  int maxDur = 8;
 
-  Future<void> play(BoardSonifier player,dynamic onFinished,{immediately = true}) async {
-    if (immediately) {
-      for (var midiEvent in track) { print("Playing: $midiEvent on $name");
-        player.playNote(midiEvent.instrument,midiEvent.offset, midiEvent.pitch, midiEvent.duration,midiEvent.volume);
-      }
-      print("Waiting: $currentTime seconds...");
-      Future.delayed(Duration(milliseconds: max(1000,(currentTime * 1000).round()))).then((value) => onFinished(this));
+  MidiTrack(this.name, {MidiTrack? rhythmCopy}) {
+    if (rhythmCopy != null) {
+      subTracks.putIfAbsent(MusicalElement.rhythm, () => List.from(rhythmCopy.getSubTrack(MusicalElement.rhythm)));
+      _currentTime = rhythmCopy._currentTime;
     }
-    else { //print("Starting: $name");
-      if (track.isEmpty) {
-        await Future.delayed(const Duration(milliseconds: 1000));
-        return;
-      }
-      playing = true;
-      while (playing) {
-        double prevOffset = track.first.offset;
-        for (var midiEvent in track) {
-          int millis = ((midiEvent.offset - prevOffset) * 1000).round(); //print("Playing: $midiEvent on $name for $millis millis");
-          await Future.delayed(Duration(milliseconds: millis));
-          player.playNote(midiEvent.instrument, 0, midiEvent.pitch, midiEvent.duration, midiEvent.volume);
-          prevOffset = midiEvent.offset;
-        }
-      }
-      playing = false;
-      onFinished(this);
+    else {
+      initTracks();
     }
   }
 
-  void addRest(Instrument instrument,double duration) {
-    //addNoteEvent(instrument,0,duration,0);
-    currentTime += duration;
+  initTracks() {
+    for (MusicalElement elem in MusicalElement.values) {
+      subTracks[elem] = [];
+    }
   }
 
-  void addNoteEvent(Instrument instrument, int pitch, double duration, double volume) {
-    currentPitch = pitch < maxPitch && pitch > minPitch ? pitch : 60;
-    MidiEvent e = MidiEvent(instrument, currentPitch!, currentTime, duration, volume);
-    track.add(e); //print("Adding: $e");
-    currentTime += duration;
+  List<MidiEvent> getSubTrack(MusicalElement elem) {
+    return subTracks[elem] ?? [];
   }
 
-  void addChordEvent(Instrument instrument, List<int> pitches, double duration, double volume) {
-    int? firstPitch = pitches.first;
-    currentPitch = firstPitch < maxPitch && firstPitch > minPitch ? firstPitch : 60;
+  Future<void> play(BoardSonifier player,dynamic onFinished) async {
+    List<MidiEvent> rhythm = getSubTrack(MusicalElement.rhythm); //print("Rhythm: $rhythm");
+    List<MidiEvent> harmony = getSubTrack(MusicalElement.harmony);
+    List<MidiEvent> melody = getSubTrack(MusicalElement.melody);
+    for (var midiEvent in rhythm) { //print("Playing Rhythm: $midiEvent on $name");
+      player.playNote(midiEvent.instrument,midiEvent.offset, midiEvent.pitch, midiEvent.duration,midiEvent.volume);
+    } //print("Waiting: $_currentTime seconds...");
+    int currentMillis = (_currentTime * 1000).round();
+    Future.delayed(Duration(milliseconds: max(1000,currentMillis))).then((value) => onFinished(this));
+    for (double t = 0; t < currentMillis; t += currentMillis / 8) {
+      await Future.delayed(Duration(milliseconds: t.floor()));
+      if (melody.isNotEmpty) {
+        MidiEvent e = melody.first;
+        player.playNote(e.instrument,0, e.pitch, e.duration,e.volume);
+        melody.removeAt(0);
+      }
+      if (harmony.isNotEmpty) {
+        for (MidiEvent e in harmony) { player.playNote(e.instrument,0, e.pitch, e.duration,e.volume); }
+        harmony.clear();
+      }
+    }
+  }
+
+  void addRest(Instrument instrument,double duration) { //addNoteEvent(instrument,0,duration,0);
+    _currentTime += duration;
+  }
+
+  void addNoteEvent(Instrument instrument, int pitch, double duration, double volume, MusicalElement elem) {
+    int p = pitch < maxPitch && pitch > minPitch ? pitch : 60;
+    MidiEvent e = MidiEvent(instrument, p, _currentTime, duration, volume);
+    getSubTrack(elem).add(e);
+    if (elem == MusicalElement.rhythm) _currentTime += duration;
+    instrument.currentPitch = p;
+  }
+
+  void addChordEvent(Instrument instrument, List<int> pitches, double duration, double volume, MusicalElement elem) {
+    if (pitches.isNotEmpty) instrument.currentPitch = pitches.first;
     for (int pitch in pitches) {
-      MidiEvent e = MidiEvent(instrument, pitch, currentTime, duration, volume);
-      track.add(e); //print("Adding: $e");
+      int p = pitch < maxPitch && pitch > minPitch ? pitch : 60;
+      MidiEvent e = MidiEvent(instrument, p, _currentTime, duration, volume);
+      getSubTrack(elem).add(e); //print("Adding: $e");
     }
-    currentTime += duration;
+    if (elem == MusicalElement.rhythm) _currentTime += duration;
   }
 
-  void clearTrack() {
-    track.clear();
-    currentTime = 0;
+  void clearTrack() { //subTracks.clear();
+    initTracks();
+    _currentTime = 0;
   }
 
   @override
   int compareTo(MidiTrack other) {
-    return currentTime.compareTo(currentTime);
+    return _currentTime.compareTo(_currentTime);
   }
 
 }
@@ -347,6 +349,7 @@ class Instrument {
   double level;
   bool mute = false;
   bool solo = false;
+  int currentPitch = 60;
   Instrument(this.patch,{ this.level = .5 });
 }
 

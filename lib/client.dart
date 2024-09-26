@@ -66,7 +66,7 @@ class MatrixClient extends ChangeNotifier {
   Future<void> initAudio() async {
     print("Loading audio");
     await sonifier.init(1);
-    sonifier.looper(sonifier.rhythmTrack);
+    sonifier.loopTrack(sonifier.masterTrack,2);
     notifyListeners();
   }
 
@@ -139,9 +139,8 @@ class MatrixClient extends ChangeNotifier {
         String fen = data['fen'];
         BoardMatrix? matrix = board.updateBoard(fen, lastMove, whiteClock, blackClock, colorScheme, maxControl);
         if (matrix == null) return;
-        Piece? piece = matrix.getSquare(lastMove.to).piece;
-        InstrumentType? instType = switch(piece?.type) {
-          null => null,
+        Piece piece = matrix.getSquare(lastMove.to).piece;
+        InstrumentType? instType = switch(piece.type) {
           PieceType.none => null, //castling?
           PieceType.pawn => InstrumentType.pawnMelody,
           PieceType.knight => InstrumentType.knightMelody,
@@ -151,34 +150,23 @@ class MatrixClient extends ChangeNotifier {
           PieceType.king => InstrumentType.kingMelody,
         };
         Instrument? i = sonifier.orchMap[instType];
-        if (i != null) {
+        Instrument? li = sonifier.orchMap[InstrumentType.mainMelody];
+        if (i != null && li != null) {
           if (realTime && !sonifier.playing) {
             int toPitch = (lastMove.to.y * 8) + lastMove.to.x;
             if (matrix.turn == ChessColor.black) toPitch = 64 - toPitch;
             sonifier.playMelody(i, minPitch + toPitch, i.level);
           }
-          MidiTrack? rhythmTrack = sonifier.tracks[sonifier.rhythm];
-          MidiTrack? leadTrack = sonifier.tracks[sonifier.lead];
-          if (rhythmTrack != null && leadTrack != null) {
-            int lastPitch = leadTrack.currentPitch ?? 60; //int lastPitch = sonifier.tracks[instType]?.currentPitch ?? 60;
-            int distance = calcMoveDistance(lastMove).round();
-            //int newPitch = piece?.color == ChessColor.black ? lastPitch - distance : lastPitch + distance;
-            int newPitch = sonifier.getNextPitch(lastPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
-            int yDist = piece.color == ChessColor.black ? lastMove.to.y : ranks - (lastMove.to.y);
-            double dur = (yDist+1)/8; //rhythmMap[yDist]; double dur2 = (lastMove.to.x+1)/8;
-            if (instType == sonifier.rhythm) {
-              //rhythmTrack.addNoteEvent(i,newPitch,dur,.2);
-              //double lag = leadTrack.currentTime - rhythmTrack.currentTime;
-              //if (lag > 0) rhythmTrack.addRest(i,lag);
-              generatePawnRhythm(sonifier.orchMap[sonifier.rhythm]!,matrix,2,false);
-            }
-            Instrument? lead = sonifier.orchMap[sonifier.lead];
-            if (lead != null) sonifier.tracks[InstrumentType.mainMelody]?.addNoteEvent(lead,newPitch,dur,.5);
+          if (instType == sonifier.rhythm) {
+            generatePawnRhythm(sonifier.orchMap[sonifier.rhythm]!,matrix,2,false,piece.color,true);
           }
+          int lastPitch = li.currentPitch;
+          int distance = calcMoveDistance(lastMove).round();
+          int newPitch = sonifier.getNextPitch(lastPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
+          int yDist = piece.color == ChessColor.black ? lastMove.to.y : ranks - (lastMove.to.y);
+          double dur = (yDist+1)/4;
+          sonifier.masterTrack.addNoteEvent(li,newPitch,dur,.5,MusicalElement.melody);
         }
-        //sonifier.tracks[instType]?.addNoteEvent(newPitch,1, .2); //print("${lastMove.to}, $instType: $lastPitch -> $newPitch, rhythm: $dur");
-        //sonifier.tracks[instType]?.addNoteEvent(newPitch,dur * 4, .2); //print("${lastMove.to}, $instType: $lastPitch -> $newPitch, rhythm: $dur");
-        //sonifier.tracks[InstrumentType.mainMelody]?.addNoteEvent(newPitch,dur, .5);
       } else if (type == 'finish') {
         print("Finished: $id");
         board.finished = true;
@@ -188,30 +176,25 @@ class MatrixClient extends ChangeNotifier {
     }
   }
 
-  void generatePawnRhythm(Instrument i, BoardMatrix board, double duration, bool realTime) {
+  void generatePawnRhythm(Instrument i, BoardMatrix board, double duration, bool realTime, ChessColor color, bool crossRhythm) {
     print("Generating pawn rhythm map...");
-    sonifier.rhythmTrack.clearTrack();
+    sonifier.masterTrack.clearTrack();
     double dur = duration / ranks;
     for (int beat = 0; beat < files; beat++) {
       List<int> chord = [];
       for (int steps = 0; steps < ranks; steps++) {
-        if (board.getSquare(Coord(beat,steps)).piece.type == PieceType.pawn) {
-        //if (board.getSquare(Coord(steps,beat)).piece.type == PieceType.pawn) {
+        Piece p = board.getSquare(crossRhythm ? Coord(beat,steps) : Coord(steps,beat)).piece;
+        if (p.type == PieceType.pawn) { // && p.color == color) {
           int pitch = sonifier.getNextPitch(sonifier.currentChord.key.index + (octave * 4), steps, sonifier.currentChord);
           chord.add(pitch); //print("Adding pitch: $pitch");
         }
         if (steps == ranks - 1) {
-          if (realTime) {
-            sonifier.playChord(i, beat * dur, chord, dur, .25);
+          if (chord.isEmpty) {
+            sonifier.masterTrack.addRest(i,dur);
+          } else {
+            sonifier.masterTrack.addChordEvent(i, chord, dur, .25, MusicalElement.rhythm);
           }
-          else {
-            if (chord.isEmpty) {
-              sonifier.rhythmTrack.addRest(i,dur);
-            } else {
-              sonifier.rhythmTrack.addChordEvent(i, chord, dur, .25);
-            }
-            print("Adding chord: $chord");
-          }
+          print("Adding chord: $chord");
         }
       }
     }

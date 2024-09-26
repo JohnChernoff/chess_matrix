@@ -42,9 +42,7 @@ class BoardWidget extends StatelessWidget {
     MatrixClient client = Provider.of(context,listen: false);
     return InkWell(
       onDoubleTap: () {
-        //client.sonifier.playDrumTrack(state.board!);
-        //client.playDrums();
-        client.sonifier.playAllTracks();
+        //TODO: add something here
       },
       onTap: () {
         state.replacable = true;

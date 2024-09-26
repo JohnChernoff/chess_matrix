@@ -14,10 +14,10 @@ Future<void> rhythmTest() async {
   await sonifier.init(1);
   double dur = .25;
   double vol = .25;
-  sonifier.rhythmTrack.clearTrack();
-  sonifier.rhythmTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [62], dur, vol);
-  sonifier.rhythmTrack.addRest(sonifier.orchMap[sonifier.rhythm]!,dur * 4);
-  sonifier.rhythmTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [61], dur, vol);
-  sonifier.rhythmTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [59,64], dur, vol);
-  sonifier.rhythmTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [59], dur, vol);
+  sonifier.masterTrack.clearTrack();
+  sonifier.masterTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [62], dur, vol);
+  sonifier.masterTrack.addRest(sonifier.orchMap[sonifier.rhythm]!,dur * 4);
+  sonifier.masterTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [61], dur, vol);
+  sonifier.masterTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [59,64], dur, vol);
+  sonifier.masterTrack.addChordEvent(sonifier.orchMap[sonifier.rhythm]!, [59], dur, vol);
 }

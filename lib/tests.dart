@@ -9,13 +9,13 @@ class MatrixTest {
     double dur = .25;
     double vol = .25;
     Instrument i = sonifier.orchMap[InstrumentType.pawnMelody]!;
-    sonifier.rhythmTrack.clearTrack();
-    sonifier.rhythmTrack.addChordEvent(i, [62], dur, vol);
-    sonifier.rhythmTrack.addRest(i,dur * 4);
-    sonifier.rhythmTrack.addChordEvent(i, [61], dur, vol);
-    sonifier.rhythmTrack.addChordEvent(i, [59,64], dur, vol);
-    sonifier.rhythmTrack.addChordEvent(i, [59], dur, vol);
-    sonifier.looper(sonifier.rhythmTrack);
+    sonifier.masterTrack.clearTrack();
+    sonifier.masterTrack.addChordEvent(i, [62], dur, vol, MusicalElement.rhythm);
+    sonifier.masterTrack.addRest(i,dur * 4);
+    sonifier.masterTrack.addChordEvent(i, [61], dur, vol, MusicalElement.rhythm);
+    sonifier.masterTrack.addChordEvent(i, [59,64], dur, vol, MusicalElement.rhythm);
+    sonifier.masterTrack.addChordEvent(i, [59], dur, vol, MusicalElement.rhythm);
+    sonifier.looper(sonifier.masterTrack,2);
   }
 }
 
