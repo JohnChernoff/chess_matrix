@@ -215,13 +215,6 @@ class BoardSonifier extends ChangeNotifier {
     return newPitch;
   }
 
-  void looper(MidiTrack track, int maxLen, { MidiTrack? sourceTrack }) { //if (sourceTrack != null) print("Looping ${track.name}");
-    MidiTrack loopTrack = sourceTrack == null ? MidiTrack("${track.name}(copy)",rhythmCopy: track) : track; //only copy original
-    MidiTrack originalTrack = sourceTrack ?? track;
-    track.play(this, (t) => originalTrack._currentTime >= maxLen ? looper(originalTrack,maxLen) : looper(loopTrack,maxLen,sourceTrack: originalTrack));
-    if (sourceTrack == null) track.clearTrack(); //only clear original
-  }
-
   void loopTrack(MidiTrack track, int maxLen) { //if (sourceTrack != null) print("Looping ${track.name}");
     track.play(this, (t) => loopTrack(track,maxLen));
   }

@@ -11,8 +11,9 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
-//TODO: lichess ping, rhythm tracks, pixel depth, color combinations
+//TODO: lichess ping, pixel depth, color combinations
 
+bool testing = false;
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MatrixApp());
@@ -134,7 +135,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
         const SizedBox(width: 20),
         ElevatedButton(onPressed: () => getColorDialog(client), child: Text("Colors",style: getTextStyle(color3))),
-        ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: getTextStyle(color3))),
+        testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: getTextStyle(color3))) : const SizedBox.shrink(),
       ],
     ));
   }

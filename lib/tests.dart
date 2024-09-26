@@ -15,7 +15,7 @@ class MatrixTest {
     sonifier.masterTrack.addChordEvent(i, [61], dur, vol, MusicalElement.rhythm);
     sonifier.masterTrack.addChordEvent(i, [59,64], dur, vol, MusicalElement.rhythm);
     sonifier.masterTrack.addChordEvent(i, [59], dur, vol, MusicalElement.rhythm);
-    sonifier.looper(sonifier.masterTrack,2);
+    sonifier.loopTrack(sonifier.masterTrack,2);
   }
 }
 
