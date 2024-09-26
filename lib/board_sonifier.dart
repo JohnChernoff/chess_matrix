@@ -234,7 +234,7 @@ class MidiTrack implements Comparable<MidiTrack> {
   bool playing = false;
   Map<MusicalElement,List<MidiEvent>> subTracks = {};
   double _currentTime = 0;
-  int maxDur = 8;
+  int maxHarmony = 2;
 
   MidiTrack(this.name, {MidiTrack? rhythmCopy}) {
     if (rhythmCopy != null) {
@@ -268,13 +268,12 @@ class MidiTrack implements Comparable<MidiTrack> {
     for (double t = 0; t < currentMillis; t += currentMillis / 8) {
       await Future.delayed(Duration(milliseconds: t.floor()));
       if (melody.isNotEmpty) {
-        MidiEvent e = melody.first;
+        MidiEvent e = melody.removeAt(0);
         player.playNote(e.instrument,0, e.pitch, e.duration,e.volume);
-        melody.removeAt(0);
       }
-      if (harmony.isNotEmpty) {
-        for (MidiEvent e in harmony) { player.playNote(e.instrument,0, e.pitch, e.duration,e.volume); }
-        harmony.clear();
+      for (int i = 0; i < maxHarmony && harmony.isNotEmpty; i++) {
+        MidiEvent e = harmony.removeAt(0);
+        player.playNote(e.instrument,0, e.pitch, e.duration,e.volume);
       }
     }
   }
