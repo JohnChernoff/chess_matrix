@@ -63,6 +63,11 @@ class MatrixClient extends ChangeNotifier {
     }
   }
 
+  void toggleDrums() {
+    sonifier.muteDrums = !sonifier.muteDrums;
+    notifyListeners();
+  }
+
   Future<void> initAudio() async {
     print("Loading audio");
     await sonifier.init(0);
@@ -158,7 +163,7 @@ class MatrixClient extends ChangeNotifier {
         Instrument? mainInstrument = sonifier.orchMap[InstrumentType.mainMelody];
         if (pieceInstrument != null && mainInstrument != null) {
           if (instType == sonifier.rhythm) {
-            generatePawnRhythms(pieceInstrument,matrix,2,false,piece.color,true);
+            generatePawnRhythms(pieceInstrument,matrix,false,piece.color,true);
           }
           int distance = calcMoveDistance(lastMove).round();
           int yDist = piece.color == ChessColor.black ? lastMove.to.y : ranks - (lastMove.to.y);
@@ -177,22 +182,27 @@ class MatrixClient extends ChangeNotifier {
     }
   }
 
-  void generatePawnRhythms(Instrument i, BoardMatrix board, double duration, bool realTime, ChessColor color, bool crossRhythm) { //print("Generating pawn rhythm map...");
+  void generatePawnRhythms(Instrument i, BoardMatrix board, bool realTime, ChessColor color, bool crossRhythm) { //print("Generating pawn rhythm map...");
     sonifier.masterTrack.clearTrack();
+    double duration = sonifier.masterTrack.maxLength ?? 2;
+    double halfDuration = duration / 2;
     double dur = duration / ranks;
     for (int beat = 0; beat < files; beat++) {
       for (int steps = 0; steps < ranks; steps++) {
         Piece p1 = board.getSquare(Coord(beat,steps)).piece;
         Piece p2 = board.getSquare(Coord(steps,beat)).piece;
-        double t = (beat/files) * duration;
+
         if (p1.type == PieceType.pawn) { // && p.color == color) {
+          double t = (beat/files) * duration;
           int pitch = sonifier.getNextPitch(sonifier.currentChord.key.index + (octave * 4), steps, sonifier.currentChord);
           sonifier.masterTrack.addNoteEvent(i, pitch, dur, .25, MusicalElement.rhythm,offset: t);
         }
         if (p2.type == PieceType.pawn) {
+          double t = (beat/files) * halfDuration;
           int pitch = 60;
           if (steps < sonifier.drumMap.values.length) {
             sonifier.masterTrack.addNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, .25, MusicalElement.rhythm,offset: t);
+            sonifier.masterTrack.addNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, .25, MusicalElement.rhythm,offset: halfDuration + t);
           }
         }
       }

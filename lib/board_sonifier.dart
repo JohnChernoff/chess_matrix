@@ -53,6 +53,7 @@ class BoardSonifier extends ChangeNotifier {
   ];
   bool audioReady = false;
   bool muted = true;
+  bool muteDrums = false;
   bool playing = false;
   double masterVolume = .25;
   Completer? loadingPatch;
@@ -138,7 +139,7 @@ class BoardSonifier extends ChangeNotifier {
       if (i.iPatch != null) {
         js.context.callMethod("playNote",[i.iPatch!.name,t,pitch,duration,volume * masterVolume]);
       }
-      else if (i.drumPatch != null) {
+      else if (i.drumPatch != null && !muteDrums) {
         js.context.callMethod("playDrum",[i.drumPatch!.name,t,duration,volume * masterVolume]); //pitch?
       }
     }

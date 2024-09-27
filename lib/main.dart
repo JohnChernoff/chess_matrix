@@ -11,7 +11,7 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
-//TODO: lichess ping, pixel depth, color combinations, drums?
+//TODO: lichess ping, pixel depth, color combinations, key changes
 
 bool testing = false;
 void main() {
@@ -77,6 +77,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             SizedBox(width: constraints.maxWidth, height: 40, child: getGeneralControls(client)),
             const SizedBox(height: 32),
             client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
+            client.sonifier.audioReady ? const SizedBox(height: 32) : const SizedBox.shrink(),
             Container(color: Colors.black, width: constraints.maxWidth, height: 40, child: Center(child: getMatrixMenus(client))),
             const SizedBox(height: 32),
             Expanded(child: getMatrixView(client),
@@ -134,7 +135,12 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
             child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
         const SizedBox(width: 20),
-        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(), child: Text("Randomize",style: getTextStyle(color3))) : const SizedBox.shrink(),
+        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(),
+            child: Text("Randomize",style: getTextStyle(color3))) : const SizedBox.shrink(),
+        const SizedBox(width: 20),
+        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.toggleDrums(),
+            child: Text("Toggle Drums",style: client.sonifier.muteDrums ? getTextStyle(color2) : getTextStyle(color3))) : const SizedBox.shrink(),
+        const SizedBox(width: 20),
         testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: getTextStyle(color3))) : const SizedBox.shrink(),
       ],
     ));
