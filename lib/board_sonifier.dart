@@ -3,10 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
-import 'board_matrix.dart';
 import 'matrix_fields.dart';
-
-const List<double> rhythmMap = [.125,.25,.5,.75,1,1.25,1.5,2];
 
 enum InstrumentType {
   pawnMelody(Colors.white),
@@ -54,7 +51,6 @@ class BoardSonifier extends ChangeNotifier {
       DefaultInstrument(InstrumentType.mainMelody,MidiInstrument.electricGuitarClean,0),
     ],
   ];
-  final drums = [MidiDrum.bassDrum1,MidiDrum.snareDrum2,MidiDrum.closedHiHat,MidiDrum.rideCymbal1,MidiDrum.highTom1,MidiDrum.highTom2,MidiDrum.lowTom2,MidiDrum.tambourine];
   bool audioReady = false;
   bool muted = true;
   bool playing = false;
@@ -62,7 +58,8 @@ class BoardSonifier extends ChangeNotifier {
   Completer? loadingPatch;
   Completer? initializing;
   Map<InstrumentType,Instrument> orchMap = {};
-  MidiTrack masterTrack = MidiTrack("Master");
+  Map<MidiDrum,Instrument> drumMap = {};
+  MidiTrack masterTrack = MidiTrack("Master",maxLength: 2);
   InstrumentType lead = InstrumentType.mainMelody;
   InstrumentType rhythm = InstrumentType.pawnMelody;
   MatrixClient client;
@@ -75,9 +72,8 @@ class BoardSonifier extends ChangeNotifier {
     js.context.callMethod("initAudio", [initialized]);
     await initializing?.future;
     await loadEnsemble(defaultEnsembles[ensembleNum]);
-    //await loadDrumKit(drums);
+    await loadDrumKit([MidiDrum.bassDrum1,MidiDrum.snareDrum2,MidiDrum.closedHiHat,MidiDrum.rideCymbal1,MidiDrum.highTom1,MidiDrum.highTom2,MidiDrum.lowTom2,MidiDrum.tambourine]);
     audioReady = true;
-    //looper(rhythmTrack);
   }
 
   void initialized() { //
@@ -85,16 +81,25 @@ class BoardSonifier extends ChangeNotifier {
       initializing?.complete();
   }
 
+  List<DefaultInstrument> randomEnsemble() {
+    List<DefaultInstrument> ensemble = [];
+    for (InstrumentType it in InstrumentType.values) {
+      ensemble.add(DefaultInstrument(it, MidiInstrument.values.elementAt(Random().nextInt(MidiInstrument.values.length)), .25));
+    }
+    return ensemble;
+  }
+
   Future<void> loadEnsemble(List<DefaultInstrument> ensemble) async {
     for (DefaultInstrument defInst in ensemble) { //print("Loading from ensemble: ${defInst.type.name},${defInst.patch.index}");
-      await loadInstrument(defInst.type,Instrument(defInst.instrument.patch,level : defInst.instrument.level));
+      //defInst.
+      await loadInstrument(defInst.type,defInst.instrument); //Instrument(defInst.instrument.iPatch,level : defInst.instrument.level)
     }
   }
 
   Future<void> loadInstrument(InstrumentType type, Instrument i) async {
     orchMap.update(type, (value) => i, ifAbsent: () => i);
     loadingPatch = Completer();
-    js.context.callMethod("setInstrument",[i.patch.name,i.patch.index,loadedInstrument]);
+    js.context.callMethod("setInstrument",[i.iPatch?.name,i.iPatch?.index,loadedInstrument]);
     return loadingPatch?.future;
   }
 
@@ -106,11 +111,12 @@ class BoardSonifier extends ChangeNotifier {
 
   Future<void> loadDrumKit(List<MidiDrum> kit) async {
     for (MidiDrum drum in kit) {
-      await loadDrum(drum);
+      await loadDrum(drum, Instrument(drumPatch: drum));
     }
   }
 
-  Future<void> loadDrum(MidiDrum drum) async {
+  Future<void> loadDrum(MidiDrum drum, Instrument i) async {
+    drumMap.update(drum, (value) => i, ifAbsent: () => i);
     loadingPatch = Completer();
     js.context.callMethod("setDrumKit",[drum.name,drum.patchNum,loadedDrum]);
     return loadingPatch?.future;
@@ -121,12 +127,6 @@ class BoardSonifier extends ChangeNotifier {
     loadingPatch?.complete(type);
   }
 
-  void playDrum(MidiDrum drum,double t, double duration, double volume) {
-    if (audioReady) {
-      js.context.callMethod("playDrum",[drum.name,t,duration,volume * masterVolume]);
-    }
-  }
-
   void playChord(Instrument? i,double t, List<int> chord, double duration,double volume) {
     for (int pitch in chord) {
       playNote(i, t, pitch, duration, volume);
@@ -135,13 +135,12 @@ class BoardSonifier extends ChangeNotifier {
 
   void playNote(Instrument? i,double t, int pitch, double duration,double volume) {
     if (i != null && audioReady && !muted && !i.mute && isSoloed(i)) {
-      js.context.callMethod("playNote",[i.patch.name,t,pitch,duration,volume * masterVolume]);
-    }
-  }
-
-  void playMelody(Instrument? i,int pitch,double volume) {
-    if (i != null && audioReady && !muted && !i.mute && isSoloed(i)) {
-      js.context.callMethod("playMelody",[i.patch.name,0,pitch,volume * masterVolume]);
+      if (i.iPatch != null) {
+        js.context.callMethod("playNote",[i.iPatch!.name,t,pitch,duration,volume * masterVolume]);
+      }
+      else if (i.drumPatch != null) {
+        js.context.callMethod("playDrum",[i.drumPatch!.name,t,duration,volume * masterVolume]); //pitch?
+      }
     }
   }
 
@@ -162,18 +161,6 @@ class BoardSonifier extends ChangeNotifier {
 
   bool isMuted(Instrument i) {
     return i.mute;
-  }
-
-  void playDrumTrack(BoardMatrix board, {offset = 0, tempo = 8}) {
-    for (int beat = 0; beat < ranks; beat++) {
-      for (int patch = 0; patch < files; patch++) {
-        Square square = board.getSquare(Coord(beat,patch));
-        if (square.piece.type == PieceType.pawn) {
-          double v =square.control.abs() / board.maxControl;
-          playDrum(drums[patch],(beat/tempo) + offset,1/tempo,v);
-        }
-      }
-    }
   }
 
   static int calcScaleDegree(int pitch, KeyChord chord) { //int degreeInC = pitch % octave;
@@ -215,8 +202,8 @@ class BoardSonifier extends ChangeNotifier {
     return newPitch;
   }
 
-  void loopTrack(MidiTrack track, int maxLen) { //if (sourceTrack != null) print("Looping ${track.name}");
-    track.play(this, (t) => loopTrack(track,maxLen));
+  void loopTrack(MidiTrack track) {
+    track.play(this, (t) => loopTrack(track));
   }
 
 }
@@ -233,23 +220,22 @@ class MidiTrack implements Comparable<MidiTrack> {
   String name;
   bool playing = false;
   Map<MusicalElement,List<MidiEvent>> subTracks = {};
-  double _currentTime = 0;
-  int maxHarmony = 2;
+  double _currentLength = 0; //_insertMarker = 0,
+  double? maxLength;
+  int maxHarmony;
 
-  MidiTrack(this.name, {MidiTrack? rhythmCopy}) {
+  MidiTrack(this.name, {this.maxHarmony  = 2, this.maxLength, MidiTrack? rhythmCopy}) {
     if (rhythmCopy != null) {
-      subTracks.putIfAbsent(MusicalElement.rhythm, () => List.from(rhythmCopy.getSubTrack(MusicalElement.rhythm)));
-      _currentTime = rhythmCopy._currentTime;
+      subTracks.putIfAbsent(MusicalElement.rhythm, () => List.from(rhythmCopy.getSubTrack(MusicalElement.rhythm))); //_insertMarker = rhythmCopy._insertMarker;
     }
-    else {
-      initTracks();
-    }
+    initTracks();
   }
 
   initTracks() {
     for (MusicalElement elem in MusicalElement.values) {
-      subTracks[elem] = [];
+      subTracks.putIfAbsent(elem, () => []); //subTracks[] = [];
     }
+    _currentLength = 0;
   }
 
   List<MidiEvent> getSubTrack(MusicalElement elem) {
@@ -262,9 +248,9 @@ class MidiTrack implements Comparable<MidiTrack> {
     List<MidiEvent> melody = getSubTrack(MusicalElement.melody);
     for (var midiEvent in rhythm) { //print("Playing Rhythm: $midiEvent on $name");
       player.playNote(midiEvent.instrument,midiEvent.offset, midiEvent.pitch, midiEvent.duration,midiEvent.volume);
-    } //print("Waiting: $_currentTime seconds...");
-    int currentMillis = (_currentTime * 1000).round();
-    Future.delayed(Duration(milliseconds: max(1000,currentMillis))).then((value) => onFinished(this));
+    }
+    int currentMillis = ((maxLength ?? 1) * 1000).round(); //print("Waiting $currentMillis milliseconds...");
+    Future.delayed(Duration(milliseconds: currentMillis)).then((value) => onFinished(this));
     for (double t = 0; t < currentMillis; t += currentMillis / 8) {
       await Future.delayed(Duration(milliseconds: t.floor()));
       if (melody.isNotEmpty) {
@@ -279,35 +265,45 @@ class MidiTrack implements Comparable<MidiTrack> {
   }
 
   void addRest(Instrument instrument,double duration) { //addNoteEvent(instrument,0,duration,0);
-    _currentTime += duration;
+    _currentLength += duration;
   }
 
-  void addNoteEvent(Instrument instrument, int pitch, double duration, double volume, MusicalElement elem) {
-    int p = pitch < maxPitch && pitch > minPitch ? pitch : 60;
-    MidiEvent e = MidiEvent(instrument, p, _currentTime, duration, volume);
-    getSubTrack(elem).add(e);
-    if (elem == MusicalElement.rhythm) _currentTime += duration;
-    instrument.currentPitch = p;
+  int trimPitch(int pitch) {
+    return pitch < maxPitch && pitch > minPitch ? pitch : 60;
   }
 
-  void addChordEvent(Instrument instrument, List<int> pitches, double duration, double volume, MusicalElement elem) {
-    if (pitches.isNotEmpty) instrument.currentPitch = pitches.first;
-    for (int pitch in pitches) {
-      int p = pitch < maxPitch && pitch > minPitch ? pitch : 60;
-      MidiEvent e = MidiEvent(instrument, p, _currentTime, duration, volume);
-      getSubTrack(elem).add(e); //print("Adding: $e");
+  void addNoteEvent(Instrument instrument, int pitch, double duration, double volume, MusicalElement elem, {double? offset, bool updatePitch = true}) {
+    int p = trimPitch(pitch);
+    double t = offset ?? _currentLength;
+    if (elem == MusicalElement.rhythm) {
+      double t2 = t + duration;
+      if (_currentLength < t2) _currentLength = t2;
+      if (_currentLength > (maxLength ?? 999)) {
+        print("Error: track overflow: $maxLength > $t + $duration");
+        return;
+      } //else { print("New length: $maxLength > $t + $duration"); }
     }
-    if (elem == MusicalElement.rhythm) _currentTime += duration;
+    MidiEvent e = MidiEvent(instrument, p, t, duration, volume);
+    getSubTrack(elem).add(e);
+    if (updatePitch) instrument.currentPitch = p;
   }
 
-  void clearTrack() { //subTracks.clear();
+  void addChordEvent(Instrument instrument, List<int> pitches, double duration, double volume, MusicalElement elem, {double? offset}) {
+    double t = offset ?? _currentLength;
+    for (int pitch in pitches) {
+      addNoteEvent(instrument, pitch, duration, volume, elem, offset: t, updatePitch: false);
+    }
+    if (pitches.isNotEmpty) instrument.currentPitch = trimPitch(pitches.first);
+  }
+
+  void clearTrack() {
+    subTracks.clear();
     initTracks();
-    _currentTime = 0;
   }
 
   @override
   int compareTo(MidiTrack other) {
-    return _currentTime.compareTo(_currentTime);
+    return _currentLength.compareTo(other._currentLength);
   }
 
 }
@@ -321,7 +317,7 @@ class MidiEvent implements Comparable<MidiEvent> {
   MidiEvent(this.instrument,this.pitch,this.offset,this.duration,this.volume);
   @override
   String toString() {
-    return "[instrument: ${instrument.patch.name}, note: ${BoardSonifier.getNote(pitch)}, pitch: $pitch, offset: $offset, duration: $duration, volume: $volume]";
+    return "[instrument: ${instrument.iPatch?.name}, note: ${BoardSonifier.getNote(pitch)}, pitch: $pitch, offset: $offset, duration: $duration, volume: $volume]";
   }
 
   @override
@@ -333,15 +329,16 @@ class MidiEvent implements Comparable<MidiEvent> {
 class DefaultInstrument {
   InstrumentType type;
   Instrument instrument;
-  DefaultInstrument(this.type,MidiInstrument defPatch,double defLevel) : instrument = Instrument(defPatch,level : defLevel);
+  DefaultInstrument(this.type,MidiInstrument defPatch,double defLevel) : instrument = Instrument(iPatch: defPatch,level : defLevel);
 }
 
 class Instrument {
-  MidiInstrument patch;
+  MidiInstrument? iPatch;
+  MidiDrum? drumPatch;
   double level;
   bool mute = false;
   bool solo = false;
   int currentPitch = 60;
-  Instrument(this.patch,{ this.level = .5 });
+  Instrument({ this.iPatch, this.drumPatch, this.level = .5 });
 }
 

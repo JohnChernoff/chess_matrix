@@ -11,7 +11,7 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
-//TODO: lichess ping, pixel depth, color combinations
+//TODO: lichess ping, pixel depth, color combinations, drums?
 
 bool testing = false;
 void main() {
@@ -134,7 +134,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
             child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
         const SizedBox(width: 20),
-        ElevatedButton(onPressed: () => getColorDialog(client), child: Text("Colors",style: getTextStyle(color3))),
+        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(), child: Text("Randomize",style: getTextStyle(color3))) : const SizedBox.shrink(),
         testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: getTextStyle(color3))) : const SizedBox.shrink(),
       ],
     ));
@@ -163,7 +163,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 ]
                 ),
                 Text(InstrumentType.values.elementAt(i).name),
-                DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i)]?.patch, alignment: AlignmentDirectional.center,
+                DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i)]?.iPatch, alignment: AlignmentDirectional.center,
                     items: List.generate(MidiInstrument.values.length, (index) {
                       MidiInstrument patch = MidiInstrument.values.elementAt(index);
                       return DropdownMenuItem(
@@ -193,6 +193,8 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             DropdownButton(value: MatrixClient.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
                 DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text("Game Style: ${GameStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
                 onChanged: (GameStyle? value) => client.setGameStyle(value!))),
+            const SizedBox(width: 24),
+            ElevatedButton(onPressed: () => getColorDialog(client), child: Text("Colors",style: getTextStyle(color3))),
             const SizedBox(width: 24),
             DecoratedBox(decoration: decoration, child: DropdownButton(value: MatrixClient.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
                 DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text("Piece Style: ${PieceStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
