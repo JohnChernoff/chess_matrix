@@ -53,7 +53,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
-    board = BoardMatrix(fen,lastMove,MatrixClient.matrixWidth,MatrixClient.matrixHeight,colorScheme,() => updateWidget(),maxControl: maxControl);
+    board = BoardMatrix(fen,lastMove,MatrixClient.matrixResolution,MatrixClient.matrixResolution,colorScheme,() => updateWidget(),maxControl: maxControl);
     clockTimer = countDown();
     return board;
   }

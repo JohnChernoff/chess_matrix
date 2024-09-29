@@ -13,8 +13,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 class MatrixClient extends ChangeNotifier {
   int initialBoardNum;
-  static int matrixWidth = 250; //slider?
-  static int matrixHeight = 250;
+  static int matrixResolution = 250; //slider?
   static PieceStyle pieceStyle = PieceStyle.horsey;
   static GameStyle gameStyle = GameStyle.blitz;
   bool showControl = false;

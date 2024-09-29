@@ -1,9 +1,8 @@
 import 'dart:ui';
-import 'package:awesome_dialog/awesome_dialog.dart';
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:chess_matrix/board_widget.dart';
+import 'package:chess_matrix/options.dart';
 import 'package:chess_matrix/tests.dart';
-import 'package:cyclop/cyclop.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
@@ -11,7 +10,15 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
-//TODO: lichess ping, pixel depth, min/max board resolution, color combinations, selectable keys/games, proper boardsizes, animate sounds, baord reloading weirdness, distance v. square pitches
+/*
+TODO:
+ lichess ping,
+ color combinations,
+ selectable keys/games,
+ animate sounds,
+ board reloading weirdness,
+ distance v. square pitches
+ */
 
 bool testing = false;
 void main() {
@@ -20,6 +27,11 @@ void main() {
 }
 
 class MatrixApp extends StatelessWidget {
+
+  static double fontSize = 20;
+  static TextStyle getTextStyle(Color color) {
+    return TextStyle(color: color, fontSize: fontSize);
+  }
 
   const MatrixApp({super.key});
 
@@ -36,6 +48,28 @@ class MatrixApp extends StatelessWidget {
             scrollBehavior: WebScrollBehavior(),
             home: const MatrixHomePage('Chess Matrix')));
   }
+
+  static Future<void> menuBuilder(BuildContext context,Widget menuWidget) {
+    return showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Colors.grey,
+            content: menuWidget,
+            actions: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  textStyle: Theme.of(context).textTheme.labelLarge,
+                ),
+                child: const Text('Return'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
+  }
 }
 
 class MatrixHomePage extends StatefulWidget {
@@ -48,7 +82,6 @@ class MatrixHomePage extends StatefulWidget {
 }
 
 class _MatrixHomePageState extends State<MatrixHomePage> {
-  double fontSize = 20;
   Color color1 = Colors.grey;
   Color color2 = Colors.white;
   Color color3 = Colors.black; //Colors.purple;
@@ -57,10 +90,6 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   @override
   void initState() {
     super.initState();
-  }
-
-  TextStyle getTextStyle(Color color) {
-    return TextStyle(color: color, fontSize: fontSize);
   }
 
   @override
@@ -78,8 +107,6 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
             const SizedBox(height: 32),
             client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
             client.sonifier.audioReady ? const SizedBox(height: 32) : const SizedBox.shrink(),
-            Container(color: Colors.black, width: constraints.maxWidth, height: 40, child: Center(child: getMatrixMenus(client))),
-            const SizedBox(height: 32),
             Expanded(child: getMatrixView(client),
             )
           ]));
@@ -103,7 +130,6 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
           child: Column(
             children: List.generate(verticalBoards, (row) {
               return Column(children: [
-                const Divider(height: 20),
                 Row(
                   mainAxisAlignment : MainAxisAlignment.center,
                   children: List.generate(horizonalBoards, (i) {
@@ -119,6 +145,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                     }
                   }),
                 ),
+                ((row * verticalBoards) < numBoards) ? const Divider(height: 20) : const SizedBox.shrink(),
               ]);
             }),
           )
@@ -130,37 +157,32 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   Widget getGeneralControls(MatrixClient client) {
     int numBoards = (newNumBoards ?? client.initialBoardNum);
     return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
-      //mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text("Boards: $numBoards",style: getTextStyle(color2)),
+        IconButton(onPressed: () => MatrixApp.menuBuilder(context,OptionWidget(client)), icon: const Icon(Icons.menu)),
+        Text("Boards: $numBoards",style: MatrixApp.getTextStyle(color2)),
         Slider(value: numBoards as double, min: 1, max: 30,
             onChanged: (double value) {
               setState(() {
                 newNumBoards = value.round();
               });
             }),
-        Text("Intensity",style: getTextStyle(color2)),
-        Slider(value: (client.maxControl-6).abs() as double, min: 1, max: 5,
-            onChanged: (double value) {
-              client.setMaxControl((value.round() - 6).abs());
-            }),
-        ElevatedButton(onPressed: () => client.loadTVGames(numBoards: numBoards-1, reset: false), child: Text("Reload", style: getTextStyle(color3))),
+        ElevatedButton(onPressed: () => client.loadTVGames(numBoards: numBoards-1, reset: false), child: Text("Reload", style: MatrixApp.getTextStyle(color3))),
         const SizedBox(width: 20),
         ElevatedButton(
             onPressed: () => client.toggleAudio(),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-            child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: getTextStyle(color3))),
+            child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: MatrixApp.getTextStyle(color3))),
         const SizedBox(width: 20),
         client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(),
-            child: Text("Randomize",style: getTextStyle(color3))) : const SizedBox.shrink(),
+            child: Text("Randomize",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
         const SizedBox(width: 20),
         client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.toggleDrums(),
-            child: Text("Toggle Drums",style: client.sonifier.muteDrums ? getTextStyle(color2) : getTextStyle(color3))) : const SizedBox.shrink(),
+            child: Text("Toggle Drums",style: client.sonifier.muteDrums ? MatrixApp.getTextStyle(color2) : MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
         const SizedBox(width: 20),
         client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.keyChange(),
-            child: Text("New Key",style:getTextStyle(color3))) : const SizedBox.shrink(),
+            child: Text("New Key",style:MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
         const SizedBox(width: 20),
-        testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: getTextStyle(color3))) : const SizedBox.shrink(),
+        testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
       ],
     )));
   }
@@ -202,104 +224,9 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     )));
   }
 
-  Widget getMatrixMenus(MatrixClient client) {
-    Decoration decoration = BoxDecoration(
-      color: Colors.greenAccent,
-      gradient: LinearGradient(
-        begin: Alignment.topRight,
-        end: Alignment.bottomLeft,
-        colors: [client.colorScheme.whiteColor,client.colorScheme.blackColor],
-      ), //borderRadius: BorderRadius.all(Radius.circular(40)),
-    );
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            DecoratedBox(decoration: decoration, child:
-            DropdownButton(value: MatrixClient.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
-                DropdownMenuItem(value: GameStyle.values.elementAt(index), child: Text("Game Style: ${GameStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
-                onChanged: (GameStyle? value) => client.setGameStyle(value!))),
-            const SizedBox(width: 24),
-            ElevatedButton(onPressed: () => getColorDialog(client), child: Text("Colors",style: getTextStyle(color3))),
-            const SizedBox(width: 24),
-            DecoratedBox(decoration: decoration, child: DropdownButton(value: MatrixClient.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
-                DropdownMenuItem(value: PieceStyle.values.elementAt(index), child: Text("Piece Style: ${PieceStyle.values.elementAt(index).name}",style: getTextStyle(Colors.black)))),
-                onChanged: (PieceStyle? value) => client.setPieceStyle(value!))),
-          ]),
-    );
-  }
 
-  void getColorDialog(MatrixClient client) {
-    AwesomeDialog(
-      context: context,
-      body: Container(color: Colors.green, child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Column(
-            children: [
-              Text("White Color: ",style: getTextStyle(Colors.white)),
-              ColorPicker(onColorSelected: (Color color) {
-                client.setColorScheme(whiteColor: color);
-              },
-                selectedColor: client.colorScheme.whiteColor,
-                config: const ColorPickerConfig(),
-                onClose: () {},
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              Text("Black Color: ",style: getTextStyle(Colors.black)),
-              ColorPicker(onColorSelected: (Color color) {
-                client.setColorScheme(blackColor: color);
-              },
-                selectedColor: client.colorScheme.blackColor,
-                config: const ColorPickerConfig(),
-                onClose: () {},
-              ),
-            ],
-          ),
-          Column(
-            children: [
-              Text("Void Color: ",style: getTextStyle(Colors.black)),
-              ColorPicker(onColorSelected: (Color color) {
-                client.setColorScheme(voidColor: color);
-              },
-                selectedColor: client.colorScheme.voidColor,
-                config: const ColorPickerConfig(),
-                onClose: () {},
-              ),
-            ],
-          )
-        ],
-      )),
-      dialogType: DialogType.info,
-      borderSide: const BorderSide(
-        color: Colors.green,
-        width: 2,
-      ),
-      //width: 280,
-      buttonsBorderRadius: const BorderRadius.all(
-        Radius.circular(2),
-      ),
-      dismissOnTouchOutside: true,
-      dismissOnBackKeyPress: false,
-      onDismissCallback: (type) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Dismissed by $type'),
-          ),
 
-        );
-      },
-      headerAnimationLoop: false,
-      animType: AnimType.bottomSlide,
-      title: 'COLOR MENU',
-      desc: 'This Dialog can be dismissed touching outside',
-      showCloseIcon: true,
-      btnCancelOnPress: () {},
-      btnOkOnPress: () {},
-    ).show();
-  }
+
 
 }
 
