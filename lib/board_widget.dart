@@ -7,7 +7,7 @@ import 'board_state.dart';
 class BoardWidget extends StatelessWidget {
   final int slot;
   final textStyle = const TextStyle(color: Colors.white);
-  final bool showID = true;
+  final bool showID = false; //true;
   const BoardWidget(this.slot, {super.key});
 
   @override

@@ -11,7 +11,7 @@ import 'client.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
-//TODO: lichess ping, pixel depth, color combinations, key changes
+//TODO: lichess ping, pixel depth, min/max board resolution, color combinations, selectable keys/games, proper boardsizes, animate sounds, baord reloading weirdness, distance v. square pitches
 
 bool testing = false;
 void main() {
@@ -52,7 +52,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   Color color1 = Colors.grey;
   Color color2 = Colors.white;
   Color color3 = Colors.black; //Colors.purple;
-  int numBoards = 8;
+  int? newNumBoards;
 
   @override
   void initState() {
@@ -87,40 +87,56 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     );
   }
 
-  Widget getMatrixView(MatrixClient client, {int minBoardSize = 200}) {
+  Widget getMatrixView(MatrixClient client, {int minBoardSize = 200}) { //TODO: use minBoardSize
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        double maxSize = ZugUtils.getMaxSizeOfSquaresInRect(client.boards.length + 1, constraints.maxWidth, constraints.maxHeight);
-        int horizonalBoards = (constraints.maxWidth / maxSize).floor();
+        double w = constraints.constrainWidth();
+        double h = constraints.constrainHeight();
+        int numBoards = client.boards.length;
+        double maxSize = ZugUtils.getMaxSizeOfSquaresInRect(w, h, numBoards) - 32;
+        int verticalBoards = (h / maxSize).floor();
+        int horizonalBoards = (w / maxSize).floor(); //print("$n -> $w,$h,$horizonalBoards,$verticalBoards"); print("Max Size: $maxSize");
         return Container(
           color: Colors.black,
-          child: GridView.count(
-            crossAxisCount: horizonalBoards,
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 0,
-            children: List.generate(
-              client.boards.length, (index) {
-              BoardState? state = client.boards.elementAt(
-                  index); //print("Viewing: $state");
-              return ChangeNotifierProvider.value(
-                  value: state,
-                  child: BoardWidget(key: ObjectKey(state), index));
-            },
-            ),
-          ),
+          width: w,
+          height: h,
+          child: Column(
+            children: List.generate(verticalBoards, (row) {
+              return Column(children: [
+                const Divider(height: 20),
+                Row(
+                  mainAxisAlignment : MainAxisAlignment.center,
+                  children: List.generate(horizonalBoards, (i) {
+                    int index = (row * horizonalBoards) + i; //print("Index: $index");
+                    if (index < numBoards) { //there's probably something more elegant than this
+                      BoardState? state = client.boards.elementAt(index); //print("Viewing: $state");
+                      return ChangeNotifierProvider.value(
+                          value: state,
+                          child: SizedBox(width: maxSize, height: maxSize, child: BoardWidget(key: ObjectKey(state), index)));
+                    }
+                    else {
+                      return const SizedBox.shrink();
+                    }
+                  }),
+                ),
+              ]);
+            }),
+          )
         );
       },
     );
   }
 
   Widget getGeneralControls(MatrixClient client) {
-    return SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
+    int numBoards = (newNumBoards ?? client.initialBoardNum);
+    return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
+      //mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text("Boards: $numBoards",style: getTextStyle(color2)),
         Slider(value: numBoards as double, min: 1, max: 30,
             onChanged: (double value) {
               setState(() {
-                numBoards = value.round();
+                newNumBoards = value.round();
               });
             }),
         Text("Intensity",style: getTextStyle(color2)),
@@ -141,9 +157,12 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
         client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.toggleDrums(),
             child: Text("Toggle Drums",style: client.sonifier.muteDrums ? getTextStyle(color2) : getTextStyle(color3))) : const SizedBox.shrink(),
         const SizedBox(width: 20),
+        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.keyChange(),
+            child: Text("New Key",style:getTextStyle(color3))) : const SizedBox.shrink(),
+        const SizedBox(width: 20),
         testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: getTextStyle(color3))) : const SizedBox.shrink(),
       ],
-    ));
+    )));
   }
 
   Widget getAudioControls(MatrixClient client) {

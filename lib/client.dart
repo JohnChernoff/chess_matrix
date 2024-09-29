@@ -12,21 +12,23 @@ import 'matrix_fields.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 class MatrixClient extends ChangeNotifier {
-  static int matrixWidth = 250, matrixHeight = 250;
+  int initialBoardNum;
+  static int matrixWidth = 250; //slider?
+  static int matrixHeight = 250;
   static PieceStyle pieceStyle = PieceStyle.horsey;
   static GameStyle gameStyle = GameStyle.blitz;
   bool showControl = false;
   bool showMove = false;
   bool realTime = false;
   final Map<String,ui.Image> pieceImages = {};
-  late IList<BoardState> boards = IList(List.generate(8, (slot) => BoardState(slot)));
   Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
   MatrixColorScheme colorScheme = MatrixColorScheme(Colors.blue, Colors.red, Colors.black);
   int maxControl = 2;
+  late IList<BoardState> boards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
   late final BoardSonifier sonifier;
   late final ZugSock lichSock;
 
-  MatrixClient(String matrixURL) {
+  MatrixClient(String matrixURL, {this.initialBoardNum = 1}) {
     sonifier = BoardSonifier(this);
     lichSock = ZugSock(matrixURL, connected, handleMsg, disconnected);
   }
@@ -148,30 +150,17 @@ class MatrixClient extends ChangeNotifier {
         Move lastMove = Move(data['lm']);
         String fen = data['fen'];
         BoardMatrix? matrix = board.updateBoard(fen, lastMove, whiteClock, blackClock, colorScheme, maxControl);
-        if (matrix == null) return;
-        Piece piece = matrix.getSquare(lastMove.to).piece;
-        InstrumentType? instType = switch(piece.type) {
-          PieceType.none => null, //castling?
-          PieceType.pawn => InstrumentType.pawnMelody,
-          PieceType.knight => InstrumentType.knightMelody,
-          PieceType.bishop => InstrumentType.bishopMelody,
-          PieceType.rook => InstrumentType.rookMelody,
-          PieceType.queen => InstrumentType.queenMelody,
-          PieceType.king => InstrumentType.kingMelody,
-        };
-        Instrument? pieceInstrument = sonifier.orchMap[instType];
-        Instrument? mainInstrument = sonifier.orchMap[InstrumentType.mainMelody];
-        if (pieceInstrument != null && mainInstrument != null) {
-          if (instType == sonifier.rhythm) {
-            generatePawnRhythms(pieceInstrument,matrix,false,piece.color,true);
+        if (matrix != null) {
+          Piece piece = matrix.getSquare(lastMove.to).piece; //print("LastMove: ${lastMove.from}-${lastMove.to}, piece: ${piece.type}");
+          if (piece.type == PieceType.none) {  //print("castling?!");
+            keyChange();
           }
-          int distance = calcMoveDistance(lastMove).round();
-          int yDist = piece.color == ChessColor.black ? lastMove.to.y : ranks - (lastMove.to.y);
-          double dur = (yDist+1)/4;
-          int newPitch = sonifier.getNextPitch(pieceInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
-          sonifier.masterTrack.addNoteEvent(pieceInstrument,newPitch,dur,.5,MusicalElement.harmony);
-          newPitch = sonifier.getNextPitch(mainInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
-          sonifier.masterTrack.addNoteEvent(mainInstrument,newPitch,dur,.5,MusicalElement.harmony);
+          else {
+            generatePieceNotes(piece,calcMoveDistance(lastMove).round(),piece.color == ChessColor.black ? lastMove.to.y : ranks - (lastMove.to.y));
+            if (piece.type == PieceType.pawn) {
+              generatePawnRhythms(matrix,false,piece.color);
+            }
+          }
         }
       } else if (type == 'finish') {
         print("Finished: $id");
@@ -182,27 +171,61 @@ class MatrixClient extends ChangeNotifier {
     }
   }
 
-  void generatePawnRhythms(Instrument i, BoardMatrix board, bool realTime, ChessColor color, bool crossRhythm) { //print("Generating pawn rhythm map...");
-    sonifier.masterTrack.clearTrack();
-    double duration = sonifier.masterTrack.maxLength ?? 2;
-    double halfDuration = duration / 2;
-    double dur = duration / ranks;
-    for (int beat = 0; beat < files; beat++) {
-      for (int steps = 0; steps < ranks; steps++) {
-        Piece p1 = board.getSquare(Coord(beat,steps)).piece;
-        Piece p2 = board.getSquare(Coord(steps,beat)).piece;
+  void keyChange() { print("Key change!");
+    sonifier.currentChord = KeyChord(
+        BoardSonifier.getNewNote(sonifier.currentChord.key),
+        BoardSonifier.getNewScale(sonifier.currentChord.scale));
+    notifyListeners();
+  }
 
-        if (p1.type == PieceType.pawn) { // && p.color == color) {
-          double t = (beat/files) * duration;
-          int pitch = sonifier.getNextPitch(sonifier.currentChord.key.index + (octave * 4), steps, sonifier.currentChord);
-          sonifier.masterTrack.addNoteEvent(i, pitch, dur, .25, MusicalElement.rhythm,offset: t);
-        }
-        if (p2.type == PieceType.pawn) {
-          double t = (beat/files) * halfDuration;
-          int pitch = 60;
-          if (steps < sonifier.drumMap.values.length) {
-            sonifier.masterTrack.addNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, .25, MusicalElement.rhythm,offset: t);
-            sonifier.masterTrack.addNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, .25, MusicalElement.rhythm,offset: halfDuration + t);
+  InstrumentType? getPieceInstrument(Piece piece) {
+    return switch(piece.type) {
+      PieceType.none => null, //shouldn't occur
+      PieceType.pawn => InstrumentType.pawnMelody,
+      PieceType.knight => InstrumentType.knightMelody,
+      PieceType.bishop => InstrumentType.bishopMelody,
+      PieceType.rook => InstrumentType.rookMelody,
+      PieceType.queen => InstrumentType.queenMelody,
+      PieceType.king => InstrumentType.kingMelody,
+    };
+  }
+
+  void generatePieceNotes(Piece piece, int distance, int yDist) {
+    Instrument? pieceInstrument = sonifier.orchMap[getPieceInstrument(piece)];
+    Instrument? mainInstrument = sonifier.orchMap[InstrumentType.mainMelody];
+    if (pieceInstrument != null && mainInstrument != null) {
+      double dur = (yDist+1)/4;
+      int newPitch = sonifier.getNextPitch(pieceInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
+
+      sonifier.masterTrack.addNoteEvent(sonifier.masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),MusicalElement.harmony);
+      newPitch = sonifier.getNextPitch(mainInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
+      sonifier.masterTrack.addNoteEvent(sonifier.masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),MusicalElement.harmony);
+    }
+  }
+
+  void generatePawnRhythms(BoardMatrix board, bool realTime, ChessColor color, {drumVol = .25, compVol = .33, crossRhythm=false}) { //print("Generating pawn rhythm map...");
+    Instrument? i = sonifier.orchMap[InstrumentType.mainRhythm];
+    if (i != null) {
+      sonifier.masterTrack.newRhythmMap.clear();
+      double duration = sonifier.masterTrack.maxLength ?? 2;
+      double halfDuration = duration / 2;
+      double dur = duration / ranks;
+      for (int beat = 0; beat < files; beat++) {
+        for (int steps = 0; steps < ranks; steps++) {
+          Piece compPiece = crossRhythm ? board.getSquare(Coord(steps,beat)).piece : board.getSquare(Coord(beat,steps)).piece;
+          Piece drumPiece = crossRhythm ? board.getSquare(Coord(beat,steps)).piece : board.getSquare(Coord(steps,beat)).piece;
+          if (compPiece.type == PieceType.pawn) { // && p.color == color) {
+            double t = (beat/files) * duration;
+            int pitch = sonifier.getNextPitch(sonifier.currentChord.key.index + (octave * 4), steps, sonifier.currentChord);
+            sonifier.masterTrack.newRhythmMap.add(sonifier.masterTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
+          }
+          if (drumPiece.type == PieceType.pawn) {
+            double t = (beat/files) * halfDuration;
+            int pitch = 60;
+            if (steps < sonifier.drumMap.values.length) {
+              sonifier.masterTrack.newRhythmMap.add(sonifier.masterTrack.createNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
+              sonifier.masterTrack.newRhythmMap.add(sonifier.masterTrack.createNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
+            }
           }
         }
       }
@@ -210,8 +233,7 @@ class MatrixClient extends ChangeNotifier {
   }
 
   void handleMidiComplete() {
-    print("Track finished");
-    //sonifier.playAllTracks();
+    print("Track finished"); //sonifier.playAllTracks();
   }
 
   double calcMoveDistance(Move move) {
