@@ -104,6 +104,12 @@ class MatrixClient extends ChangeNotifier {
     }
   }
 
+  void setSingleState(BoardState state) {
+    boards = boards.clear();
+    boards = boards.add(state);
+    notifyListeners();
+  }
+
   void loadTVGames({reset = false, int? numBoards}) async {
     if (numBoards != null) {
       setNumGames(numBoards);
@@ -113,11 +119,9 @@ class MatrixClient extends ChangeNotifier {
         board.replacable = true;
       }
     }
-    List<dynamic> games = await Lichess.getTV(gameStyle.name,boards.length);
+    List<dynamic> games = await Lichess.getTV(gameStyle.name,30);
     List<dynamic> availableGames = games.where((game) => boards.where((b) => b.id == game['id']).isEmpty).toList(); //remove pre-existing games
-    boards.where((board) => games.where((game) => game['id'] == board.id && !board.finished).isNotEmpty).forEach((board) => board.replacable = false); //preserve existing boards
-    List<BoardState> openBoards = boards.where((board) => board.replacable).toList();
-    openBoards.sort(); //probably unnecessary
+    List<BoardState> openBoards = boards.where((board) => board.replacable || board.finished).toList(); //openBoards.sort(); //probably unnecessary
     for (BoardState board in openBoards) {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);
@@ -130,8 +134,7 @@ class MatrixClient extends ChangeNotifier {
         print("Error: no available game for slot: ${board.slot}");
         break;
       }
-    }
-    boards = boards.sort();
+    } //boards = boards.sort();
     print("Loaded: $boards");
     notifyListeners();
   }
@@ -164,13 +167,12 @@ class MatrixClient extends ChangeNotifier {
       } else if (type == 'finish') {
         print("Finished: $id");
         board.finished = true;
-        board.replacable = true;
         loadTVGames();
       }
     }
   }
 
-  void keyChange() { print("Key change!");
+  void keyChange() { //print("Key change!");
     sonifier.currentChord = KeyChord(
         BoardSonifier.getNewNote(sonifier.currentChord.key),
         BoardSonifier.getNewScale(sonifier.currentChord.scale));

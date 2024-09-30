@@ -30,30 +30,30 @@ enum MidiScale {
   const MidiScale(this.intervals);
 }
 
-class BoardSonifier extends ChangeNotifier {
+List<List<DefaultInstrument>> defaultEnsembles = [
+  [
+    DefaultInstrument(InstrumentType.pawnMelody,MidiInstrument.dulcimer,.25),
+    DefaultInstrument(InstrumentType.knightMelody,MidiInstrument.glockenspiel,.25),
+    DefaultInstrument(InstrumentType.bishopMelody,MidiInstrument.kalimba,.25),
+    DefaultInstrument(InstrumentType.rookMelody,MidiInstrument.marimba,.25),
+    DefaultInstrument(InstrumentType.queenMelody,MidiInstrument.celesta,.25),
+    DefaultInstrument(InstrumentType.kingMelody,MidiInstrument.ocarina,.25),
+    DefaultInstrument(InstrumentType.mainMelody,MidiInstrument.acousticGrandPiano,.25),
+    DefaultInstrument(InstrumentType.mainRhythm,MidiInstrument.pizzStrings,.25),
+  ],
+  [
+    DefaultInstrument(InstrumentType.pawnMelody,MidiInstrument.electricBassPick,0),
+    DefaultInstrument(InstrumentType.knightMelody,MidiInstrument.timpani,0),
+    DefaultInstrument(InstrumentType.bishopMelody,MidiInstrument.clarinet,0),
+    DefaultInstrument(InstrumentType.rookMelody,MidiInstrument.trumpet,0),
+    DefaultInstrument(InstrumentType.queenMelody,MidiInstrument.fx3Crystal,0),
+    DefaultInstrument(InstrumentType.kingMelody,MidiInstrument.pad8Sweep,0),
+    DefaultInstrument(InstrumentType.mainMelody,MidiInstrument.overdrivenGuitar,0),
+    DefaultInstrument(InstrumentType.mainRhythm,MidiInstrument.acousticGrandPiano,.25),
+  ],
+];
 
-  static List<List<DefaultInstrument>> defaultEnsembles = [
-    [
-      DefaultInstrument(InstrumentType.pawnMelody,MidiInstrument.dulcimer,.25),
-      DefaultInstrument(InstrumentType.knightMelody,MidiInstrument.glockenspiel,.25),
-      DefaultInstrument(InstrumentType.bishopMelody,MidiInstrument.kalimba,.25),
-      DefaultInstrument(InstrumentType.rookMelody,MidiInstrument.marimba,.25),
-      DefaultInstrument(InstrumentType.queenMelody,MidiInstrument.celesta,.25),
-      DefaultInstrument(InstrumentType.kingMelody,MidiInstrument.ocarina,.25),
-      DefaultInstrument(InstrumentType.mainMelody,MidiInstrument.acousticGrandPiano,.25),
-      DefaultInstrument(InstrumentType.mainRhythm,MidiInstrument.pizzStrings,.25),
-    ],
-    [
-      DefaultInstrument(InstrumentType.pawnMelody,MidiInstrument.electricBassPick,0),
-      DefaultInstrument(InstrumentType.knightMelody,MidiInstrument.timpani,0),
-      DefaultInstrument(InstrumentType.bishopMelody,MidiInstrument.clarinet,0),
-      DefaultInstrument(InstrumentType.rookMelody,MidiInstrument.trumpet,0),
-      DefaultInstrument(InstrumentType.queenMelody,MidiInstrument.fx3Crystal,0),
-      DefaultInstrument(InstrumentType.kingMelody,MidiInstrument.pad8Sweep,0),
-      DefaultInstrument(InstrumentType.mainMelody,MidiInstrument.overdrivenGuitar,0),
-      DefaultInstrument(InstrumentType.mainRhythm,MidiInstrument.acousticGrandPiano,.25),
-    ],
-  ];
+class BoardSonifier extends ChangeNotifier {
   bool audioReady = false;
   bool muted = true;
   bool muteDrums = true;
@@ -78,6 +78,7 @@ class BoardSonifier extends ChangeNotifier {
     await loadEnsemble(defaultEnsembles[ensembleNum]);
     await loadDrumKit([MidiDrum.bassDrum1,MidiDrum.snareDrum2,MidiDrum.closedHiHat,MidiDrum.rideCymbal1,MidiDrum.highTom1,MidiDrum.highTom2,MidiDrum.lowTom2,MidiDrum.tambourine]);
     orchMap[InstrumentType.mainRhythm]!.mute = true;
+    orchMap[InstrumentType.mainMelody]!.solo = true;
     audioReady = true;
   }
 

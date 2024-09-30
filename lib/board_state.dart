@@ -16,6 +16,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   BoardState(this.slot);
 
   void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixColorScheme colorScheme, int maxControl) {
+    replacable = false;
+    finished = false;
     this.id = id;
     this.whitePlayer = whitePlayer;
     this.blackPlayer = blackPlayer;
@@ -24,7 +26,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
 
   @override
   String toString() {
-      return "$slot: $id";
+      return "$slot: $id, fin: $finished, rep: $replacable";
   }
 
   Timer countDown() {

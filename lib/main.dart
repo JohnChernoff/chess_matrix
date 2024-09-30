@@ -14,7 +14,7 @@ import 'board_state.dart';
 TODO:
  lichess ping,
  color combinations,
- selectable keys/games,
+ selectable keys,
  animate sounds,
  board reloading weirdness,
  distance v. square pitches
@@ -87,6 +87,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   Color color3 = Colors.black; //Colors.purple;
   int? newNumBoards;
 
+
   @override
   void initState() {
     super.initState();
@@ -155,19 +156,17 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   }
 
   Widget getGeneralControls(MatrixClient client) {
-    int numBoards = (newNumBoards ?? client.initialBoardNum);
+    int numBoards = (newNumBoards ?? client.boards.length);
     return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
       children: [
         IconButton(onPressed: () => MatrixApp.menuBuilder(context,OptionWidget(client)), icon: const Icon(Icons.menu)),
         Text("Boards: $numBoards",style: MatrixApp.getTextStyle(color2)),
-        Slider(value: numBoards as double, min: 1, max: 30,
-            onChanged: (double value) {
-              setState(() {
-                newNumBoards = value.round();
-              });
-            }),
-        ElevatedButton(onPressed: () => client.loadTVGames(numBoards: numBoards-1, reset: false), child: Text("Reload", style: MatrixApp.getTextStyle(color3))),
-        const SizedBox(width: 20),
+        Slider(value: numBoards as double, min: 1, max: 16,
+            onChanged: (double value) => setState(() { newNumBoards = value.floor(); }),
+            onChangeEnd: (double value) {
+              newNumBoards = null; client.loadTVGames(numBoards: value.floor()-1);
+            },
+        ),
         ElevatedButton(
             onPressed: () => client.toggleAudio(),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),

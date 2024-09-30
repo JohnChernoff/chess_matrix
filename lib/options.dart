@@ -22,8 +22,8 @@ class _OptionWidgetState extends State<OptionWidget> {
         children: [
           ElevatedButton(
               onPressed: () => MatrixApp.menuBuilder(context, getColorPickers(widget.client,axis)),
-              child: Text("Colors",style: MatrixApp.getTextStyle(Colors.black)
-          )),
+              child: Text("Colors",style: MatrixApp.getTextStyle(Colors.black)),
+          ),
           const SizedBox(width: 24, height: 24),
           DropdownButton(value: MatrixClient.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
               DropdownMenuItem(value: GameStyle.values.elementAt(index),
@@ -61,6 +61,10 @@ class _OptionWidgetState extends State<OptionWidget> {
                     });
                   }),
             ],
+          ),
+          ElevatedButton(
+            onPressed: () => widget.client.loadTVGames(reset: false),
+            child: Text("Reload",style: MatrixApp.getTextStyle(Colors.black)),
           ),
         ],
     ));

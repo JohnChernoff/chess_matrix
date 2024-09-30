@@ -244,6 +244,8 @@ class Square {
   final Color bigBlue = const Color.fromARGB(255, 0,0, 255);
   Piece piece;
   int control = 0;
+  int whiteControl = 0;
+  int blackControl = 0;
   ColorArray color = ColorArray.fromFill(0);
   Square(this.piece);
 
@@ -252,7 +254,28 @@ class Square {
     color = getTriColor(colorScheme, maxControl);
   }
 
+  void setDoubleControl(int wc, int bc, MatrixColorScheme colorScheme, int maxControl) {
+    whiteControl = wc; blackControl = bc;
+    color = getTwoColor(colorScheme, maxControl);
+  }
+
   ColorArray getTriColor(MatrixColorScheme colorScheme, int maxControl) {
+    ColorArray colorMatrix = ColorArray.fromColor(colorScheme.voidColor);
+    double controlGrad =  min(control.abs(),maxControl) / maxControl;
+    if (control > 0) {
+      colorMatrix.addRed = ((colorScheme.whiteColor.red - colorScheme.voidColor.red) * controlGrad).floor();
+      colorMatrix.addGreen = ((colorScheme.whiteColor.green - colorScheme.voidColor.green) * controlGrad).floor();
+      colorMatrix.addBlue = ((colorScheme.whiteColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
+    } else if (control < 0) {
+      colorMatrix.addRed = ((colorScheme.blackColor.red - colorScheme.voidColor.red) * controlGrad).floor();
+      colorMatrix.addGreen = ((colorScheme.blackColor.green - colorScheme.voidColor.green) * controlGrad).floor();
+      colorMatrix.addBlue = ((colorScheme.blackColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
+    }
+    //if (control != 0) print("${voidColor.red},${voidColor.green},${voidColor.blue} -> ${colorMatrix.values}");
+    return colorMatrix;
+  }
+
+  ColorArray getTwoColor(MatrixColorScheme colorScheme, int maxControl) {
     ColorArray colorMatrix = ColorArray.fromColor(colorScheme.voidColor);
     double controlGrad =  min(control.abs(),maxControl) / maxControl;
     if (control > 0) {

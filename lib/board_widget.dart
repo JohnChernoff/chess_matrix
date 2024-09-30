@@ -21,7 +21,7 @@ class BoardWidget extends StatelessWidget {
     return state.board == null
           ? const SizedBox.shrink()
           : Column(children: [
-              showID ? Text("$slot: ${state.id}",style: textStyle) : const SizedBox.shrink(),
+              showID ? Text("$slot: ${state.toString()}",style: textStyle) : const SizedBox.shrink(),
               getPlayerBar(state, true),
               Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard(context, state))),
               getPlayerBar(state, false),
@@ -37,16 +37,15 @@ class BoardWidget extends StatelessWidget {
     ));
   }
 
-  Widget getBoard(BuildContext context,BoardState state) {
-    //print("$slot -> Board FEN: ${state.board?.fen}");
+  Widget getBoard(BuildContext context,BoardState state) { //print("$slot -> Board FEN: ${state.board?.fen}");
     MatrixClient client = Provider.of(context,listen: false);
     return InkWell(
       onDoubleTap: () {
-        //TODO: add something here
-      },
-      onTap: () {
         state.replacable = true;
         client.loadTVGames();
+      },
+      onTap: () {
+        client.setSingleState(state);
       },
       child: Container(
         color: Colors.black,
