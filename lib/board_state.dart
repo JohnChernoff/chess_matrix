@@ -15,13 +15,13 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
 
   BoardState(this.slot);
 
-  void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixColorScheme colorScheme, int maxControl) {
+  void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixClient client) {
     replacable = false;
     finished = false;
     this.id = id;
     this.whitePlayer = whitePlayer;
     this.blackPlayer = blackPlayer;
-    updateBoard(fen, null, 0, 0, colorScheme,maxControl);
+    updateBoard(fen, null, 0, 0, client);
   }
 
   @override
@@ -37,7 +37,6 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
         } else if (board?.turn == ChessColor.black) {
           blackPlayer?.nextTick();
         }
-
         updateWidget();
       }
       else {
@@ -51,11 +50,18 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     notifyListeners();
   }
 
-  BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixColorScheme colorScheme, int maxControl) { //print("Updating: $id");
+  void refreshBoard(MatrixClient client) {
+    BoardMatrix? bm = board;
+    if (bm != null) {
+      board = BoardMatrix(bm.fen,bm.lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),maxControl: client.maxControl);
+    }
+  }
+
+  BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client) { //print("Updating: $id");
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
-    board = BoardMatrix(fen,lastMove,MatrixClient.matrixResolution,MatrixClient.matrixResolution,colorScheme,() => updateWidget(),maxControl: maxControl);
+    board = BoardMatrix(fen,lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),maxControl: client.maxControl);
     clockTimer = countDown();
     return board;
   }

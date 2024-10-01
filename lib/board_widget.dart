@@ -53,9 +53,9 @@ class BoardWidget extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             state.board?.image != null ? CustomPaint(
-              painter: BoardPainter(client,state.board!),
+              painter: BoardPainter(client,state),
             ) : const SizedBox.shrink(),
-            getBoardPieces(state.board!,Colors.brown,client.blackPieceColor,MatrixClient.pieceStyle.name),
+            getBoardPieces(state.board!,Colors.brown,client.blackPieceColor,client.pieceStyle.name),
             client.showControl ? getBoardControl(state.board!) : const SizedBox.shrink(),
           ],
         ),
@@ -99,13 +99,14 @@ class BoardWidget extends StatelessWidget {
 //TODO: draw last move
 class BoardPainter extends CustomPainter {
   final MatrixClient client;
-  final BoardMatrix board;
+  final BoardState state;
 
-  const BoardPainter(this.client,this.board);
+  const BoardPainter(this.client,this.state);
 
   @override
   void paint(Canvas canvas, Size size) { //print("Size: $size");
-    if (board.image != null) {
+    BoardMatrix? board = state.board;
+    if (board != null && board.image != null) {
       canvas.scale(
           size.width  / board.width,
           size.height / board.height
@@ -116,9 +117,6 @@ class BoardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    if (oldDelegate is BoardPainter) {
-      return oldDelegate.board.image != null && (oldDelegate.board.fen != board.fen || oldDelegate.board.colorScheme != board.colorScheme);
-    }
     return false;
   }
 

@@ -13,16 +13,17 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 class MatrixClient extends ChangeNotifier {
   int initialBoardNum;
-  static int matrixResolution = 250; //slider?
-  static PieceStyle pieceStyle = PieceStyle.horsey;
-  static GameStyle gameStyle = GameStyle.blitz;
+  int matrixResolution = 250;
+  PieceStyle pieceStyle = PieceStyle.horsey;
+  GameStyle gameStyle = GameStyle.blitz;
   bool showControl = false;
   bool showMove = false;
   bool realTime = false;
-  final Map<String,ui.Image> pieceImages = {};
   Color blackPieceColor = const Color.fromARGB(255, 22, 108, 0);
-  MatrixColorScheme colorScheme = MatrixColorScheme(Colors.blue, Colors.red, Colors.black);
+  MatrixColorScheme colorScheme = ColorStyle.blueRed.colorScheme;
+  MixStyle mixStyle = MixStyle.pigment;
   int maxControl = 2;
+  final Map<String,ui.Image> pieceImages = {};
   late IList<BoardState> boards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
   late final BoardSonifier sonifier;
   late final ZugSock lichSock;
@@ -32,9 +33,18 @@ class MatrixClient extends ChangeNotifier {
     lichSock = ZugSock(matrixURL, connected, handleMsg, disconnected);
   }
 
+  void updateView({updateBoards = false}) {
+    if (updateBoards) {
+      for (BoardState board in boards) {
+        board.refreshBoard(this);
+      }
+    }
+    notifyListeners();
+  }
+
   void setMaxControl(int control) {
     maxControl = control;
-    notifyListeners();
+    updateView(updateBoards: true);
   }
 
   void setColorScheme({Color? whiteColor, Color? blackColor, Color? voidColor}) {
@@ -42,12 +52,12 @@ class MatrixClient extends ChangeNotifier {
         whiteColor ?? colorScheme.whiteColor,
         blackColor ?? colorScheme.blackColor,
         voidColor ?? colorScheme.voidColor);
-    notifyListeners(); //TODO: call each updater
+    updateView(updateBoards: true);
   }
 
   void setPieceStyle(PieceStyle style) {
     pieceStyle = style;
-    notifyListeners();
+    updateView();
   }
 
   void setGameStyle(GameStyle style) {
@@ -55,35 +65,45 @@ class MatrixClient extends ChangeNotifier {
     loadTVGames(reset: true);
   }
 
+  void setMixStyle(MixStyle style) {
+    mixStyle = style;
+    updateView(updateBoards: true);
+  }
+
+  void setResolution(int resolution) {
+    matrixResolution = resolution;
+    updateView(updateBoards: true);
+  }
+
   void toggleAudio() {
     sonifier.muted = !sonifier.muted;
     if (!sonifier.muted && !sonifier.audioReady) {
       initAudio();
     } else {
-      notifyListeners();
+      updateView();
     }
   }
 
   void toggleDrums() {
     sonifier.muteDrums = !sonifier.muteDrums;
-    notifyListeners();
+    updateView();
   }
 
   Future<void> initAudio() async {
     print("Loading audio");
     await sonifier.init(0);
     sonifier.loopTrack(sonifier.masterTrack);
-    notifyListeners();
+    updateView();
   }
 
   void loadInstrument(InstrumentType type, MidiInstrument patch) async {
     await sonifier.loadInstrument(type, Instrument(iPatch: patch)); //TODO: levels
-    notifyListeners(); //todo: avoid redundancy when calling via initAudio?
+    updateView(); //todo: avoid redundancy when calling via initAudio?
   }
 
   Future<void> loadRandomEnsemble() async {
     await sonifier.loadEnsemble(sonifier.randomEnsemble());
-    notifyListeners();
+    updateView();
   }
 
   void connected() {
@@ -107,7 +127,7 @@ class MatrixClient extends ChangeNotifier {
   void setSingleState(BoardState state) {
     boards = boards.clear();
     boards = boards.add(state);
-    notifyListeners();
+    updateView();
   }
 
   void loadTVGames({reset = false, int? numBoards}) async {
@@ -126,7 +146,7 @@ class MatrixClient extends ChangeNotifier {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);
         String id = game['id']; //print("Adding: $id");
-        board.initState(id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black']),colorScheme,maxControl);
+        board.initState(id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black']),this);
         lichSock.send(
             jsonEncode({ 't': 'startWatching', 'd': id })
         );
@@ -136,7 +156,7 @@ class MatrixClient extends ChangeNotifier {
       }
     } //boards = boards.sort();
     print("Loaded: $boards");
-    notifyListeners();
+    updateView();
   }
 
   void handleMsg(String msg) { //print("Message: $msg");
@@ -151,7 +171,7 @@ class MatrixClient extends ChangeNotifier {
         int blackClock = int.parse(data['bc'].toString());
         Move lastMove = Move(data['lm']);
         String fen = data['fen'];
-        BoardMatrix? matrix = board.updateBoard(fen, lastMove, whiteClock, blackClock, colorScheme, maxControl);
+        BoardMatrix? matrix = board.updateBoard(fen, lastMove, whiteClock, blackClock, this);
         if (matrix != null) {
           Piece piece = matrix.getSquare(lastMove.to).piece; //print("LastMove: ${lastMove.from}-${lastMove.to}, piece: ${piece.type}");
           if (piece.type == PieceType.none) {  //print("castling?!");
@@ -176,7 +196,7 @@ class MatrixClient extends ChangeNotifier {
     sonifier.currentChord = KeyChord(
         BoardSonifier.getNewNote(sonifier.currentChord.key),
         BoardSonifier.getNewScale(sonifier.currentChord.scale));
-    notifyListeners();
+    updateView();
   }
 
   InstrumentType? getPieceInstrument(Piece piece) {
@@ -284,8 +304,8 @@ class Player {
 }
 
 class MatrixColorScheme {
-  Color whiteColor = Colors.blue;
-  Color blackColor = Colors.red;
-  Color voidColor = Colors.black;
-  MatrixColorScheme(this.whiteColor,this.blackColor,this.voidColor);
+  final Color whiteColor;
+  final Color blackColor;
+  final Color voidColor;
+  const MatrixColorScheme(this.whiteColor,this.blackColor,this.voidColor);
 }

@@ -1,3 +1,4 @@
+import 'dart:js' as js;
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -6,10 +7,18 @@ import 'client.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
-
 const ranks = 8, files = 8;
 
 enum ColorComponent {red,green,blue}
+enum ColorStyle {
+  blueRed(MatrixColorScheme(Colors.blue,Colors.red, Colors.black)),
+  yellowRed(MatrixColorScheme(Colors.yellowAccent, Colors.red, Colors.black)),
+  yellowBlue(MatrixColorScheme(Colors.yellowAccent, Colors.blue, Colors.black)),
+  monochrome(MatrixColorScheme(Colors.white, Colors.black, Colors.grey));
+  final MatrixColorScheme colorScheme;
+  const ColorStyle(this.colorScheme);
+}
+enum MixStyle {pigment,light,none}
 enum ChessColor {none,white,black}
 enum PieceType {none,pawn,knight,bishop,rook,queen,king}
 
@@ -22,11 +31,12 @@ class BoardMatrix {
       files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
   final Color edgeColor;
   final MatrixColorScheme colorScheme;
+  final MixStyle mixStyle;
   final Move? lastMove;
   late final ChessColor turn;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,imgCall,{this.maxControl = 5, this.edgeColor = Colors.black}) {
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,imgCall,{this.maxControl = 5, this.edgeColor = Colors.black}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
     _setPieces(fenStrs[0]);
@@ -78,21 +88,21 @@ class BoardMatrix {
   void updateControl() {
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
-        squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme,maxControl);
+        squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme,mixStyle,maxControl);
       }
     }
   }
 
-  int calcControl(Coord p) {
-    int control = 0;
-    control += knightControl(p);
-    control += diagControl(p);
-    control += lineControl(p);
+  ControlTable calcControl(Coord p) {
+    ControlTable control = const ControlTable(0, 0);
+    control = control.add(knightControl(p));
+    control = control.add(diagControl(p));
+    control = control.add(lineControl(p));
     return control;
   }
 
-  int knightControl(Coord p) {
-    int control = 0;
+  ControlTable knightControl(Coord p) {
+   int blackControl = 0, whiteControl = 0;
     for (int x = -2; x <= 2; x++) {
       for (int y = -2; y <= 2; y++) {
         if ((x.abs() + y.abs()) == 3) {
@@ -100,17 +110,17 @@ class BoardMatrix {
           if (p2.x >= 0 && p2.x < 8 && p2.y >= 0 && p2.y < 8) {
             Piece piece = getSquare(p2).piece;
             if (piece.type == PieceType.knight) {
-              control += colorVal(piece.color);
+              piece.color == ChessColor.black ? blackControl++ : whiteControl++;
             }
           }
         }
       }
     }
-    return control;
+    return ControlTable(whiteControl,blackControl);
   }
 
-  int diagControl(Coord p1) {
-    int control = 0;
+  ControlTable diagControl(Coord p1) {
+    int blackControl = 0, whiteControl = 0;
     for (int dx = -1; dx <= 1; dx += 2) {
       for (int dy = -1; dy <= 1; dy += 2) {
         Coord p2 = Coord.fromCoord(p1);
@@ -121,14 +131,14 @@ class BoardMatrix {
           if (clearLine) {
             Piece piece = getSquare(p2).piece;
             if (piece.type == PieceType.bishop || piece.type == PieceType.queen) {
-              control += colorVal(piece.color);
+              piece.color == ChessColor.black ? blackControl++ : whiteControl++;
             } else if (p1.isAdjacent(p2)) {
               if (piece.type == PieceType.king) {
-                control += colorVal(piece.color);
+                piece.color == ChessColor.black ? blackControl++ : whiteControl++;
               } else if (piece.type == PieceType.pawn && piece.color == ChessColor.white && p1.y < p2.y) {
-                control += colorVal(ChessColor.white);
+                whiteControl++;
               } else if (piece.type == PieceType.pawn && piece.color == ChessColor.black && p1.y > p2.y) {
-                control += colorVal(ChessColor.black);
+                blackControl++;
               }
             }
             clearLine = (piece.type == PieceType.none);
@@ -136,11 +146,11 @@ class BoardMatrix {
         }
       }
     }
-    return control;
+    return ControlTable(whiteControl,blackControl);
   }
 
-  int lineControl(Coord p1) {
-    int control = 0;
+  ControlTable lineControl(Coord p1) {
+    int whiteControl = 0, blackControl = 0;
     for (int dx = -1; dx <= 1; dx++) {
       for (int dy = -1; dy <= 1; dy++) {
         if ((dx == 0) ^ (dy == 0)) {
@@ -152,10 +162,10 @@ class BoardMatrix {
             if (clearLine) {
               Piece piece = getSquare(p2).piece;
               if (piece.type == PieceType.rook || piece.type == PieceType.queen) {
-                control += colorVal(piece.color);
+                piece.color == ChessColor.black ? blackControl++ : whiteControl++;
               } else if (p1.isAdjacent(p2)) {
                 if (piece.type == PieceType.king) {
-                  control += colorVal(piece.color);
+                  piece.color == ChessColor.black ? blackControl++ : whiteControl++;
                 }
               }
               clearLine = (piece.type == PieceType.none);
@@ -164,7 +174,7 @@ class BoardMatrix {
         }
       }
     }
-    return control;
+    return ControlTable(whiteControl,blackControl);
   }
 
   Uint8List getLinearInterpolation() {
@@ -238,35 +248,38 @@ class BoardMatrix {
 
 }
 
+class ControlTable {
+  final int whiteControl;
+  final int blackControl;
+  int get totalControl => whiteControl - blackControl;
+  const ControlTable(this.whiteControl,this.blackControl);
+  ControlTable add(ControlTable ctab) {
+    return ControlTable(whiteControl + ctab.whiteControl, blackControl + ctab.blackControl);
+  }
+}
+
 class Square {
   final Color bigRed = const Color.fromARGB(255, 255, 0, 0);
   final Color bigGreen = const Color.fromARGB(255, 0,255, 0);
   final Color bigBlue = const Color.fromARGB(255, 0,0, 255);
   Piece piece;
-  int control = 0;
-  int whiteControl = 0;
-  int blackControl = 0;
+  ControlTable control = const ControlTable(0, 0);
   ColorArray color = ColorArray.fromFill(0);
   Square(this.piece);
 
-  void setControl(int c, MatrixColorScheme colorScheme, int maxControl) {
+  void setControl(ControlTable c, MatrixColorScheme colorScheme, MixStyle mixStyle, int maxControl) {
     control = c;
-    color = getTriColor(colorScheme, maxControl);
-  }
-
-  void setDoubleControl(int wc, int bc, MatrixColorScheme colorScheme, int maxControl) {
-    whiteControl = wc; blackControl = bc;
-    color = getTwoColor(colorScheme, maxControl);
+    color = mixStyle == MixStyle.none ? getTriColor(colorScheme, maxControl) : getTwoColor(colorScheme, maxControl);
   }
 
   ColorArray getTriColor(MatrixColorScheme colorScheme, int maxControl) {
     ColorArray colorMatrix = ColorArray.fromColor(colorScheme.voidColor);
-    double controlGrad =  min(control.abs(),maxControl) / maxControl;
-    if (control > 0) {
+    double controlGrad =  min(control.totalControl.abs(),maxControl) / maxControl;
+    if (control.totalControl > 0) {
       colorMatrix.addRed = ((colorScheme.whiteColor.red - colorScheme.voidColor.red) * controlGrad).floor();
       colorMatrix.addGreen = ((colorScheme.whiteColor.green - colorScheme.voidColor.green) * controlGrad).floor();
       colorMatrix.addBlue = ((colorScheme.whiteColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
-    } else if (control < 0) {
+    } else if (control.totalControl < 0) {
       colorMatrix.addRed = ((colorScheme.blackColor.red - colorScheme.voidColor.red) * controlGrad).floor();
       colorMatrix.addGreen = ((colorScheme.blackColor.green - colorScheme.voidColor.green) * controlGrad).floor();
       colorMatrix.addBlue = ((colorScheme.blackColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
@@ -276,19 +289,32 @@ class Square {
   }
 
   ColorArray getTwoColor(MatrixColorScheme colorScheme, int maxControl) {
-    ColorArray colorMatrix = ColorArray.fromColor(colorScheme.voidColor);
-    double controlGrad =  min(control.abs(),maxControl) / maxControl;
-    if (control > 0) {
-      colorMatrix.addRed = ((colorScheme.whiteColor.red - colorScheme.voidColor.red) * controlGrad).floor();
-      colorMatrix.addGreen = ((colorScheme.whiteColor.green - colorScheme.voidColor.green) * controlGrad).floor();
-      colorMatrix.addBlue = ((colorScheme.whiteColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
-    } else if (control < 0) {
-      colorMatrix.addRed = ((colorScheme.blackColor.red - colorScheme.voidColor.red) * controlGrad).floor();
-      colorMatrix.addGreen = ((colorScheme.blackColor.green - colorScheme.voidColor.green) * controlGrad).floor();
-      colorMatrix.addBlue = ((colorScheme.blackColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
+    double whiteControlGrad =  min(control.whiteControl,maxControl) / maxControl;
+    double blackControlGrad =  min(control.blackControl,maxControl) / maxControl;
+
+    ColorArray whiteMatrix = ColorArray(
+        (colorScheme.whiteColor.red * whiteControlGrad).floor(),
+        (colorScheme.whiteColor.green * whiteControlGrad).floor(),
+        (colorScheme.whiteColor.blue * whiteControlGrad).floor());
+
+    ColorArray blackMatrix = ColorArray(
+        (colorScheme.blackColor.red * blackControlGrad).floor(),
+        (colorScheme.blackColor.green * blackControlGrad).floor(),
+        (colorScheme.blackColor.blue * blackControlGrad).floor());
+
+    if (control.whiteControl == 0 && control.blackControl >  0) {
+      return blackMatrix;
+    } else if (control.whiteControl > 0 && control.blackControl == 0) {
+      return whiteMatrix;
+    } else if (control.whiteControl == 0 && control.blackControl == 0) {
+      return ColorArray.fromColor(colorScheme.voidColor);
     }
-    //if (control != 0) print("${voidColor.red},${voidColor.green},${voidColor.blue} -> ${colorMatrix.values}");
-    return colorMatrix;
+    var mixedColor = js.context.callMethod("mixColors",[
+      whiteMatrix.red,whiteMatrix.green,whiteMatrix.blue,
+      blackMatrix.red,blackMatrix.green,blackMatrix.blue,
+      .5
+    ]); //print("Mixed Color: $mixedColor");
+    return ColorArray(mixedColor[0], mixedColor[1], mixedColor[2]);
   }
 }
 

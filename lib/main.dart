@@ -13,7 +13,7 @@ import 'board_state.dart';
 /*
 TODO:
  lichess ping,
- color combinations,
+ ~color combinations,
  selectable keys,
  animate sounds,
  board reloading weirdness,
