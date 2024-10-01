@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'dart:async';
 import 'board_matrix.dart';
 import 'client.dart';
@@ -12,6 +13,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   BoardMatrix? board;
   Timer? clockTimer;
   int slot;
+  cb.ChessBoardController controller = cb.ChessBoardController();
 
   BoardState(this.slot);
 
@@ -63,6 +65,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     blackPlayer?.clock = bc;
     board = BoardMatrix(fen,lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),maxControl: client.maxControl);
     clockTimer = countDown();
+    String longFEN = "$fen KQkq - 0 1"; //print("Long FEN: $longFEN");
+    controller.loadFen(longFEN);
     return board;
   }
 

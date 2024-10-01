@@ -33,13 +33,15 @@ dependencies:
     path: "C:/Users/jac107/IdeaProjects/flutter/zug_utils"
   lichess_package:
     path: "C:/Users/jac107/IdeaProjects/flutter/lichess_package"
+  flutter_chess_board:
+    path: "C:/Users/jac107/IdeaProjects/flutter/flutter_chess_board"
   flutter:
     sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  chess: ^0.8.1
+  chess: ^0.7.0
   fast_immutable_collections: ^10.2.4
   cyclop: ^0.7.0
   awesome_dialog: ^3.2.1

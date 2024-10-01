@@ -121,7 +121,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
       builder: (BuildContext context, BoxConstraints constraints) {
         double w = constraints.constrainWidth();
         double h = constraints.constrainHeight();
-        int numBoards = client.boards.length;
+        int numBoards = client.activeBoards.length;
         double maxSize = ZugUtils.getMaxSizeOfSquaresInRect(w, h, numBoards) - 32;
         int verticalBoards = (h / maxSize).floor();
         int horizonalBoards = (w / maxSize).floor(); //print("$n -> $w,$h,$horizonalBoards,$verticalBoards"); print("Max Size: $maxSize");
@@ -137,7 +137,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                   children: List.generate(horizonalBoards, (i) {
                     int index = (row * horizonalBoards) + i; //print("Index: $index");
                     if (index < numBoards) { //there's probably something more elegant than this
-                      BoardState? state = client.boards.elementAt(index); //print("Viewing: $state");
+                      BoardState? state = client.activeBoards.elementAt(index); //print("Viewing: $state");
                       return ChangeNotifierProvider.value(
                           value: state,
                           child: SizedBox(width: maxSize, height: maxSize, child: BoardWidget(key: ObjectKey(state), index)));
@@ -157,7 +157,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   }
 
   Widget getGeneralControls(MatrixClient client) {
-    int numBoards = (newNumBoards ?? client.boards.length);
+    int numBoards = (newNumBoards ?? client.viewBoards.length);
     return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
       children: [
         IconButton(onPressed: () => MatrixApp.menuBuilder(context,OptionWidget(client)), icon: const Icon(Icons.menu)),

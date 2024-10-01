@@ -1,6 +1,7 @@
 import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chess_board/flutter_chess_board.dart' as chessboard;
 import 'package:provider/provider.dart';
 import 'board_state.dart';
 
@@ -23,7 +24,14 @@ class BoardWidget extends StatelessWidget {
           : Column(children: [
               showID ? Text("$slot: ${state.toString()}",style: textStyle) : const SizedBox.shrink(),
               getPlayerBar(state, true),
-              Expanded(child: AspectRatio(aspectRatio: 1, child: getBoard(context, state))),
+              Expanded(
+                  child: AspectRatio(aspectRatio: 1,
+                      //child: getBoard(context, state),
+                      child: chessboard.ChessBoard(controller: state.controller,
+                          backgroundImage: state.board?.image,
+                      ),
+                  )
+              ),
               getPlayerBar(state, false),
             ]);
   }

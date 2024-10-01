@@ -24,9 +24,11 @@ class MatrixClient extends ChangeNotifier {
   MixStyle mixStyle = MixStyle.pigment;
   int maxControl = 2;
   final Map<String,ui.Image> pieceImages = {};
-  late IList<BoardState> boards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
   late final BoardSonifier sonifier;
   late final ZugSock lichSock;
+  late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
+  IList<BoardState> playBoards = const IList.empty();
+  IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
   MatrixClient(String matrixURL, {this.initialBoardNum = 1}) {
     sonifier = BoardSonifier(this);
@@ -35,7 +37,7 @@ class MatrixClient extends ChangeNotifier {
 
   void updateView({updateBoards = false}) {
     if (updateBoards) {
-      for (BoardState board in boards) {
+      for (BoardState board in activeBoards) {
         board.refreshBoard(this);
       }
     }
@@ -116,17 +118,17 @@ class MatrixClient extends ChangeNotifier {
   }
 
   void setNumGames(int n) {
-    int prevBoards = boards.length;
-    boards = boards.removeWhere((board) => board.slot > n);
-    int diff = n - (boards.length - 1);
+    int prevBoards = viewBoards.length;
+    viewBoards = activeBoards.removeWhere((board) => board.slot > n);
+    int diff = n - (viewBoards.length - 1);
     if (diff > 0) { //print("Adding $diff extra boards...");
-      boards = boards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
+      viewBoards = viewBoards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
     }
   }
 
   void setSingleState(BoardState state) {
-    boards = boards.clear();
-    boards = boards.add(state);
+    viewBoards = viewBoards.clear();
+    viewBoards = viewBoards.add(state);
     updateView();
   }
 
@@ -135,13 +137,13 @@ class MatrixClient extends ChangeNotifier {
       setNumGames(numBoards);
     }
     if (reset) {
-      for (var board in boards) {
+      for (var board in viewBoards) {
         board.replacable = true;
       }
     }
     List<dynamic> games = await Lichess.getTV(gameStyle.name,30);
-    List<dynamic> availableGames = games.where((game) => boards.where((b) => b.id == game['id']).isEmpty).toList(); //remove pre-existing games
-    List<BoardState> openBoards = boards.where((board) => board.replacable || board.finished).toList(); //openBoards.sort(); //probably unnecessary
+    List<dynamic> availableGames = games.where((game) => viewBoards.where((b) => b.id == game['id']).isEmpty).toList(); //remove pre-existing games
+    List<BoardState> openBoards = viewBoards.where((board) => board.replacable || board.finished).toList(); //openBoards.sort(); //probably unnecessary
     for (BoardState board in openBoards) {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);
@@ -155,7 +157,7 @@ class MatrixClient extends ChangeNotifier {
         break;
       }
     } //boards = boards.sort();
-    print("Loaded: $boards");
+    print("Loaded: $viewBoards");
     updateView();
   }
 
@@ -170,7 +172,7 @@ class MatrixClient extends ChangeNotifier {
         int whiteClock = int.parse(data['wc'].toString());
         int blackClock = int.parse(data['bc'].toString());
         Move lastMove = Move(data['lm']);
-        String fen = data['fen'];
+        String fen = data['fen']; //print("FEN: $fen");
         BoardMatrix? matrix = board.updateBoard(fen, lastMove, whiteClock, blackClock, this);
         if (matrix != null) {
           Piece piece = matrix.getSquare(lastMove.to).piece; //print("LastMove: ${lastMove.from}-${lastMove.to}, piece: ${piece.type}");
@@ -262,7 +264,7 @@ class MatrixClient extends ChangeNotifier {
   }
 
   BoardState? getBoardByID(String id) {
-    return boards.where((state) => state.id == id).firstOrNull;
+    return activeBoards.where((state) => state.id == id).firstOrNull;
   }
 
   String getFen(String moves) {
