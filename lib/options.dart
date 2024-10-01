@@ -146,18 +146,6 @@ class _OptionWidgetState extends State<OptionWidget> {
                 ),
               ],
             ),
-            Column(
-              children: List.generate(ColorStyle.values.length, (int index) =>
-                  ElevatedButton(
-                      onPressed: () => widget.client.setColorScheme(
-                        whiteColor: ColorStyle.values.elementAt(index).colorScheme.whiteColor,
-                        blackColor: ColorStyle.values.elementAt(index).colorScheme.blackColor,
-                        voidColor: ColorStyle.values.elementAt(index).colorScheme.voidColor,
-                      ),
-                      child: Text(ColorStyle.values.elementAt(index).name)
-                  )
-              ),
-            ),
           ],
         ));
   }

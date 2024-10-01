@@ -18,6 +18,7 @@ TODO:
  animate sounds,
  board reloading weirdness,
  distance v. square pitches
+ optimize board drawing and minimum resolution
  */
 
 bool testing = false;
@@ -40,7 +41,7 @@ class MatrixApp extends StatelessWidget {
     return ChangeNotifierProvider(
         create: (context) => MatrixClient('wss://socket.lichess.org/api/socket'),
         child: MaterialApp(
-            title: 'Flutter Demo',
+            title: 'Chess Matrix 1.0',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,

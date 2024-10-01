@@ -8,13 +8,16 @@ import 'client.dart';
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
 const ranks = 8, files = 8;
+const Color deepBlue = Color(0xFF0000FF);
+const Color deepRed = Color(0xFFFF0000);
+const Color deepYellow = Color(0xFFFFFF00);
 
 enum ColorComponent {red,green,blue}
 enum ColorStyle {
-  blueRed(MatrixColorScheme(Colors.blue,Colors.red, Colors.black)),
-  yellowRed(MatrixColorScheme(Colors.yellowAccent, Colors.red, Colors.black)),
-  yellowBlue(MatrixColorScheme(Colors.yellowAccent, Colors.blue, Colors.black)),
-  monochrome(MatrixColorScheme(Colors.white, Colors.black, Colors.grey));
+  blueRed(MatrixColorScheme(deepBlue,deepRed,Colors.black)),
+  yellowRed(MatrixColorScheme(deepYellow,deepRed,Colors.black)),
+  yellowBlue(MatrixColorScheme(deepYellow,deepBlue,Colors.black)),
+  monochrome(MatrixColorScheme(Colors.white,Colors.black,Colors.grey));
   final MatrixColorScheme colorScheme;
   const ColorStyle(this.colorScheme);
 }
