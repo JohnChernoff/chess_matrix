@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'client.dart';
+import 'game_seek.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
@@ -160,7 +161,9 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     int numBoards = (newNumBoards ?? client.viewBoards.length);
     return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
       children: [
-        client.playBoards.isEmpty ? IconButton(onPressed: () => client.seekGame(3,0,false), icon: const Icon(Icons.search)) : const SizedBox.shrink(),
+        client.playBoards.isEmpty && client.seeking ?
+        IconButton(onPressed: () => client.cancelSeek(), icon: const Icon(Icons.cancel)) :
+        IconButton(onPressed: () => MatrixApp.menuBuilder(context,SeekWidget(client)), icon: const Icon(Icons.send)),
         IconButton(onPressed: () => MatrixApp.menuBuilder(context,OptionWidget(client)), icon: const Icon(Icons.menu)),
         Text("Boards: $numBoards",style: MatrixApp.getTextStyle(color2)),
         Slider(value: numBoards as double, min: 1, max: 16,

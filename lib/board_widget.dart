@@ -42,7 +42,11 @@ class BoardWidget extends StatelessWidget {
                         client.setSingleState(state);
                       }
                     },
-                      child: chessboard.ChessBoard(controller: state.controller,size: size,
+                      child: chessboard.ChessBoard(
+                          controller: state.controller,
+                          size: size,
+                          blackPieceColor: Colors.green,
+                          pieceSet: client.pieceStyle.name,
                           dummyBoard: true,
                           backgroundImage: state.board?.image,
                           onMove: (from, to, prom) => client.sendMove(state.id ?? "", from, to, prom),

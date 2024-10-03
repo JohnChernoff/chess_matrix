@@ -122,6 +122,7 @@ class MatrixClient extends ChangeNotifier {
 
   void cancelSeek() {
     Lichess.removeSeek();
+    notifyListeners();
   }
 
   void updateView({updateBoards = false}) {
