@@ -129,7 +129,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
           color: Colors.black,
           width: w,
           height: h,
-          child: Column(
+          child: client.seeking ? Text("Seeking...",style: MatrixApp.getTextStyle(Colors.white)) : Column(
             children: List.generate(verticalBoards, (row) {
               return Column(children: [
                 Row(
@@ -140,7 +140,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                       BoardState? state = client.activeBoards.elementAt(index); //print("Viewing: $state");
                       return ChangeNotifierProvider.value(
                           value: state,
-                          child: SizedBox(width: maxSize, height: maxSize, child: BoardWidget(key: ObjectKey(state), index)));
+                          child: SizedBox(width: maxSize, height: maxSize, child: BoardWidget(key: ObjectKey(state),index,maxSize,client)));
                     }
                     else {
                       return const SizedBox.shrink();
@@ -160,6 +160,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     int numBoards = (newNumBoards ?? client.viewBoards.length);
     return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
       children: [
+        client.playBoards.isEmpty ? IconButton(onPressed: () => client.seekGame(3,0,false), icon: const Icon(Icons.search)) : const SizedBox.shrink(),
         IconButton(onPressed: () => MatrixApp.menuBuilder(context,OptionWidget(client)), icon: const Icon(Icons.menu)),
         Text("Boards: $numBoards",style: MatrixApp.getTextStyle(color2)),
         Slider(value: numBoards as double, min: 1, max: 16,

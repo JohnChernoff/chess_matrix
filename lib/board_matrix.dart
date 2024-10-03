@@ -360,6 +360,9 @@ class Move {
     from = Coord(moveStr.codeUnitAt(0) - "a".codeUnitAt(0),7 - (moveStr.codeUnitAt(1) - "1".codeUnitAt(0)));
     to = Coord(moveStr.codeUnitAt(2) - "a".codeUnitAt(0),7 - (moveStr.codeUnitAt(3) - "1".codeUnitAt(0)));
   }
+  static coord2Int(Coord c) {
+    return c.x + (c.y * ranks);
+  }
   bool eq(Move move) {
     return from.eq(move.from) && to.eq(move.to);
   }

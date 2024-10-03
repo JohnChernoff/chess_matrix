@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:chess/chess.dart' as dc;
 import 'package:chess_matrix/board_sonifier.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:lichess_package/zug_sock.dart';
@@ -26,13 +27,101 @@ class MatrixClient extends ChangeNotifier {
   final Map<String,ui.Image> pieceImages = {};
   late final BoardSonifier sonifier;
   late final ZugSock lichSock;
-  late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
+  late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot,false)));
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
+  String userName = "Scherzo";
+  bool seeking = false;
 
   MatrixClient(String matrixURL, {this.initialBoardNum = 1}) {
     sonifier = BoardSonifier(this);
     lichSock = ZugSock(matrixURL, connected, handleMsg, disconnected);
+    Lichess.getEventStream(lichessToken, followStream, web: kIsWeb);
+  }
+
+  void followStream(Stream<String> eventStream) { print("Event: $eventStream");
+    eventStream.listen((data) {
+      if (data.trim().isNotEmpty) {
+        print('Event Chunk: $data');
+        dynamic json = jsonDecode(data);
+        String type = json["type"];
+        if (type == "gameStart") {
+          dynamic game = json['game']; String id = game['gameId'];
+          BoardState state = BoardState(playBoards.length,true);
+          dynamic whitePlayer = game['color'] == 'white' ? {'id' : userName, 'rating' : 2000} : game['opponent'];
+          dynamic blackPlayer = game['color'] == 'black' ? {'id' : userName, 'rating' : 2000} : game['opponent'];
+          state.initState(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),this);
+          playBoards = playBoards.add(state);
+          Lichess.followGame(id,lichessToken,followGame, web: kIsWeb);
+          updateView();
+        }
+        else if (type == 'gameFinish') {
+          dynamic game = json['game']; String id = game['gameId'];
+          BoardState? state = playBoards.where((state) => state.id == id).firstOrNull;
+          state?.finished = true;
+        }
+      }
+    });
+  }
+
+  void followGame(String gid, Stream<String> gameStream) { print("Game: $gid");
+    gameStream.listen((data) {
+      if (data.trim().isNotEmpty) { //print('Game Chunk: $data');
+        for (String chunk in data.split("\n")) {
+          if (chunk.isNotEmpty) {
+            dynamic json = jsonDecode(chunk.trim()); //print('JSON Chunk: $json');
+            String? lastMove = json['lm'];
+            BoardState? board = playBoards.where((state) => state.id == gid).firstOrNull;
+            if (board != null) {
+              String type = json['type'];
+              dynamic state = type == 'gameState' ? json : type == 'gameFull' ? json['state'] : null;
+              if (state != null) { print("State: $state");
+                String moves = state['moves'].trim();
+                if (moves.length > 1) {
+                  dc.Chess chess = dc.Chess.fromFEN(startFEN);
+                  dc.Color color = dc.Color.WHITE;
+                  for (String m in moves.split(" ")) { //board.controller.makeMoveWithNormalNotation(m);
+                    var fromSquare = dc.Chess.SQUARES[m.substring(0,2)];
+                    var toSquare = dc.Chess.SQUARES[m.substring(2,4)];
+                    dc.Piece? p = chess.get(m.substring(0,2));
+                    dc.Move mv = dc.Move(color,fromSquare,toSquare,0,p!.type,null,null);
+                    chess.make_move(mv);
+                    color = dc.Chess.swap_color(color);
+                  }
+                  board.updateBoard(chess.fen, lastMove != null ? Move(lastMove) : null, ((state['wtime'] ?? 0)/1000).floor(), ((state['btime'] ?? 0)/1000).floor(),this);
+                  updateView();
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  void sendMove(String id, String from, String to, String? prom) { //lichSock.send(jsonEncode({ 't': 'move', 'd':   { 'u': uci, }}));
+    String uci = prom != null ? "$from$to=$prom" : "$from$to"; print("Sending move: $uci");
+    Lichess.makeMove(uci, id, lichessToken);
+  }
+
+  void seekGame(int minutes, int inc, bool rated ) {  //lichSock.send(jsonEncode({ 't': 'poolIn', 'd': '3' }));
+    if (playBoards.isEmpty) {
+      if (seeking) {
+        cancelSeek();
+      }
+      else {
+        seeking = true;
+        Lichess.createSeek(LichessVariant.standard, 15, inc, rated, lichessToken, minRating: 2299, maxRating: 2301, color:"black").then((statusCode) {
+          print("Seek Status: $statusCode");
+          seeking = false;
+        }, onError: (oops) => print("Oops: $oops"));
+      }
+      updateView();
+    }
+  }
+
+  void cancelSeek() {
+    Lichess.removeSeek();
   }
 
   void updateView({updateBoards = false}) {
@@ -117,12 +206,17 @@ class MatrixClient extends ChangeNotifier {
     print("Disconnected");
   }
 
+  void closeLiveGame(BoardState state) {
+    playBoards = playBoards.remove(state);
+    updateView(updateBoards: true);
+  }
+
   void setNumGames(int n) {
     int prevBoards = viewBoards.length;
-    viewBoards = activeBoards.removeWhere((board) => board.slot > n);
+    viewBoards = viewBoards.removeWhere((board) => board.slot > n);
     int diff = n - (viewBoards.length - 1);
     if (diff > 0) { //print("Adding $diff extra boards...");
-      viewBoards = viewBoards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
+      viewBoards = viewBoards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i,false)));
     }
   }
 
@@ -148,7 +242,7 @@ class MatrixClient extends ChangeNotifier {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);
         String id = game['id']; //print("Adding: $id");
-        board.initState(id, getFen(game['moves']), Player(game['players']['white']), Player(game['players']['black']),this);
+        board.initState(id, getFen(game['moves']), Player.fromTV(game['players']['white']), Player.fromTV(game['players']['black']),this);
         lichSock.send(
             jsonEncode({ 't': 'startWatching', 'd': id })
         );
@@ -173,7 +267,8 @@ class MatrixClient extends ChangeNotifier {
         int blackClock = int.parse(data['bc'].toString());
         Move lastMove = Move(data['lm']);
         String fen = data['fen']; //print("FEN: $fen");
-        BoardMatrix? matrix = board.updateBoard(fen, lastMove, whiteClock, blackClock, this);
+        String fullFEN = "$fen - - 0 1"; //print("Full FEN: $fullFEN");
+        BoardMatrix? matrix = board.updateBoard(fullFEN, lastMove, whiteClock, blackClock, this);
         if (matrix != null) {
           Piece piece = matrix.getSquare(lastMove.to).piece; //print("LastMove: ${lastMove.from}-${lastMove.to}, piece: ${piece.type}");
           if (piece.type == PieceType.none) {  //print("castling?!");
@@ -280,7 +375,8 @@ class Player {
   final int rating;
   int clock = 0;
 
-  Player(dynamic data) : name = data['user']['name'], rating = int.parse(data['rating'].toString());
+  Player.fromTV(dynamic data) : name = data['user']['name'], rating = int.parse(data['rating'].toString());
+  Player.fromSeek(dynamic data) : name = data['id'], rating = data['rating'];
 
   void nextTick() {
     if (clock > 0) clock--;

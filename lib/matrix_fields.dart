@@ -228,4 +228,5 @@ enum MidiInstrument {
   const MidiDrum(this.patchNum);
 }
 
+const lichessToken = "lip_WnPKLoSmxaa5NW60hcj5"; //"lip_v6Jc4xJ9VmIgIT3mUawi";
 

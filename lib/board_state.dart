@@ -13,9 +13,10 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   BoardMatrix? board;
   Timer? clockTimer;
   int slot;
+  bool live;
   cb.ChessBoardController controller = cb.ChessBoardController();
 
-  BoardState(this.slot);
+  BoardState(this.slot, this.live);
 
   void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixClient client) {
     replacable = false;
@@ -65,8 +66,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     blackPlayer?.clock = bc;
     board = BoardMatrix(fen,lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),maxControl: client.maxControl);
     clockTimer = countDown();
-    String longFEN = "$fen KQkq - 0 1"; //print("Long FEN: $longFEN");
-    controller.loadFen(longFEN);
+    controller.loadFen(fen);
     return board;
   }
 

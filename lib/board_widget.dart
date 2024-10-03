@@ -9,7 +9,10 @@ class BoardWidget extends StatelessWidget {
   final int slot;
   final textStyle = const TextStyle(color: Colors.white);
   final bool showID = false; //true;
-  const BoardWidget(this.slot, {super.key});
+  final MatrixClient client;
+  final double size;
+
+  const BoardWidget(this.slot, this.size, this.client,{super.key});
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
@@ -25,10 +28,24 @@ class BoardWidget extends StatelessWidget {
               showID ? Text("$slot: ${state.toString()}",style: textStyle) : const SizedBox.shrink(),
               getPlayerBar(state, true),
               Expanded(
-                  child: AspectRatio(aspectRatio: 1,
-                      //child: getBoard(context, state),
-                      child: chessboard.ChessBoard(controller: state.controller,
+                  child: InkWell(
+                    onDoubleTap: () {
+                      if (!state.live) {
+                        state.replacable = true;
+                        client.loadTVGames();
+                      }
+                    },
+                    onTap: () {
+                      if (state.live && state.finished) {
+                        client.closeLiveGame(state);
+                      } else {
+                        client.setSingleState(state);
+                      }
+                    },
+                      child: chessboard.ChessBoard(controller: state.controller,size: size,
+                          dummyBoard: true,
                           backgroundImage: state.board?.image,
+                          onMove: (from, to, prom) => client.sendMove(state.id ?? "", from, to, prom),
                       ),
                   )
               ),
