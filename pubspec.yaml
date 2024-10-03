@@ -35,6 +35,8 @@ dependencies:
     path: "C:/Users/jac107/IdeaProjects/flutter/lichess_package"
   flutter_chess_board:
     path: "C:/Users/jac107/IdeaProjects/flutter/flutter_chess_board"
+  flutter_oauth:
+    path: "C:/Users/jac107/IdeaProjects/flutter/flutter_oauth"
   flutter:
     sdk: flutter
 
@@ -44,7 +46,8 @@ dependencies:
   chess: ^0.8.1
   fast_immutable_collections: ^10.2.4
   cyclop: ^0.7.0
-  awesome_dialog: ^3.2.1
+  oauth2: ^2.0.2
+  #awesome_dialog: ^3.2.1
 
 dev_dependencies:
   flutter_test:
@@ -100,41 +103,3 @@ flutter:
   # see https://flutter.dev/to/font-from-package
   assets:
     - assets/
-    - assets/images/
-    - assets/images/pieces/
-    - assets/images/pieces/alpha/
-    - assets/images/pieces/anarcandy/
-    - assets/images/pieces/california/
-    - assets/images/pieces/caliente/
-    - assets/images/pieces/cardinal/
-    - assets/images/pieces/cburnett/
-    - assets/images/pieces/celtic/
-    - assets/images/pieces/chess7/
-    - assets/images/pieces/chessnut/
-    - assets/images/pieces/companion/
-    - assets/images/pieces/disguised/
-    - assets/images/pieces/dubrovny/
-    - assets/images/pieces/fantasy/
-    - assets/images/pieces/fresca/
-    - assets/images/pieces/gioco/
-    - assets/images/pieces/governor/
-    - assets/images/pieces/horsey/
-    - assets/images/pieces/icpieces/
-    - assets/images/pieces/kiwen-suwi/
-    - assets/images/pieces/kosal/
-    - assets/images/pieces/leipzig/
-    - assets/images/pieces/letter/
-    - assets/images/pieces/libra/
-    - assets/images/pieces/maestro/
-    - assets/images/pieces/merida/
-    - assets/images/pieces/mono/
-    - assets/images/pieces/mpchess/
-    - assets/images/pieces/pirouetti/
-    - assets/images/pieces/pixel/
-    - assets/images/pieces/reillycraig/
-    - assets/images/pieces/riohacha/
-    - assets/images/pieces/shapes/
-    - assets/images/pieces/spatial/
-    - assets/images/pieces/staunty/
-    - assets/images/pieces/symmetric/
-    - assets/images/pieces/tatiana/

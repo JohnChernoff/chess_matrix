@@ -5,8 +5,10 @@ import 'package:chess/chess.dart' as dc;
 import 'package:chess_matrix/board_sonifier.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_oauth/flutter_oauth.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:lichess_package/zug_sock.dart';
+import 'package:oauth2/oauth2.dart';
 import 'board_state.dart';
 import 'board_matrix.dart';
 import 'matrix_fields.dart';
@@ -30,16 +32,38 @@ class MatrixClient extends ChangeNotifier {
   late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot,false)));
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
-  String userName = "Scherzo";
   bool seeking = false;
+  bool authenticating = false;
+  String? lichessToken;
+  String? userName;
+  OauthClient oauthClient = OauthClient("lichess.org","chessMatrix");
 
   MatrixClient(String matrixURL, {this.initialBoardNum = 1}) {
     sonifier = BoardSonifier(this);
     lichSock = ZugSock(matrixURL, connected, handleMsg, disconnected);
-    Lichess.getEventStream(lichessToken, followStream, web: kIsWeb);
+    oauthClient.checkRedirect(getClient);
+  }
+
+  void lichessLogin() {
+    authenticating = true;
+    oauthClient.authenticate(getClient,scopes: ["board:play"]); //,(client) => setToken(client?.credentials.accessToken));
+  }
+
+  void getClient(Client? client) {
+    setToken(client?.credentials.accessToken);
+    authenticating = false;
+  }
+
+  void setToken(String? accessToken) {
+    print("Access Token: $accessToken");
+    lichessToken = accessToken;
+    if (lichessToken != null) {
+      Lichess.getEventStream(lichessToken!, followStream, web: kIsWeb);
+    }
   }
 
   void followStream(Stream<String> eventStream) { print("Event: $eventStream");
+    String? token = lichessToken; if (token == null) { return; }
     eventStream.listen((data) {
       if (data.trim().isNotEmpty) {
         print('Event Chunk: $data');
@@ -52,7 +76,7 @@ class MatrixClient extends ChangeNotifier {
           dynamic blackPlayer = game['color'] == 'black' ? {'id' : userName, 'rating' : 2000} : game['opponent'];
           state.initState(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),this);
           playBoards = playBoards.add(state);
-          Lichess.followGame(id,lichessToken,followGame, web: kIsWeb);
+          Lichess.followGame(id,token,followGame, web: kIsWeb);
           updateView();
         }
         else if (type == 'gameFinish') {
@@ -100,18 +124,20 @@ class MatrixClient extends ChangeNotifier {
   }
 
   void sendMove(String id, String from, String to, String? prom) { //lichSock.send(jsonEncode({ 't': 'move', 'd':   { 'u': uci, }}));
+    String? token = lichessToken; if (token == null) { return; }
     String uci = prom != null ? "$from$to=$prom" : "$from$to"; print("Sending move: $uci");
-    Lichess.makeMove(uci, id, lichessToken);
+    Lichess.makeMove(uci, id, token);
   }
 
   void seekGame(int minutes, int inc, bool rated ) {  //lichSock.send(jsonEncode({ 't': 'poolIn', 'd': '3' }));
+    String? token = lichessToken; if (token == null) { return; }
     if (playBoards.isEmpty) {
       if (seeking) {
         cancelSeek();
       }
       else {
         seeking = true;
-        Lichess.createSeek(LichessVariant.standard, 15, inc, rated, lichessToken, minRating: 2299, maxRating: 2301, color:"black").then((statusCode) {
+        Lichess.createSeek(LichessVariant.standard, 15, inc, rated, token, minRating: 2299, maxRating: 2301, color:"black").then((statusCode) {
           print("Seek Status: $statusCode");
           seeking = false;
         }, onError: (oops) => print("Oops: $oops"));

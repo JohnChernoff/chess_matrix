@@ -13,11 +13,11 @@ import 'board_state.dart';
 
 /*
 TODO:
+ lichess login, game commands, chat, etc.
  lichess ping,
- ~color combinations,
  selectable keys,
  animate sounds,
- board reloading weirdness,
+ ~board reloading weirdness,
  distance v. square pitches
  optimize board drawing and minimum resolution
  */
@@ -161,7 +161,8 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     int numBoards = (newNumBoards ?? client.viewBoards.length);
     return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
       children: [
-        client.playBoards.isEmpty && client.seeking ?
+        client.lichessToken == null ? IconButton(onPressed: () => client.lichessLogin(), icon: const Icon(Icons.login)) : const SizedBox.shrink(),
+        client.lichessToken == null ? const SizedBox.shrink() : client.playBoards.isEmpty && client.seeking ?
         IconButton(onPressed: () => client.cancelSeek(), icon: const Icon(Icons.cancel)) :
         IconButton(onPressed: () => MatrixApp.menuBuilder(context,SeekWidget(client)), icon: const Icon(Icons.send)),
         IconButton(onPressed: () => MatrixApp.menuBuilder(context,OptionWidget(client)), icon: const Icon(Icons.menu)),
