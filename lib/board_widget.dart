@@ -42,15 +42,7 @@ class BoardWidget extends StatelessWidget {
                         client.setSingleState(state);
                       }
                     },
-                      child: chessboard.ChessBoard(
-                          controller: state.controller,
-                          size: size,
-                          blackPieceColor: Colors.green,
-                          pieceSet: client.pieceStyle.name,
-                          dummyBoard: true,
-                          backgroundImage: state.board?.image,
-                          onMove: (from, to, prom) => client.sendMove(state.id ?? "", from, to, prom),
-                      ),
+                      child: getBoard(context, state),
                   )
               ),
               getPlayerBar(state, false),
@@ -66,88 +58,35 @@ class BoardWidget extends StatelessWidget {
     ));
   }
 
-  Widget getBoard(BuildContext context,BoardState state) { //print("$slot -> Board FEN: ${state.board?.fen}");
-    MatrixClient client = Provider.of(context,listen: false);
-    return InkWell(
-      onDoubleTap: () {
-        state.replacable = true;
-        client.loadTVGames();
-      },
-      onTap: () {
-        client.setSingleState(state);
-      },
-      child: Container(
-        color: Colors.black,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            state.board?.image != null ? CustomPaint(
-              painter: BoardPainter(client,state),
-            ) : const SizedBox.shrink(),
-            getBoardPieces(state.board!,Colors.brown,client.blackPieceColor,client.pieceStyle.name),
-            client.showControl ? getBoardControl(state.board!) : const SizedBox.shrink(),
-          ],
-        ),
-      ),
+  Widget getBoard(BuildContext context, BoardState state) { //print("$slot -> Board FEN: ${state.board?.fen}");
+    MatrixClient client = Provider.of(context, listen: false);
+    return chessboard.ChessBoard(
+      controller: state.controller,
+      size: size,
+      blackPieceColor: Colors.green,
+      pieceSet: client.pieceStyle.name,
+      dummyBoard: true,
+      backgroundImage: state.board?.image, //TODO: hide when null
+      onMove: (from, to, prom) =>
+          client.sendMove(state.id ?? "", from, to, prom),
     );
   }
 
-  Widget getBoardPieces(BoardMatrix board, Color borderColor, Color blackPieceColor, String pieceStyle) {
-    return GridView.count(
+  Widget getBoardGrid(BoardMatrix board, Color borderColor, bool showControl) {
+    return SizedBox(width: size-16,height: size-16, child: GridView.count(
       crossAxisCount: 8,
       children: List.generate(64, (index) {
         Coord squareCoord = Coord(index % 8, (index / 8).floor());
-        Piece piece = board.getSquare(squareCoord).piece;
-        BlendMode? blendMode = piece.color == ChessColor.white ? null : BlendMode.modulate;
-        Color? color = piece.color == ChessColor.white ? null : blackPieceColor;
         return Container(
-          decoration:
-          BoxDecoration(border: Border.all(color: borderColor, width: 1)),
-          child: (piece.type != PieceType.none)
-              ? Image.asset("assets/images/pieces/$pieceStyle/${piece.toString(white: true)}.png",colorBlendMode: blendMode, color: color)
-              : const SizedBox.shrink(),
+          decoration: BoxDecoration(border: Border.all(color: borderColor, width: 1)),
+            child: showControl ?
+            Text(board.getSquare(squareCoord).control.toString(), style: const TextStyle(color: Colors.yellowAccent))
+                : const SizedBox.shrink()
         );
       }),
-    );
-  }
-
-  Widget getBoardControl(BoardMatrix board) {
-    return GridView.count(
-      crossAxisCount: 8,
-      children: List.generate(64, (index) {
-        Coord squareCoord = Coord(index % 8, (index / 8).floor());
-        return SizedBox(
-            child: Text(board.getSquare(squareCoord).control.toString(),
-                style: const TextStyle(color: Colors.yellowAccent))
-        );
-      }),
-    );
-  }
-}
-
-//TODO: draw last move
-class BoardPainter extends CustomPainter {
-  final MatrixClient client;
-  final BoardState state;
-
-  const BoardPainter(this.client,this.state);
-
-  @override
-  void paint(Canvas canvas, Size size) { //print("Size: $size");
-    BoardMatrix? board = state.board;
-    if (board != null && board.image != null) {
-      canvas.scale(
-          size.width  / board.width,
-          size.height / board.height
-      );
-      canvas.drawImage(board.image!,const Offset(0,0), Paint());
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+    ));
   }
 
 }
+
 
