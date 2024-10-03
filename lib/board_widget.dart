@@ -66,25 +66,10 @@ class BoardWidget extends StatelessWidget {
       blackPieceColor: Colors.green,
       pieceSet: client.pieceStyle.name,
       dummyBoard: true,
-      backgroundImage: state.board?.image, //TODO: hide when null
+      backgroundImage: state.finished ? null : state.board?.image, //TODO: hide when null
       onMove: (from, to, prom) =>
-          client.sendMove(state.id ?? "", from, to, prom),
+          client.sendMove(state.id, from, to, prom),
     );
-  }
-
-  Widget getBoardGrid(BoardMatrix board, Color borderColor, bool showControl) {
-    return SizedBox(width: size-16,height: size-16, child: GridView.count(
-      crossAxisCount: 8,
-      children: List.generate(64, (index) {
-        Coord squareCoord = Coord(index % 8, (index / 8).floor());
-        return Container(
-          decoration: BoxDecoration(border: Border.all(color: borderColor, width: 1)),
-            child: showControl ?
-            Text(board.getSquare(squareCoord).control.toString(), style: const TextStyle(color: Colors.yellowAccent))
-                : const SizedBox.shrink()
-        );
-      }),
-    ));
   }
 
 }

@@ -35,7 +35,7 @@ class MatrixClient extends ChangeNotifier {
   bool seeking = false;
   bool authenticating = false;
   String? lichessToken;
-  String? userName;
+  String userName = "?";
   OauthClient oauthClient = OauthClient("lichess.org","chessMatrix");
 
   MatrixClient(String matrixURL, {this.initialBoardNum = 1}) {
@@ -60,6 +60,7 @@ class MatrixClient extends ChangeNotifier {
     if (lichessToken != null) {
       Lichess.getEventStream(lichessToken!, followStream, web: kIsWeb);
     }
+    updateView();
   }
 
   void followStream(Stream<String> eventStream) { print("Event: $eventStream");
@@ -103,14 +104,13 @@ class MatrixClient extends ChangeNotifier {
                 String moves = state['moves'].trim();
                 if (moves.length > 1) {
                   dc.Chess chess = dc.Chess.fromFEN(startFEN);
-                  dc.Color color = dc.Color.WHITE;
-                  for (String m in moves.split(" ")) { //board.controller.makeMoveWithNormalNotation(m);
-                    var fromSquare = dc.Chess.SQUARES[m.substring(0,2)];
-                    var toSquare = dc.Chess.SQUARES[m.substring(2,4)];
-                    dc.Piece? p = chess.get(m.substring(0,2));
-                    dc.Move mv = dc.Move(color,fromSquare,toSquare,0,p!.type,null,null);
-                    chess.make_move(mv);
-                    color = dc.Chess.swap_color(color);
+                  for (String m in moves.split(" ")) {
+                    if (m.length == 4) {
+                      chess.move({'from': m.substring(0,2), 'to': m.substring(2,4)});
+                    }
+                    else if (m.length == 5) {
+                      chess.move({'from': m.substring(0,2), 'to': m.substring(2,4), 'promotion': m[4]});
+                    }
                   }
                   board.updateBoard(chess.fen, lastMove != null ? Move(lastMove) : null, ((state['wtime'] ?? 0)/1000).floor(), ((state['btime'] ?? 0)/1000).floor(),this);
                   updateView();
@@ -123,10 +123,10 @@ class MatrixClient extends ChangeNotifier {
     });
   }
 
-  void sendMove(String id, String from, String to, String? prom) { //lichSock.send(jsonEncode({ 't': 'move', 'd':   { 'u': uci, }}));
+  void sendMove(String? id, String from, String to, String? prom) { //lichSock.send(jsonEncode({ 't': 'move', 'd':   { 'u': uci, }}));
     String? token = lichessToken; if (token == null) { return; }
-    String uci = prom != null ? "$from$to=$prom" : "$from$to"; print("Sending move: $uci");
-    Lichess.makeMove(uci, id, token);
+    String uci = prom != null ? "$from$to$prom" : "$from$to"; print("Sending move: $uci");
+    Lichess.makeMove(uci, id ?? "", token);
   }
 
   void seekGame(int minutes, int inc, bool rated ) {  //lichSock.send(jsonEncode({ 't': 'poolIn', 'd': '3' }));
@@ -137,7 +137,7 @@ class MatrixClient extends ChangeNotifier {
       }
       else {
         seeking = true;
-        Lichess.createSeek(LichessVariant.standard, 15, inc, rated, token, minRating: 2299, maxRating: 2301, color:"black").then((statusCode) {
+        Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token).then((statusCode) { //, minRating: 2299, maxRating: 2301, color:"black"
           print("Seek Status: $statusCode");
           seeking = false;
         }, onError: (oops) => print("Oops: $oops"));
