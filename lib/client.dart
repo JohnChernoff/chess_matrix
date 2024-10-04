@@ -35,7 +35,7 @@ class MatrixClient extends ChangeNotifier {
   bool seeking = false;
   bool authenticating = false;
   String? lichessToken;
-  String userName = "?";
+  dynamic userInfo;
   OauthClient oauthClient = OauthClient("lichess.org","chessMatrix");
 
   MatrixClient(String matrixURL, {this.initialBoardNum = 1}) {
@@ -54,27 +54,26 @@ class MatrixClient extends ChangeNotifier {
     authenticating = false;
   }
 
-  void setToken(String? accessToken) {
-    print("Access Token: $accessToken");
-    lichessToken = accessToken;
-    if (lichessToken != null) {
-      Lichess.getEventStream(lichessToken!, followStream, web: kIsWeb);
+  Future<void> setToken(String? accessToken) async {
+    if (accessToken != null) { //print("Access Token: $accessToken");
+      lichessToken = accessToken;
+      userInfo = await Lichess.getAccount(accessToken,web:true);
+      Lichess.getEventStream(accessToken, followStream, web: kIsWeb);
+      updateView();
     }
-    updateView();
   }
 
   void followStream(Stream<String> eventStream) { print("Event: $eventStream");
     String? token = lichessToken; if (token == null) { return; }
     eventStream.listen((data) {
-      if (data.trim().isNotEmpty) {
-        print('Event Chunk: $data');
+      if (data.trim().isNotEmpty) { //print('Event Chunk: $data');
         dynamic json = jsonDecode(data);
         String type = json["type"];
         if (type == "gameStart") {
           dynamic game = json['game']; String id = game['gameId'];
           BoardState state = BoardState(playBoards.length,true);
-          dynamic whitePlayer = game['color'] == 'white' ? {'id' : userName, 'rating' : 2000} : game['opponent'];
-          dynamic blackPlayer = game['color'] == 'black' ? {'id' : userName, 'rating' : 2000} : game['opponent'];
+          dynamic whitePlayer = game['color'] == 'white' ? {'id' : userInfo['username'], 'rating' : userInfo['perfs']['rapid']['rating']} : game['opponent'];
+          dynamic blackPlayer = game['color'] == 'black' ? {'id' : userInfo['username'], 'rating' : userInfo['perfs']['rapid']['rating']} : game['opponent'];
           state.initState(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),this);
           playBoards = playBoards.add(state);
           Lichess.followGame(id,token,followGame, web: kIsWeb);
@@ -89,7 +88,7 @@ class MatrixClient extends ChangeNotifier {
     });
   }
 
-  void followGame(String gid, Stream<String> gameStream) { print("Game: $gid");
+  void followGame(String gid, Stream<String> gameStream) { print("Following Game: $gid");
     gameStream.listen((data) {
       if (data.trim().isNotEmpty) { //print('Game Chunk: $data');
         for (String chunk in data.split("\n")) {
@@ -100,7 +99,7 @@ class MatrixClient extends ChangeNotifier {
             if (board != null) {
               String type = json['type'];
               dynamic state = type == 'gameState' ? json : type == 'gameFull' ? json['state'] : null;
-              if (state != null) { print("State: $state");
+              if (state != null) { //print("State: $state");
                 String moves = state['moves'].trim();
                 if (moves.length > 1) {
                   dc.Chess chess = dc.Chess.fromFEN(startFEN);
@@ -137,10 +136,12 @@ class MatrixClient extends ChangeNotifier {
       }
       else {
         seeking = true;
-        Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token).then((statusCode) { //, minRating: 2299, maxRating: 2301, color:"black"
+        print("Seeking: $minutes,$inc");
+        Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token, minRating: 2299, maxRating: 2301).then((statusCode) {
+        //Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token).then((statusCode) {
           print("Seek Status: $statusCode");
           seeking = false;
-        }, onError: (oops) => print("Oops: $oops"));
+        }, onError: (err) => print("Seek error: $err"));
       }
       updateView();
     }
@@ -149,6 +150,14 @@ class MatrixClient extends ChangeNotifier {
   void cancelSeek() {
     Lichess.removeSeek();
     notifyListeners();
+  }
+
+  void resign(BoardState state) {
+    Lichess.boardAction(BoardAction.resign, state.id ?? "", lichessToken ?? "");
+  }
+
+  void offerDraw(BoardState state) {
+    Lichess.boardAction(BoardAction.drawYes, state.id ?? "", lichessToken ?? "");
   }
 
   void updateView({updateBoards = false}) {

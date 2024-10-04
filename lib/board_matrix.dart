@@ -37,9 +37,10 @@ class BoardMatrix {
   final MixStyle mixStyle;
   final Move? lastMove;
   late final ChessColor turn;
+  bool blackPOV;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,imgCall,{this.maxControl = 5, this.edgeColor = Colors.black}) {
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,imgCall,{this.blackPOV  = false, this.maxControl = 5, this.edgeColor = Colors.black}) {
     List<String> fenStrs = fen.split(" ");
     turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
     _setPieces(fenStrs[0]);
@@ -60,7 +61,11 @@ class BoardMatrix {
         if (piece.type == PieceType.none) {
           file += int.parse(char); //todo: try
         } else {
-          squares[file++][rank].piece = piece;
+          if (blackPOV) {
+            squares[file++][fenRanks.length - rank - 1].piece = piece;
+          } else {
+            squares[file++][rank].piece = piece;
+          }
         }
       }
     }
@@ -138,9 +143,9 @@ class BoardMatrix {
             } else if (p1.isAdjacent(p2)) {
               if (piece.type == PieceType.king) {
                 piece.color == ChessColor.black ? blackControl++ : whiteControl++;
-              } else if (piece.type == PieceType.pawn && piece.color == ChessColor.white && p1.y < p2.y) {
+              } else if (piece.type == PieceType.pawn && piece.color == ChessColor.white && (blackPOV ? p1.y > p2.y : p1.y < p2.y)) {
                 whiteControl++;
-              } else if (piece.type == PieceType.pawn && piece.color == ChessColor.black && p1.y > p2.y) {
+              } else if (piece.type == PieceType.pawn && piece.color == ChessColor.black && (blackPOV ? p1.y < p2.y : p1.y > p2.y)) {
                 blackControl++;
               }
             }

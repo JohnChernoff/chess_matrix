@@ -29,11 +29,15 @@ class BoardWidget extends StatelessWidget {
               getPlayerBar(state, true),
               Expanded(
                   child: InkWell(
-                    onDoubleTap: () {
+                    onLongPress: () {
                       if (!state.live) {
                         state.replacable = true;
                         client.loadTVGames();
                       }
+                    },
+                    onDoubleTap: () {
+                      state.blackPOV = !state.blackPOV;
+                      client.updateView(updateBoards: true);
                     },
                     onTap: () {
                       if (state.live && state.finished) {
@@ -46,6 +50,10 @@ class BoardWidget extends StatelessWidget {
                   )
               ),
               getPlayerBar(state, false),
+              (state.live) ? Row(children: [
+                IconButton(onPressed: () => client.resign(state), icon: const Icon(Icons.flag)),
+                IconButton(onPressed: () => client.offerDraw(state), icon: const Icon(Icons.health_and_safety))
+              ]) : const SizedBox.shrink()
             ]);
   }
 
@@ -61,6 +69,7 @@ class BoardWidget extends StatelessWidget {
   Widget getBoard(BuildContext context, BoardState state) { //print("$slot -> Board FEN: ${state.board?.fen}");
     MatrixClient client = Provider.of(context, listen: false);
     return chessboard.ChessBoard(
+      boardOrientation: state.blackPOV ? chessboard.PlayerColor.black : chessboard.PlayerColor.white,
       controller: state.controller,
       size: size,
       blackPieceColor: Colors.green,

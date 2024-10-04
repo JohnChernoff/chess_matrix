@@ -56,7 +56,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   void refreshBoard(MatrixClient client) {
     BoardMatrix? bm = board;
     if (bm != null) {
-      board = BoardMatrix(bm.fen,bm.lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),maxControl: client.maxControl);
+      board = BoardMatrix(bm.fen,bm.lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),
+          blackPOV: blackPOV, maxControl: client.maxControl);
     }
   }
 
@@ -64,7 +65,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
-    board = BoardMatrix(fen,lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),maxControl: client.maxControl);
+    board = BoardMatrix(fen,lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),
+        blackPOV: blackPOV, maxControl: client.maxControl);
     clockTimer = countDown();
     controller.loadFen(fen);
     return board;

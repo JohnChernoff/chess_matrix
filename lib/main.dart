@@ -13,7 +13,8 @@ import 'board_state.dart';
 
 /*
 TODO:
- lichess login, game commands, chat, etc.
+ flip board
+ game commands, chat, etc.
  lichess ping,
  selectable keys,
  animate sounds,
@@ -161,7 +162,8 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     int numBoards = (newNumBoards ?? client.viewBoards.length);
     return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
       children: [
-        client.lichessToken == null ? IconButton(onPressed: () => client.lichessLogin(), icon: const Icon(Icons.login)) : const SizedBox.shrink(),
+        client.lichessToken == null ? IconButton(onPressed: () => client.lichessLogin(), icon: const Icon(Icons.login))
+            : Text(client.userInfo['username'],style: MatrixApp.getTextStyle(Colors.white)),
         client.lichessToken == null ? const SizedBox.shrink() : client.playBoards.isEmpty && client.seeking ?
         IconButton(onPressed: () => client.cancelSeek(), icon: const Icon(Icons.cancel)) :
         IconButton(onPressed: () => MatrixApp.menuBuilder(context,SeekWidget(client)), icon: const Icon(Icons.send)),
@@ -173,10 +175,10 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
               newNumBoards = null; client.loadTVGames(numBoards: value.floor()-1);
             },
         ),
-        ElevatedButton(
+        IconButton(
             onPressed: () => client.toggleAudio(),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-            child: Text("Toggle Audio (currently: ${client.sonifier.muted ? 'off' : 'on'})",style: MatrixApp.getTextStyle(color3))),
+            icon: Icon(client.sonifier.muted ? Icons.audiotrack : Icons.volume_mute)),
         const SizedBox(width: 20),
         client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(),
             child: Text("Randomize",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
