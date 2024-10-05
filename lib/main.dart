@@ -89,7 +89,6 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   Color color3 = Colors.black; //Colors.purple;
   int? newNumBoards;
 
-
   @override
   void initState() {
     super.initState();
@@ -159,8 +158,9 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
 
   Widget getGeneralControls(MatrixClient client) {
     int numBoards = (newNumBoards ?? client.viewBoards.length);
-    return Center(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
+    return Center(child: Row(mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        const Spacer(),
         client.lichessToken == null ? IconButton(onPressed: () => client.lichessLogin(), icon: const Icon(Icons.login))
             : Text(client.userInfo['username'],style: MatrixApp.getTextStyle(Colors.white)),
         client.lichessToken == null ? const SizedBox.shrink() : client.playBoards.isEmpty && client.seeking ?
@@ -174,24 +174,30 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
               newNumBoards = null; client.loadTVGames(numBoards: value.floor()-1);
             },
         ),
-        IconButton(
-            onPressed: () => client.toggleAudio(),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-            icon: Icon(client.sonifier.muted ? Icons.audiotrack : Icons.volume_mute)),
-        const SizedBox(width: 20),
-        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(),
-            child: Text("Randomize",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
-        const SizedBox(width: 20),
-        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.toggleDrums(),
-            child: Text("Toggle Drums",style: client.sonifier.muteDrums ? MatrixApp.getTextStyle(color2) : MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
-        const SizedBox(width: 20),
-        client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.keyChange(),
-            child: Text("New Key",style:MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
-        const SizedBox(width: 20),
-        testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
+        const Spacer(),
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            IconButton(
+                onPressed: () => client.toggleAudio(),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
+                icon: Icon(client.sonifier.muted ? Icons.audiotrack : Icons.volume_mute)),
+            const SizedBox(width: 20),
+            client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(),
+                child: Text("Randomize",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
+            const SizedBox(width: 20),
+            client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.toggleDrums(),
+                child: Text("Toggle Drums",style: client.sonifier.muteDrums ? MatrixApp.getTextStyle(color2) : MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
+            const SizedBox(width: 20),
+            client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.keyChange(),
+                child: Text("New Key",style:MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
+            const SizedBox(width: 20),
+            testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
+          ])
       ],
-    )));
+    ));
   }
+
+
+
 
   Widget getAudioControls(MatrixClient client) {
     return Center(child: SizedBox(height: 120, child:
