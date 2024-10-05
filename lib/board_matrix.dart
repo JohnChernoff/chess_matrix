@@ -3,7 +3,6 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'client.dart';
 
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
@@ -62,7 +61,7 @@ class BoardMatrix {
           file += int.parse(char); //todo: try
         } else {
           if (blackPOV) {
-            squares[file++][fenRanks.length - rank - 1].piece = piece;
+            squares[fenRanks.length - 1 - file++][fenRanks.length - 1 - rank].piece = piece;
           } else {
             squares[file++][rank].piece = piece;
           }
@@ -264,6 +263,10 @@ class ControlTable {
   ControlTable add(ControlTable ctab) {
     return ControlTable(whiteControl + ctab.whiteControl, blackControl + ctab.blackControl);
   }
+  @override
+  String toString() {
+    return "[$whiteControl,$blackControl,$totalControl]";
+  }
 }
 
 class Square {
@@ -354,7 +357,7 @@ class Piece {
 
   @override
   String toString({bool white = false}) {
-    String pieceChar = (type == PieceType.knight) ? "n" : type.name[0];
+    String pieceChar = (type == PieceType.knight) ? "n" : (type == PieceType.none) ? "-" : type.name[0];
     return (white || color == ChessColor.white ? "w" : "b") + pieceChar.toUpperCase();
   }
 }
@@ -407,5 +410,12 @@ class ColorArray {
 
 Color rndCol() {
   return Colors.primaries[Random().nextInt(Colors.primaries.length)];
+}
+
+class MatrixColorScheme {
+  final Color whiteColor;
+  final Color blackColor;
+  final Color voidColor;
+  const MatrixColorScheme(this.whiteColor,this.blackColor,this.voidColor);
 }
 

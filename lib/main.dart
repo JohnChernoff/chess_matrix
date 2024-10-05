@@ -13,14 +13,13 @@ import 'board_state.dart';
 
 /*
 TODO:
- flip board
- game commands, chat, etc.
- lichess ping,
+ game chat, etc.
  selectable keys,
  animate sounds,
  ~board reloading weirdness,
  distance v. square pitches
  optimize board drawing and minimum resolution
+  ~lichess ping,
  */
 
 bool testing = false;

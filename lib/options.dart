@@ -103,7 +103,7 @@ class _OptionWidgetState extends State<OptionWidget> {
           children: [
             Column(
               children: [
-                Text("White Color: ",
+                Text("White Control Color: ",
                     style: MatrixApp.getTextStyle(Colors.white)),
                 ColorPicker(
                   onColorSelected: (Color color) {
@@ -118,7 +118,7 @@ class _OptionWidgetState extends State<OptionWidget> {
             ),
             Column(
               children: [
-                Text("Black Color: ",
+                Text("Black Control Color: ",
                     style: MatrixApp.getTextStyle(Colors.black)),
                 ColorPicker(
                   onColorSelected: (Color color) {
@@ -133,7 +133,7 @@ class _OptionWidgetState extends State<OptionWidget> {
             ),
             Column(
               children: [
-                Text("Void Color: ",
+                Text("Void Control Color: ",
                     style: MatrixApp.getTextStyle(Colors.grey)),
                 ColorPicker(
                   onColorSelected: (Color color) {
@@ -146,6 +146,55 @@ class _OptionWidgetState extends State<OptionWidget> {
                 ),
               ],
             ),
+            Column(
+              children: [
+                Text("Black Piece Color: ",
+                    style: MatrixApp.getTextStyle(Colors.grey)),
+                ColorPicker(
+                  onColorSelected: (Color color) {
+                    client.blackPieceColor = color;
+                    client.updateView(updateBoards: true);
+                  },
+                  selectedColor: client.blackPieceColor,
+                  config: const ColorPickerConfig(),
+                  darkMode: true,
+                  onClose: () {},
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                Text("White Piece Color: ",
+                    style: MatrixApp.getTextStyle(Colors.grey)),
+                ColorPicker(
+                  onColorSelected: (Color color) {
+                    client.whitePieceColor = color;
+                    client.updateView(updateBoards: true);
+                  },
+                  selectedColor: client.whitePieceColor,
+                  config: const ColorPickerConfig(),
+                  darkMode: true,
+                  onClose: () {},
+                ),
+              ],
+            ),
+            Column(
+              children: [
+                Text("Grid Color: ",
+                    style: MatrixApp.getTextStyle(Colors.grey)),
+                ColorPicker(
+                  onColorSelected: (Color color) {
+                    client.gridColor = color;
+                    client.updateView(updateBoards: true);
+                  },
+                  selectedColor: client.gridColor,
+                  config: const ColorPickerConfig(),
+                  darkMode: true,
+                  onClose: () {},
+                ),
+              ],
+            ),
+
           ],
         ));
   }

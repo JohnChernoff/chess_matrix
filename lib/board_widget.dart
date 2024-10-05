@@ -66,18 +66,40 @@ class BoardWidget extends StatelessWidget {
     ));
   }
 
-  Widget getBoard(BuildContext context, BoardState state) { //print("$slot -> Board FEN: ${state.board?.fen}");
+  Widget getBoard(BuildContext context, BoardState state, {showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
     MatrixClient client = Provider.of(context, listen: false);
-    return chessboard.ChessBoard(
+    final board = chessboard.ChessBoard(
       boardOrientation: state.blackPOV ? chessboard.PlayerColor.black : chessboard.PlayerColor.white,
       controller: state.controller,
       size: size,
-      blackPieceColor: Colors.green,
+      blackPieceColor: client.blackPieceColor,
+      whitePieceColor: client.whitePieceColor,
+      gridColor: client.gridColor,
       pieceSet: client.pieceStyle.name,
       dummyBoard: true,
       backgroundImage: state.finished ? null : state.board?.image, //TODO: hide when null
       onMove: (from, to, prom) =>
           client.sendMove(state.id, from, to, prom),
+    );
+    if (showControl) {
+      return Stack(fit: StackFit.expand, children: [board, getBoardControl(state.board!)]);
+    }
+    else {
+      return board;
+    }
+  }
+
+  Widget getBoardControl(BoardMatrix board) {
+    return GridView.count(
+      crossAxisCount: 8,
+      children: List.generate(64, (index) {
+        Coord squareCoord = Coord(index % 8, (index / 8).floor());
+        Square square = board.getSquare(squareCoord);
+        return SizedBox(
+            child: Text("${square.control.toString()}:${square.piece.toString()}",
+                style: const TextStyle(color: Colors.yellowAccent))
+        );
+      }),
     );
   }
 
