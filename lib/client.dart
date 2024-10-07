@@ -67,8 +67,7 @@ class MatrixClient extends ChangeNotifier {
   }
 
   int getRating(double minutes, int inc) {
-    String? ratingType = LichessClient.getRatingType(minutes, inc)?.name;
-    print("Rating type: $ratingType");
+    String? ratingType = LichessClient.getRatingType(minutes, inc)?.name; //print("Rating type: $ratingType");
     return (userInfo?['perfs']?[ratingType]?['rating']) ?? 1500;
   }
 
