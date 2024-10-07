@@ -20,6 +20,14 @@ class _OptionWidgetState extends State<OptionWidget> {
   double? intensity;
   ColorStyle? colorStyle;
 
+  get imageQuality => (num resolution) => switch (resolution) {
+    >= 500 => "Ultra",
+    >= 400 => "High",
+    >= 300 => "Good",
+    >= 200 => "Medium",
+    >= 100 => "Low",
+    _ => "Crap"};
+
   @override
   Widget build(BuildContext context) {
     Axis axis = ZugUtils.getScreenDimensions(context).getMainAxis();
@@ -64,13 +72,14 @@ class _OptionWidgetState extends State<OptionWidget> {
               })),
           Row(
             children: [
-              Text("Resolution: ${resolution?.floor() ?? widget.client.matrixResolution.floor()}",style: MatrixApp.getTextStyle(Colors.black)),
+              Text("Image Quality: ${imageQuality(resolution ?? widget.client.matrixResolution)}",
+                  style: MatrixApp.getTextStyle(Colors.black)),
                 Slider(
-                  value: resolution ?? widget.client.matrixResolution as double, divisions: 9, min: 50, max: 500,
+                  value: resolution ?? (widget.client.matrixResolution as double), divisions: 4, min: 100, max: 500,
                   onChanged: (double value) => setState(() {
                     resolution = value;
                   }),
-                  onChangeEnd: (double value) => widget.client.setResolution(value.floor()),
+                  onChangeEnd: (double value) => widget.client.setResolution(value.round()),
                 ),
               ],
           ),

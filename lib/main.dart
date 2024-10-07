@@ -12,6 +12,10 @@ import 'matrix_fields.dart';
 import 'board_state.dart';
 
 /*
+
+Forest Scheme: #ffd8ffb,#ff171717,#ff76c479,#ff92cf94,#ff14ffe9,#48ffffff
+You can make blueprint of single game (cumulative board control)
+
 TODO:
  game chat, etc.
  selectable keys,
@@ -40,7 +44,7 @@ class MatrixApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-        create: (context) => MatrixClient('wss://socket.lichess.org/api/socket'),
+        create: (context) => MatrixClient("lichess.org"),
         child: MaterialApp(
             title: 'Chess Matrix 1.0',
             theme: ThemeData(

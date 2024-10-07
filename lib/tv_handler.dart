@@ -11,7 +11,7 @@ class TVHandler {
 
   TVHandler(this.client, this.sonifier);
 
-  void handleMsg(String msg) { //print("Message: $msg");
+  void handleMsg(msg) { //print("Message: $msg");
     dynamic json = jsonDecode(msg);
     String type = json['t'];
     dynamic data = json['d'];
