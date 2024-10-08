@@ -22,7 +22,7 @@ enum ColorStyle {
   final MatrixColorScheme colorScheme;
   const ColorStyle(this.colorScheme);
 }
-enum MixStyle {pigment,light,none}
+enum MixStyle {pigment,checker,add}
 enum ChessColor {none,white,black}
 enum PieceType {none,pawn,knight,bishop,rook,queen,king}
 
@@ -32,13 +32,16 @@ class BoardMatrix {
   final int maxControl;
   final List<List<Square>> squares = List<List<Square>>.generate(
       ranks, (i) => List<Square>.generate(
-      files, (index) => Square(Piece(PieceType.none,ChessColor.none)), growable: false), growable: false);
+      files, (index) => Square(
+        Piece(PieceType.none,ChessColor.none),
+      (index + i).isEven ? SquareShade.light : SquareShade.dark), growable: false), growable: false);
   final Color edgeColor;
   final MatrixColorScheme colorScheme;
   final MixStyle mixStyle;
   final Move? lastMove;
+  final bool blackPOV;
+  final bool triColor = true;
   late final ChessColor turn;
-  bool blackPOV;
   ui.Image? image;
 
   BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,imgCall,{this.blackPOV  = false, this.maxControl = 5, this.edgeColor = Colors.black}) {
@@ -271,21 +274,30 @@ class ControlTable {
   }
 }
 
+enum SquareShade {
+  light,dark
+}
+
 class Square {
   final Color bigRed = const Color.fromARGB(255, 255, 0, 0);
   final Color bigGreen = const Color.fromARGB(255, 0,255, 0);
   final Color bigBlue = const Color.fromARGB(255, 0,0, 255);
+  SquareShade shade;
   Piece piece;
   ControlTable control = const ControlTable(0, 0);
   ColorArray color = ColorArray.fromFill(0);
-  Square(this.piece);
+  Square(this.piece,this.shade);
 
   void setControl(ControlTable c, MatrixColorScheme colorScheme, MixStyle mixStyle, int maxControl) {
     control = c;
-    color = mixStyle == MixStyle.none ? getTriColor(colorScheme, maxControl) : getTwoColor(colorScheme, maxControl);
+    color = switch(mixStyle) {
+      MixStyle.add => getAddidiveColor(colorScheme, maxControl),
+      MixStyle.checker => getCheckerColor(colorScheme, maxControl),
+      MixStyle.pigment => getMixColor(colorScheme, maxControl),
+    };
   }
 
-  ColorArray getTriColor(MatrixColorScheme colorScheme, int maxControl) {
+  ColorArray getAddidiveColor(MatrixColorScheme colorScheme, int maxControl) {
     ColorArray colorMatrix = ColorArray.fromColor(colorScheme.voidColor);
     double controlGrad =  min(control.totalControl.abs(),maxControl) / maxControl;
     if (control.totalControl > 0) {
@@ -301,7 +313,17 @@ class Square {
     return colorMatrix;
   }
 
-  ColorArray getTwoColor(MatrixColorScheme colorScheme, int maxControl) {
+  ColorArray getCheckerColor(MatrixColorScheme colorScheme, int maxControl) {
+    double whiteControlGrad =  min(control.whiteControl,maxControl) / maxControl;
+    double blackControlGrad =  min(control.blackControl,maxControl) / maxControl;
+    return ColorArray(
+      (255 * blackControlGrad).floor(),
+      shade == SquareShade.dark ? 0 : 255,
+      (255 * whiteControlGrad).floor(),
+    );
+  }
+
+  ColorArray getMixColor(MatrixColorScheme colorScheme, int maxControl) {
     double whiteControlGrad =  min(control.whiteControl,maxControl) / maxControl;
     double blackControlGrad =  min(control.blackControl,maxControl) / maxControl;
 

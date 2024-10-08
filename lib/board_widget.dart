@@ -12,7 +12,7 @@ class BoardWidget extends StatelessWidget {
   final MatrixClient client;
   final double size;
 
-  const BoardWidget(this.slot, this.size, this.client,{super.key});
+  const BoardWidget(this.slot, this.size, this.client, {super.key});
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
@@ -77,7 +77,7 @@ class BoardWidget extends StatelessWidget {
       gridColor: client.colorScheme.gridColor,
       pieceSet: client.pieceStyle.name,
       dummyBoard: true,
-      backgroundImage: state.finished ? null : state.board?.image, //TODO: hide when null
+      backgroundImage: state.finished ? null : state.board?.image ?? state.buffImg, //TODO: hide when null
       onMove: (from, to, prom) =>
           client.sendMove(state.id, from, to, prom),
     );

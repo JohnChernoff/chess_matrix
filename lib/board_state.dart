@@ -3,6 +3,7 @@ import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'dart:async';
 import 'board_matrix.dart';
 import 'client.dart';
+import 'dart:ui' as ui;
 
 class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   String? id;
@@ -14,6 +15,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   Timer? clockTimer;
   int slot;
   bool live;
+  ui.Image? buffImg;
   cb.ChessBoardController controller = cb.ChessBoardController();
 
   BoardState(this.slot, this.live);
@@ -50,6 +52,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   }
 
   void updateWidget() {
+    buffImg = board?.image;
     notifyListeners();
   }
 
