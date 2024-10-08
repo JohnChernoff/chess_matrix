@@ -46,7 +46,7 @@ class BoardWidget extends StatelessWidget {
                         client.setSingleState(state);
                       }
                     },
-                      child: getBoard(context, state),
+                      child: getBoard(context, state, showMove: client.showMove),
                   )
               ),
               getPlayerBar(state, false),
@@ -66,8 +66,11 @@ class BoardWidget extends StatelessWidget {
     ));
   }
 
-  Widget getBoard(BuildContext context, BoardState state, {showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
+  Widget getBoard(BuildContext context, BoardState state, {showMove = false, showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
     MatrixClient client = Provider.of(context, listen: false);
+    String? from =  state.board?.lastMove?.moveStr.substring(0,2);
+    String? to =  state.board?.lastMove?.moveStr.substring(2,4);
+    final arrow = (showMove && from != null && to != null) ? chessboard.BoardArrow(from: from, to: to, color: const Color(0x55ffffff)) : null;
     final board = chessboard.ChessBoard(
       boardOrientation: state.blackPOV ? chessboard.PlayerColor.black : chessboard.PlayerColor.white,
       controller: state.controller,
@@ -77,6 +80,7 @@ class BoardWidget extends StatelessWidget {
       gridColor: client.colorScheme.gridColor,
       pieceSet: client.pieceStyle.name,
       dummyBoard: true,
+      arrows: arrow != null ? [arrow] : [],
       backgroundImage: state.finished ? null : state.board?.image ?? state.buffImg, //TODO: hide when null
       onMove: (from, to, prom) =>
           client.sendMove(state.id, from, to, prom),

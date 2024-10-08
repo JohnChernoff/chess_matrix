@@ -30,8 +30,17 @@ class _OptionWidgetState extends State<OptionWidget> {
   @override
   Widget build(BuildContext context) {
     MatrixClient client = Provider.of(context, listen: false);
-    return Container(color: Colors.grey, height: 480, child: Flex(direction: Axis.vertical,
+    return Container(color: Colors.grey, height: 640, child: Flex(direction: Axis.vertical,
         children: [
+          Row(
+            children: [
+              Text("Show Move Arrow: ",style: MatrixApp.getTextStyle(Colors.black)),
+              Checkbox(value: client.showMove, onChanged: (b) => setState(() {
+                client.showMove = b ?? false;
+              })),
+            ],
+          ),
+          const Divider(),
           Row(
             children: [
               Text("Color Presets: ",style: MatrixApp.getTextStyle(Colors.black)),

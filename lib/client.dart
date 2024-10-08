@@ -19,8 +19,7 @@ class MatrixClient extends ChangeNotifier {
   PieceStyle pieceStyle = PieceStyle.caliente;
   GameStyle gameStyle = GameStyle.blitz;
   bool showControl = false;
-  bool showMove = false;
-  bool realTime = false;
+  bool showMove = true;
   MatrixColorScheme colorScheme = ColorStyle.heatmap.colorScheme;
   MixStyle mixStyle = MixStyle.pigment;
   int maxControl = 2;
