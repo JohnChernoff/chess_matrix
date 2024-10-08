@@ -21,10 +21,7 @@ class MatrixClient extends ChangeNotifier {
   bool showControl = false;
   bool showMove = false;
   bool realTime = false;
-  Color blackPieceColor = const Color.fromARGB(255, 20, 255, 233 );
-  Color whitePieceColor = const Color.fromARGB(255, 255, 231, 20 );
-  Color gridColor =  const Color.fromARGB(72, 255, 255, 255);
-  MatrixColorScheme colorScheme = ColorStyle.blueRed.colorScheme;
+  MatrixColorScheme colorScheme = ColorStyle.heatmap.colorScheme;
   MixStyle mixStyle = MixStyle.pigment;
   int maxControl = 2;
   final Map<String,ui.Image> pieceImages = {};
@@ -180,11 +177,15 @@ class MatrixClient extends ChangeNotifier {
     updateView(updateBoards: true);
   }
 
-  void setColorScheme({Color? whiteColor, Color? blackColor, Color? voidColor}) {
-    colorScheme = MatrixColorScheme(
-        whiteColor ?? colorScheme.whiteColor,
-        blackColor ?? colorScheme.blackColor,
-        voidColor ?? colorScheme.voidColor);
+  void setColorScheme({Color? whiteControl, Color? blackControl, Color? voidColor, Color? whiteBlend, Color? blackBlend, Color? grid, MatrixColorScheme? scheme}) {
+    colorScheme = scheme ?? MatrixColorScheme(
+        whiteControl ?? colorScheme.whiteColor,
+        blackControl ?? colorScheme.blackColor,
+        voidColor ?? colorScheme.voidColor,
+        whitePieceBlendColor: whiteBlend ?? colorScheme.whitePieceBlendColor,
+        blackPieceBlendColor: blackBlend ?? colorScheme.blackPieceBlendColor,
+        gridColor: grid ?? colorScheme.gridColor,
+    );
     updateView(updateBoards: true);
   }
 

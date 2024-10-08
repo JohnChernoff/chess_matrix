@@ -13,7 +13,6 @@ import 'board_state.dart';
 
 /*
 
-Forest Scheme: #ffd8ffb,#ff171717,#ff76c479,#ff92cf94,#ff14ffe9,#48ffffff
 You can make blueprint of single game (cumulative board control)
 
 TODO:
@@ -183,7 +182,9 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                     client.lichessToken == null ? const SizedBox.shrink() : client.playBoards.isEmpty && client.seeking ?
                     IconButton(onPressed: () => client.cancelSeek(), icon: const Icon(Icons.cancel)) :
                     IconButton(onPressed: () => MatrixApp.menuBuilder(context,SeekWidget(client)), icon: const Icon(Icons.send)),
-                    IconButton(onPressed: () => MatrixApp.menuBuilder(context,OptionWidget(client)), icon: const Icon(Icons.menu)),
+                    IconButton(onPressed: () => MatrixApp.menuBuilder(context,
+                        ChangeNotifierProvider.value(value: client,child: const OptionWidget())),
+                        icon: const Icon(Icons.menu)),
                     Text("Boards: $numBoards",style: MatrixApp.getTextStyle(color2)),
                     Slider(value: numBoards as double, min: 1, max: 16,
                       onChanged: (double value) => setState(() { newNumBoards = value.floor(); }),

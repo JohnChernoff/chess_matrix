@@ -1,18 +1,17 @@
 import 'package:chess_matrix/main.dart';
 import 'package:cyclop/cyclop.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'board_matrix.dart';
 import 'client.dart';
 import 'matrix_fields.dart';
 
 class OptionWidget extends StatefulWidget {
-  final MatrixClient client;
-  const OptionWidget(this.client,{super.key});
+  const OptionWidget({super.key});
 
   @override
   State<StatefulWidget> createState() => _OptionWidgetState();
-
 }
 
 class _OptionWidgetState extends State<OptionWidget> {
@@ -30,183 +29,135 @@ class _OptionWidgetState extends State<OptionWidget> {
 
   @override
   Widget build(BuildContext context) {
-    Axis axis = ZugUtils.getScreenDimensions(context).getMainAxis();
-    return Container(color: Colors.grey, height: 500, child: Flex(direction: Axis.vertical,
+    MatrixClient client = Provider.of(context, listen: false);
+    return Container(color: Colors.grey, height: 480, child: Flex(direction: Axis.vertical,
         children: [
-          DropdownButton(value: colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
-              DropdownMenuItem(value: ColorStyle.values.elementAt(index),
-                  child: Text("Color Style: ${ColorStyle.values.elementAt(index).name}",
-                      style: MatrixApp.getTextStyle(Colors.black)))),
-              onChanged: (ColorStyle? style) => widget.client.setColorScheme(
-                whiteColor: style?.colorScheme.whiteColor,
-                blackColor: style?.colorScheme.blackColor,
-                voidColor: style?.colorScheme.voidColor,
-              )),
-          ElevatedButton(
-              onPressed: () => MatrixApp.menuBuilder(context, getColorPickers(widget.client,axis)),
-              child: Text("Colors",style: MatrixApp.getTextStyle(Colors.black)),
+          Row(
+            children: [
+              Text("Color Presets: ",style: MatrixApp.getTextStyle(Colors.black)),
+              DropdownButton(value: colorStyle, items: List.generate(ColorStyle.values.length, (index) =>
+                  DropdownMenuItem(value: ColorStyle.values.elementAt(index),
+                      child: Text("Color Style: ${ColorStyle.values.elementAt(index).name}",
+                          style: MatrixApp.getTextStyle(Colors.black)))),
+                  onChanged: (ColorStyle? style) => client.setColorScheme(scheme: style?.colorScheme)
+              ),
+            ],
           ),
           const SizedBox(width: 24, height: 24),
-          DropdownButton(value: widget.client.mixStyle, items: List.generate(MixStyle.values.length, (index) =>
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ElevatedButton(
+                onPressed: () => MatrixApp.menuBuilder(context, ChangeNotifierProvider.value(value: client, child: const ColorMenu())),
+                child: Text("Set Colors",style: MatrixApp.getTextStyle(Colors.black)),
+              ),
+              ElevatedButton(
+                onPressed: () => client.setColorScheme(
+                  whiteControl: rndCol(),blackControl: rndCol(),voidColor: rndCol(),whiteBlend: rndCol(),blackBlend: rndCol()//,grid: rndCol()
+                ),
+                child: Text("Random Colors",style: MatrixApp.getTextStyle(Colors.black)),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          DropdownButton(value: client.mixStyle, items: List.generate(MixStyle.values.length, (index) =>
               DropdownMenuItem(value: MixStyle.values.elementAt(index),
                   child: Text("Mix Style: ${MixStyle.values.elementAt(index).name}",
                       style: MatrixApp.getTextStyle(Colors.black)))),
               onChanged: (MixStyle? value) => setState(() {
-                widget.client.setMixStyle(value!);
+                client.setMixStyle(value!);
               })),
           const SizedBox(width: 24, height: 24),
-          DropdownButton(value: widget.client.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
+          DropdownButton(value: client.gameStyle, items: List.generate(GameStyle.values.length, (index) =>
               DropdownMenuItem(value: GameStyle.values.elementAt(index),
                   child: Text("Game Style: ${GameStyle.values.elementAt(index).name}",
                       style: MatrixApp.getTextStyle(Colors.black)))),
               onChanged: (GameStyle? value) => setState(() {
-                widget.client.setGameStyle(value!);
+                client.setGameStyle(value!);
               })),
           const SizedBox(width: 24, height: 24),
-          DropdownButton(value: widget.client.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
+          DropdownButton(value: client.pieceStyle, items: List.generate(PieceStyle.values.length, (index) =>
               DropdownMenuItem(value: PieceStyle.values.elementAt(index),
                   child: Text("Piece Style: ${PieceStyle.values.elementAt(index).name}",
                       style: MatrixApp.getTextStyle(Colors.black)))),
               onChanged: (PieceStyle? value) => setState(() {
-                widget.client.setPieceStyle(value!);
+                client.setPieceStyle(value!);
               })),
+          const Divider(height: 24),
           Row(
             children: [
-              Text("Image Quality: ${imageQuality(resolution ?? widget.client.matrixResolution)}",
+              Text("Resolution: ${imageQuality(resolution ?? client.matrixResolution)}",
                   style: MatrixApp.getTextStyle(Colors.black)),
                 Slider(
-                  value: resolution ?? (widget.client.matrixResolution as double), divisions: 4, min: 100, max: 500,
+                  value: resolution ?? (client.matrixResolution as double), divisions: 4, min: 100, max: 500,
                   onChanged: (double value) => setState(() {
                     resolution = value;
                   }),
-                  onChangeEnd: (double value) => widget.client.setResolution(value.round()),
+                  onChangeEnd: (double value) => client.setResolution(value.round()),
                 ),
               ],
           ),
           Row(
             children: [
               Text("Intensity",style: MatrixApp.getTextStyle(Colors.black)),
-              Slider(value: intensity ?? (widget.client.maxControl-6).abs() as double, divisions: 5, min: 1, max: 5,
+              Slider(value: intensity ?? (client.maxControl-6).abs() as double, divisions: 5, min: 1, max: 5,
                   onChanged: (double value) => setState(() {
                     intensity = value;
                   }),
-                  onChangeEnd: (double value) => widget.client.setMaxControl((value.round() - 6).abs()),
+                  onChangeEnd: (double value) => client.setMaxControl((value.round() - 6).abs()),
                 ),
               ],
           ),
           ElevatedButton(
-            onPressed: () => widget.client.loadTVGames(reset: false),
+            onPressed: () => client.loadTVGames(reset: false),
             child: Text("Reload",style: MatrixApp.getTextStyle(Colors.black)),
           ),
         ],
     ));
   }
+}
 
-  Widget getColorPickers(MatrixClient client, Axis axis) {
+class ColorMenu extends StatelessWidget {
+  const ColorMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    MatrixClient client = context.watch<MatrixClient>();
+    final dims = ZugUtils.getScreenDimensions(context); //Axis axis = dims.getMainAxis();
     return Container(
         color: Colors.brown,
-        width: double.maxFinite,
-        height: double.maxFinite,
-        child: ListView(
-          scrollDirection: axis,
+        width: dims.width /2,
+        height: dims.height / 3,
+        child: GridView.extent(
+          scrollDirection: Axis.vertical, //axis,
+          maxCrossAxisExtent: 200,
+          mainAxisSpacing: 8.0,
+          crossAxisSpacing: 8.0,
+          padding: const EdgeInsets.all(8.0),
           children: [
-            Column(
-              children: [
-                Text("White Control Color: ",
-                    style: MatrixApp.getTextStyle(Colors.white)),
-                ColorPicker(
-                  onColorSelected: (Color color) {
-                    client.setColorScheme(whiteColor: color);
-                  },
-                  selectedColor: client.colorScheme.whiteColor,
-                  config: const ColorPickerConfig(),
-                  darkMode: true,
-                  onClose: () {},
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text("Black Control Color: ",
-                    style: MatrixApp.getTextStyle(Colors.black)),
-                ColorPicker(
-                  onColorSelected: (Color color) {
-                    client.setColorScheme(blackColor: color);
-                  },
-                  selectedColor: client.colorScheme.blackColor,
-                  config: const ColorPickerConfig(),
-                  darkMode: true,
-                  onClose: () {},
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text("Void Control Color: ",
-                    style: MatrixApp.getTextStyle(Colors.grey)),
-                ColorPicker(
-                  onColorSelected: (Color color) {
-                    client.setColorScheme(voidColor: color);
-                  },
-                  selectedColor: client.colorScheme.voidColor,
-                  config: const ColorPickerConfig(),
-                  darkMode: true,
-                  onClose: () {},
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text("Black Piece Color: ",
-                    style: MatrixApp.getTextStyle(Colors.grey)),
-                ColorPicker(
-                  onColorSelected: (Color color) {
-                    client.blackPieceColor = color;
-                    client.updateView(updateBoards: true);
-                  },
-                  selectedColor: client.blackPieceColor,
-                  config: const ColorPickerConfig(),
-                  darkMode: true,
-                  onClose: () {},
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text("White Piece Color: ",
-                    style: MatrixApp.getTextStyle(Colors.grey)),
-                ColorPicker(
-                  onColorSelected: (Color color) {
-                    client.whitePieceColor = color;
-                    client.updateView(updateBoards: true);
-                  },
-                  selectedColor: client.whitePieceColor,
-                  config: const ColorPickerConfig(),
-                  darkMode: true,
-                  onClose: () {},
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text("Grid Color: ",
-                    style: MatrixApp.getTextStyle(Colors.grey)),
-                ColorPicker(
-                  onColorSelected: (Color color) {
-                    client.gridColor = color;
-                    client.updateView(updateBoards: true);
-                  },
-                  selectedColor: client.gridColor,
-                  config: const ColorPickerConfig(),
-                  darkMode: true,
-                  onClose: () {},
-                ),
-              ],
-            ),
-
+            getColorPicker(client, "White Control ", client.colorScheme.whiteColor, (color) => client.setColorScheme(whiteControl: color)),
+            getColorPicker(client, "Black Control ", client.colorScheme.blackColor, (color) => client.setColorScheme(blackControl: color)),
+            getColorPicker(client, "Void: ", client.colorScheme.voidColor, (color) => client.setColorScheme(voidColor: color)),
+            getColorPicker(client, "Grid: ", client.colorScheme.gridColor, (color) => client.setColorScheme(grid: color)),
+            getColorPicker(client, "White Blend ", client.colorScheme.whitePieceBlendColor, (color) => client.setColorScheme(whiteBlend: color)),
+            getColorPicker(client, "Black Blend ", client.colorScheme.blackPieceBlendColor, (color) => client.setColorScheme(blackBlend: color)),
           ],
         ));
   }
+
+  Widget getColorPicker(MatrixClient client, String title, Color colorProvider, dynamic onSelect) {
+    return Column(
+      children: [
+        Text(title, style: MatrixApp.getTextStyle(colorProvider)),
+        ColorButton(
+          size: 100,
+          boxShape: BoxShape.rectangle,
+          color: colorProvider,
+          onColorChanged: (Color color) => onSelect(color),
+          config: const ColorPickerConfig(enableLibrary: false, enableEyePicker: false),
+          darkMode: true,
+        ),
+      ],
+    );
+  }
 }
-
-

@@ -13,10 +13,12 @@ const Color deepYellow = Color(0xFFFFFF00);
 
 enum ColorComponent {red,green,blue}
 enum ColorStyle {
-  blueRed(MatrixColorScheme(deepBlue,deepRed,Colors.black)),
-  yellowRed(MatrixColorScheme(deepYellow,deepRed,Colors.black)),
-  yellowBlue(MatrixColorScheme(deepYellow,deepBlue,Colors.black)),
-  monochrome(MatrixColorScheme(Colors.white,Colors.black,Colors.grey));
+  heatmap(MatrixColorScheme(deepBlue,deepRed,Colors.black)),
+  lava(MatrixColorScheme(deepYellow,deepRed,Colors.black)),
+  rainbow(MatrixColorScheme(deepYellow,deepBlue,Colors.black)),
+  forest(MatrixColorScheme(Color(0xffd8ffb0),Color(0xff171717),Color(0xff76c479),blackPieceBlendColor: Color(0xff92cf94),whitePieceBlendColor: Color(0xff14ffe9))),
+  mono(MatrixColorScheme(Colors.white,Colors.black,Colors.grey)),
+  ;
   final MatrixColorScheme colorScheme;
   const ColorStyle(this.colorScheme);
 }
@@ -408,14 +410,23 @@ class ColorArray {
   ColorArray(final int red, final int green, final int blue) : values = List.of([red,green,blue]);
 }
 
-Color rndCol() {
-  return Colors.primaries[Random().nextInt(Colors.primaries.length)];
-}
-
 class MatrixColorScheme {
   final Color whiteColor;
   final Color blackColor;
   final Color voidColor;
-  const MatrixColorScheme(this.whiteColor,this.blackColor,this.voidColor);
+  final Color whitePieceBlendColor;
+  final Color blackPieceBlendColor;
+  final Color gridColor;
+  final Color edgeColor;
+
+  const MatrixColorScheme(this.whiteColor,this.blackColor,this.voidColor, {
+    this.whitePieceBlendColor = const Color.fromARGB(255, 255, 231, 20 ),
+    this.blackPieceBlendColor = const Color.fromARGB(255, 20, 255, 233 ),
+    this.gridColor = const Color.fromARGB(72, 255, 255, 255),
+    this.edgeColor = Colors.black,
+  });
 }
 
+Color rndCol() {
+  return Colors.primaries[Random().nextInt(Colors.primaries.length)];
+}

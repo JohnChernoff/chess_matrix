@@ -72,9 +72,9 @@ class BoardWidget extends StatelessWidget {
       boardOrientation: state.blackPOV ? chessboard.PlayerColor.black : chessboard.PlayerColor.white,
       controller: state.controller,
       size: size,
-      blackPieceColor: client.blackPieceColor,
-      whitePieceColor: client.whitePieceColor,
-      gridColor: client.gridColor,
+      blackPieceColor: client.colorScheme.blackPieceBlendColor,
+      whitePieceColor: client.colorScheme.whitePieceBlendColor,
+      gridColor: client.colorScheme.gridColor,
       pieceSet: client.pieceStyle.name,
       dummyBoard: true,
       backgroundImage: state.finished ? null : state.board?.image, //TODO: hide when null
