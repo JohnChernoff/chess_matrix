@@ -16,7 +16,7 @@ import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 class MatrixClient extends ChangeNotifier {
   int initialBoardNum;
   int matrixResolution = 300;
-  PieceStyle pieceStyle = PieceStyle.horsey;
+  PieceStyle pieceStyle = PieceStyle.caliente;
   GameStyle gameStyle = GameStyle.blitz;
   bool showControl = false;
   bool showMove = false;

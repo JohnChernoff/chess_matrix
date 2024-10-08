@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'client.dart';
 import 'game_seek.dart';
+import 'help_widget.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
 
@@ -16,6 +17,7 @@ import 'board_state.dart';
 You can make blueprint of single game (cumulative board control)
 
 TODO:
+ settings cookies
  game chat, etc.
  selectable keys,
  animate sounds,
@@ -177,6 +179,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 const SizedBox.shrink(), // Nothing to left-align
                 Row( // Center-aligned widget (with multiple children)
                   children: [
+                    IconButton(onPressed: () => MatrixApp.menuBuilder(context,const HelpWidget()), icon: const Icon(Icons.help)),
                     client.lichessToken == null ? IconButton(onPressed: () => client.lichessLogin(), icon: const Icon(Icons.login))
                         : Text(client.userInfo['username'],style: MatrixApp.getTextStyle(Colors.white)),
                     client.lichessToken == null ? const SizedBox.shrink() : client.playBoards.isEmpty && client.seeking ?
