@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'board_matrix.dart';
 import 'chess.dart';
@@ -45,12 +46,13 @@ List<List<MidiAssignment>> defaultEnsembles = [
 class ChessSonifier {
   MatrixClient client;
   MidiManager midi = MidiManager();
-  MidiTrack masterTrack = MidiTrack("Master",maxLength: 2);
+  MidiTrack loopTrack = MidiTrack("LoopTrack",maxLength: 2);
+  MidiTrack gameTrack = MidiTrack("GameTrack"); //int n = 0;
 
   ChessSonifier(this.client);
 
-  MidiChessPlayer? getPieceInstrument(Piece piece) {
-    return switch(piece.type) {
+  MidiChessPlayer? getPieceInstrument(Piece? piece) {
+    return switch(piece?.type ?? PieceType.none) {
       PieceType.none => null, //shouldn't occur
       PieceType.pawn => MidiChessPlayer.pawnMelody,
       PieceType.knight => MidiChessPlayer.knightMelody,
@@ -61,26 +63,44 @@ class ChessSonifier {
     };
   }
 
-  void generatePieceNotes(Piece piece, Move move, int yDist) {
+  int getMoveInterval(Piece piece, Move move) {
     int distance = calcMoveDistance(move).round();
-    Instrument? pieceInstrument = midi.orchMap[getPieceInstrument(piece)?.name];
-    Instrument? mainInstrument = midi.orchMap[MidiChessPlayer.mainMelody.name];
-    if (pieceInstrument != null && mainInstrument != null) {
-      double dur = (yDist+1)/4;
-      int newPitch = midi.getNextPitch(pieceInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
+    return piece.color == ChessColor.black ? -distance : distance;
+  }
 
-      masterTrack.addNoteEvent(masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),elem: TrackElement.realtimeHarmony);
-      newPitch = midi.getNextPitch(mainInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
-      masterTrack.addNoteEvent(masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),elem: TrackElement.realtimeHarmony);
+  List<MidiEvent> getMoveMidiEvents(MidiTrack track, MidiChessPlayer? player, Piece? piece, Move move, {double tempo = .25, xRest = false, yRest = false}) {
+    List<MidiEvent> events = []; if (piece == null) return events;
+    int yDist = piece.color == ChessColor.black ? move.to.y : ranks - (move.to.y);
+    Instrument? i = midi.orchMap[player?.name];
+    if (i != null) {
+      int newPitch = midi.getNextPitch(i.currentPitch, getMoveInterval(piece, move), midi.currentChord);
+      events.add(track.createNoteEvent(i, newPitch, (yDist + 1) * tempo, .5));
+      if (xRest) {
+        int xRestDist = piece.color == ChessColor.black ? move.to.x : files - (move.to.x);
+        events.add(track.createRestEvent(i, (xRestDist + 1) * tempo));
+      }
+      else if (yRest) {
+        int yRestDist = piece.color == ChessColor.black ? move.from.x : files - (move.from.x);
+        events.add(track.createRestEvent(i, (yRestDist + 1) * tempo/8));
+      }
+    }
+    return events;
+  }
+
+  void generatePieceNotes(Piece piece, Move move) {
+    if (!gameTrack.playing) {
+      MidiEvent? e = getMoveMidiEvents(loopTrack,getPieceInstrument(piece),piece,move).firstOrNull;
+      if (e != null) loopTrack.addNoteEvent(e,elem: TrackElement.realtimeHarmony);
+      MidiEvent? e2 = getMoveMidiEvents(loopTrack,MidiChessPlayer.mainMelody,piece,move).firstOrNull;
+      if (e2 != null) loopTrack.addNoteEvent(e2,elem: TrackElement.realtimeHarmony);
     }
   }
 
   void generatePawnRhythms(BoardMatrix board, bool realTime, ChessColor color, {drumVol = .25, compVol = .33, crossRhythm=false}) { //print("Generating pawn rhythm map...");
     Instrument? i = midi.orchMap[MidiChessPlayer.mainRhythm.name];
-    if (i != null) {
-      masterTrack.newMasterMap.clear();
-      double duration = masterTrack.maxLength ?? 2;
-      double halfDuration = duration / 2;
+    if (!gameTrack.playing && i != null) {
+      loopTrack.newMasterMap.clear();
+      double duration = loopTrack.maxLength ?? 2;
       double dur = duration / ranks;
       for (int beat = 0; beat < files; beat++) {
         for (int steps = 0; steps < ranks; steps++) {
@@ -89,14 +109,15 @@ class ChessSonifier {
           if (compPiece.type == PieceType.pawn) { // && p.color == color) {
             double t = (beat/files) * duration;
             int pitch = midi.getNextPitch(midi.currentChord.key.index + (octave * 4), steps, midi.currentChord);
-            masterTrack.newMasterMap.add(masterTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
+            loopTrack.newMasterMap.add(loopTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
           }
           if (drumPiece.type == PieceType.pawn) {
+            double halfDuration = duration / 2;
             double t = (beat/files) * halfDuration;
             int pitch = 60;
             if (steps < midi.drumMap.values.length) {
-              masterTrack.newMasterMap.add(masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
-              masterTrack.newMasterMap.add(masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
+              loopTrack.newMasterMap.add(loopTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
+              loopTrack.newMasterMap.add(loopTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
             }
           }
         }
@@ -128,7 +149,7 @@ class ChessSonifier {
 
   Future<void> initAudio() async { print("Loading audio");
     await midi.init(defaultEnsembles.first);
-    midi.loopTrack(masterTrack);
+    loopTrack.play(midi,looping: true); //midi.loopTrack(loopTrack);
     client.updateView();
   }
 
@@ -147,6 +168,19 @@ class ChessSonifier {
         MidiManager.getNewNote(midi.currentChord.key),
         MidiManager.getNewScale(midi.currentChord.scale));
     client.updateView();
+  }
+
+  Future<void> playGame(IList<MoveState> moves) async {
+    loopTrack.stop();
+    for (MoveState move in moves) { //final MidiChessPlayer? player = getPieceInstrument(move.piece);
+      print("${move.piece} -> ${move.move}");
+      for (MidiEvent e in getMoveMidiEvents(gameTrack, MidiChessPlayer.mainRhythm, move.piece, move.move, tempo: .05, yRest: true)) {
+        print("Note Event: $e");
+        gameTrack.addNoteEvent(e);
+      }
+    }
+    await gameTrack.play(midi, looping: false);
+    loopTrack.play(midi,looping: true);
   }
 
 }

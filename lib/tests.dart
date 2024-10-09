@@ -13,11 +13,11 @@ class MatrixTest {
     Instrument i = sonifier.orchMap[MidiChessPlayer.pawnMelody.name]!;
     masterTrack.clearTrack();
     masterTrack.addChordEvent(i, [62], dur, vol);
-    masterTrack.addRest(i,dur * 4);
+    masterTrack.addRest(dur * 4);
     masterTrack.addChordEvent(i, [61], dur, vol);
     masterTrack.addChordEvent(i, [59,64], dur, vol);
     masterTrack.addChordEvent(i, [59], dur, vol);
-    sonifier.loopTrack(masterTrack);
+    masterTrack.play(sonifier,looping: true); //sonifier.loopTrack(masterTrack);
   }
 }
 

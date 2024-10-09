@@ -2,7 +2,27 @@ import 'dart:js' as js;
 import 'package:chess/chess.dart' as dc;
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'board_matrix.dart';
+
+const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const ranks = 8, files = 8;
+const Color deepBlue = Color(0xFF0000FF);
+const Color deepRed = Color(0xFFFF0000);
+const Color deepYellow = Color(0xFFFFFF00);
+
+enum ColorComponent {red,green,blue}
+enum ColorStyle {
+  heatmap(MatrixColorScheme(deepBlue,deepRed,Colors.black)),
+  lava(MatrixColorScheme(deepYellow,deepRed,Colors.black)),
+  rainbow(MatrixColorScheme(deepYellow,deepBlue,Colors.black)),
+  forest(MatrixColorScheme(Color(0xffd8ffb0),Color(0xff171717),Color(0xff76c479),blackPieceBlendColor: Color(0xff92cf94),whitePieceBlendColor: Color(0xff14ffe9))),
+  mono(MatrixColorScheme(Colors.white,Colors.black,Colors.grey)),
+  ;
+  final MatrixColorScheme colorScheme;
+  const ColorStyle(this.colorScheme);
+}
+enum MixStyle {pigment,checker,add}
+enum ChessColor {none,white,black}
+enum PieceType {none,pawn,knight,bishop,rook,queen,king}
 
 class ColorArray {
   final List<int> values;
@@ -133,9 +153,28 @@ class Piece {
     type = _decodeChar(char);
     color = char == char.toUpperCase() ? ChessColor.white : ChessColor.black;
   }
+  Piece.fromDartChess(dc.Piece p) {
+    type = _decodePieceType(p.type);
+    color = p.color == dc.Color.BLACK ? ChessColor.black : ChessColor.white;
+  }
+  Piece.fromDartChessType(dc.PieceType pt, this.color) {
+    type = _decodePieceType(pt);
+  }
 
   bool eq(PieceType t, ChessColor c) {
     return type == t && color == c;
+  }
+
+  PieceType _decodePieceType(dc.PieceType pt) {
+    return switch(pt) {
+      dc.PieceType.PAWN => PieceType.pawn,
+      dc.PieceType.KNIGHT => PieceType.knight,
+      dc.PieceType.BISHOP => PieceType.bishop,
+      dc.PieceType.ROOK => PieceType.rook,
+      dc.PieceType.QUEEN => PieceType.queen,
+      dc.PieceType.KING => PieceType.king,
+      dc.PieceType() => PieceType.none, //eh?
+    };
   }
 
   PieceType _decodeChar(String char) {
@@ -207,12 +246,13 @@ class MoveState {
   final String afterFEN;
   final Move move;
   final int whiteClock, blackClock;
-  late final dc.PieceType? piece;
+  late Piece? piece;
   //late final bool isCheck, isCapture, isCastle, isEP, isProm; //TODO: calc
 
   MoveState(this.move,this.whiteClock,this.blackClock,this.beforeFEN, this.afterFEN) {
-    dc.Chess game = dc.Chess.fromFEN(afterFEN);
-    piece = game.get(move.toStr)?.type;
+    final game = dc.Chess.fromFEN(afterFEN);
+    final p = game.get(move.toStr);
+    piece = p != null ? Piece.fromDartChess(p) : Piece(PieceType.none,ChessColor.none);
   }
 }
 

@@ -9,7 +9,6 @@ import 'package:flutter_oauth/flutter_oauth.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:oauth2/oauth2.dart';
 import 'board_state.dart';
-import 'board_matrix.dart';
 import 'chess.dart';
 import 'matrix_fields.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';

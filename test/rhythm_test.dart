@@ -18,7 +18,7 @@ Future<void> rhythmTest() async {
   double vol = .25;
   masterTrack.clearTrack();
   masterTrack.addChordEvent(sonifier.midi.orchMap[MidiChessPlayer.mainRhythm.name]!, [62], dur, vol);
-  masterTrack.addRest(sonifier.midi.orchMap[MidiChessPlayer.mainRhythm.name]!,dur * 4);
+  masterTrack.addRest(dur * 4);
   masterTrack.addChordEvent(sonifier.midi.orchMap[MidiChessPlayer.mainRhythm.name]!, [61], dur, vol);
   masterTrack.addChordEvent(sonifier.midi.orchMap[MidiChessPlayer.mainRhythm.name]!, [59,64], dur, vol);
   masterTrack.addChordEvent(sonifier.midi.orchMap[MidiChessPlayer.mainRhythm.name]!, [59], dur, vol);

@@ -3,28 +3,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'chess.dart';
 
-const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const emptyVal = 0, pawnVal = 1, knightVal = 2, bishopVal = 3, rookVal = 4, queenVal = 5, kingVal = 6;
-const ranks = 8, files = 8;
-const Color deepBlue = Color(0xFF0000FF);
-const Color deepRed = Color(0xFFFF0000);
-const Color deepYellow = Color(0xFFFFFF00);
-
-enum ColorComponent {red,green,blue}
-enum ColorStyle {
-  heatmap(MatrixColorScheme(deepBlue,deepRed,Colors.black)),
-  lava(MatrixColorScheme(deepYellow,deepRed,Colors.black)),
-  rainbow(MatrixColorScheme(deepYellow,deepBlue,Colors.black)),
-  forest(MatrixColorScheme(Color(0xffd8ffb0),Color(0xff171717),Color(0xff76c479),blackPieceBlendColor: Color(0xff92cf94),whitePieceBlendColor: Color(0xff14ffe9))),
-  mono(MatrixColorScheme(Colors.white,Colors.black,Colors.grey)),
-  ;
-  final MatrixColorScheme colorScheme;
-  const ColorStyle(this.colorScheme);
-}
-enum MixStyle {pigment,checker,add}
-enum ChessColor {none,white,black}
-enum PieceType {none,pawn,knight,bishop,rook,queen,king}
-
 class BoardMatrix {
   final String fen;
   final int width, height;

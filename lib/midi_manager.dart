@@ -181,12 +181,6 @@ class MidiManager extends ChangeNotifier {
     return newPitch;
   }
 
-  void loopTrack(MidiTrack track) {
-    track.play(this, (t) {
-      loopTrack(track);
-    },realTime: true);
-  }
-
 }
 
 class KeyChord {
@@ -221,39 +215,54 @@ class MidiTrack implements Comparable<MidiTrack> {
     return subTracks[elem] ?? [];
   }
 
-  Future<void> play(MidiManager player,dynamic onFinished,{realTime = false}) async {
-    if (newMasterMap.isNotEmpty) {
-      getSubTrack(TrackElement.master).clear();
-      for (MidiEvent e in newMasterMap) {
-        addNoteEvent(e, updatePitch: false);
-      }
-      newMasterMap.clear();
-    }
-    List<MidiEvent> master = getSubTrack(TrackElement.master);
-    for (MidiEvent e in master) {
-      player.playNote(e.instrument,e.offset, e.pitch, e.duration,e.volume);
-    }
-    if (realTime) {
-      List<MidiEvent> harmony = getSubTrack(TrackElement.realtimeHarmony);
-      List<MidiEvent> melody = getSubTrack(TrackElement.realtimeMelody);
-      int currentMillis = ((maxLength ?? 1) * 1000).round(); //print("Waiting $currentMillis milliseconds...");
-      Future.delayed(Duration(milliseconds: currentMillis)).then((value) => onFinished(this));
-      double quantizeMillis =  currentMillis / 8; //print("Quantizing to: $quantizeMillis");
-      for (double t = 0; t < currentMillis; t += quantizeMillis) {
-        await Future.delayed(Duration(milliseconds: t.floor()));
-        if (melody.isNotEmpty) {
-          MidiEvent melodyEvent = melody.removeAt(0);
-          player.playNote(melodyEvent.instrument,0, melodyEvent.pitch, melodyEvent.duration,melodyEvent.volume);
+  Future<void> play(MidiManager player,{looping = false, realTime = true}) async {
+    playing = true;
+    do {
+      if (newMasterMap.isNotEmpty) {
+        getSubTrack(TrackElement.master).clear();
+        for (MidiEvent e in newMasterMap) {
+          addNoteEvent(e, updatePitch: false);
         }
-        for (int i = 0; i < maxHarmony && harmony.isNotEmpty; i++) {
-          MidiEvent harmonyEvent = harmony.removeAt(0);
-          player.playNote(harmonyEvent.instrument,0, harmonyEvent.pitch, harmonyEvent.duration,harmonyEvent.volume);
+        newMasterMap.clear();
+      }
+      List<MidiEvent> master = getSubTrack(TrackElement.master);
+      for (MidiEvent e in master) {
+        player.playNote(e.instrument,e.offset, e.pitch, e.duration,e.volume);
+      }
+      //final eot = //.then((value) => onFinished());
+      if (looping) {
+        int currentMillis = ((maxLength ?? 1) * 1000).round(); //print("$name: Waiting $currentMillis milliseconds...");
+        List<MidiEvent> harmony = getSubTrack(TrackElement.realtimeHarmony);
+        List<MidiEvent> melody = getSubTrack(TrackElement.realtimeMelody);
+        double quantizeMillis =  currentMillis / 8;
+        for (double t = 0; t < currentMillis && playing; t += quantizeMillis) { //print("$name: Waiting $quantizeMillis millis")
+          await Future.delayed(Duration(milliseconds: quantizeMillis.floor()));
+          if (melody.isNotEmpty) {
+            MidiEvent melodyEvent = melody.removeAt(0);
+            player.playNote(melodyEvent.instrument,0, melodyEvent.pitch, melodyEvent.duration,melodyEvent.volume);
+          }
+          for (int i = 0; i < maxHarmony && harmony.isNotEmpty; i++) {
+            MidiEvent harmonyEvent = harmony.removeAt(0);
+            player.playNote(harmonyEvent.instrument,0, harmonyEvent.pitch, harmonyEvent.duration,harmonyEvent.volume);
+          }
         }
       }
-    }
+      else if (realTime) {
+        int millis = (max(maxLength ?? 1,_currentLength) * 1000).floor();
+        print("Waiting $millis milliseconds");
+        await Future.delayed(Duration(milliseconds: millis));
+      }
+    } while (looping && playing);
+    playing = false;
   }
 
-  void addRest(Instrument instrument,double duration) { //addNoteEvent(instrument,0,duration,0);
+  //void pause() {}
+
+  void stop() {
+    playing = false;
+  }
+
+  void addRest(double duration) { //addNoteEvent(instrument,0,duration,0);
     _currentLength += duration;
   }
 
@@ -261,11 +270,18 @@ class MidiTrack implements Comparable<MidiTrack> {
     return pitch < maxPitch && pitch > minPitch ? pitch : 60;
   }
 
+  MidiEvent createRestEvent(Instrument instrument,double duration, {double? offset}) {
+    return MidiEvent(instrument, 0, offset ?? _currentLength, duration, 0);
+  }
+
   MidiEvent createNoteEvent(Instrument instrument, int pitch, double duration, double volume, {double? offset}) {
     return MidiEvent(instrument, trimPitch(pitch), offset ?? _currentLength, duration, volume);
   }
 
   void addNoteEvent(MidiEvent e,{elem = TrackElement.master, updatePitch = true}) { //MidiEvent e = createNoteEvent(instrument,pitch,duration,volume,offset: offset);
+    if (e.pitch <= 0) {
+      addRest(e.duration); return;
+    }
     if (elem == TrackElement.master) {
       double t2 = e.offset + e.duration;
       if (_currentLength < t2) _currentLength = t2;

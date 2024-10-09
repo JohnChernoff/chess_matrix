@@ -31,7 +31,7 @@ class TVHandler {
             client.sonifier.keyChange();
           }
           else {
-            sonifier.generatePieceNotes(piece,lastMove,piece.color == ChessColor.black ? lastMove.to.y : ranks - (lastMove.to.y));
+            sonifier.generatePieceNotes(piece,lastMove);
             if (piece.type == PieceType.pawn) {
               sonifier.generatePawnRhythms(matrix,false,piece.color);
             }

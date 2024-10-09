@@ -3,7 +3,7 @@ import 'package:cyclop/cyclop.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
-import 'board_matrix.dart';
+import 'chess.dart';
 import 'client.dart';
 import 'matrix_fields.dart';
 

@@ -30,6 +30,9 @@ class BoardWidget extends StatelessWidget {
               getPlayerBar(state, true),
               Expanded(
                   child: InkWell(
+                    onSecondaryTap: () {
+                      client.sonifier.playGame(state.moves);
+                    },
                     onLongPress: () {
                       if (!state.live) {
                         state.replacable = true;
