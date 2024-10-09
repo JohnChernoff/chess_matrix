@@ -1,4 +1,8 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'board_matrix.dart';
+import 'chess.dart';
+import 'client.dart';
 import 'matrix_fields.dart';
 import 'midi_manager.dart';
 
@@ -39,9 +43,110 @@ List<List<MidiAssignment>> defaultEnsembles = [
 ];
 
 class ChessSonifier {
-  MidiManager midi;
+  MatrixClient client;
+  MidiManager midi = MidiManager();
 
-  ChessSonifier(this.midi);
+  ChessSonifier(this.client);
 
+  MidiChessPlayer? getPieceInstrument(Piece piece) {
+    return switch(piece.type) {
+      PieceType.none => null, //shouldn't occur
+      PieceType.pawn => MidiChessPlayer.pawnMelody,
+      PieceType.knight => MidiChessPlayer.knightMelody,
+      PieceType.bishop => MidiChessPlayer.bishopMelody,
+      PieceType.rook => MidiChessPlayer.rookMelody,
+      PieceType.queen => MidiChessPlayer.queenMelody,
+      PieceType.king => MidiChessPlayer.kingMelody,
+    };
+  }
+
+  void generatePieceNotes(Piece piece, Move move, int yDist) {
+    int distance = calcMoveDistance(move).round();
+    Instrument? pieceInstrument = midi.orchMap[getPieceInstrument(piece)?.name];
+    Instrument? mainInstrument = midi.orchMap[MidiChessPlayer.mainMelody.name];
+    if (pieceInstrument != null && mainInstrument != null) {
+      double dur = (yDist+1)/4;
+      int newPitch = midi.getNextPitch(pieceInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
+
+      midi.masterTrack.addNoteEvent(midi.masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
+      newPitch = midi.getNextPitch(mainInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
+      midi.masterTrack.addNoteEvent(midi.masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
+    }
+  }
+
+  void generatePawnRhythms(BoardMatrix board, bool realTime, ChessColor color, {drumVol = .25, compVol = .33, crossRhythm=false}) { //print("Generating pawn rhythm map...");
+    Instrument? i = midi.orchMap[MidiChessPlayer.mainRhythm.name];
+    if (i != null) {
+      midi.masterTrack.newMasterMap.clear();
+      double duration = midi.masterTrack.maxLength ?? 2;
+      double halfDuration = duration / 2;
+      double dur = duration / ranks;
+      for (int beat = 0; beat < files; beat++) {
+        for (int steps = 0; steps < ranks; steps++) {
+          Piece compPiece = crossRhythm ? board.getSquare(Coord(steps,beat)).piece : board.getSquare(Coord(beat,steps)).piece;
+          Piece drumPiece = crossRhythm ? board.getSquare(Coord(beat,steps)).piece : board.getSquare(Coord(steps,beat)).piece;
+          if (compPiece.type == PieceType.pawn) { // && p.color == color) {
+            double t = (beat/files) * duration;
+            int pitch = midi.getNextPitch(midi.currentChord.key.index + (octave * 4), steps, midi.currentChord);
+            midi.masterTrack.newMasterMap.add(midi.masterTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
+          }
+          if (drumPiece.type == PieceType.pawn) {
+            double t = (beat/files) * halfDuration;
+            int pitch = 60;
+            if (steps < midi.drumMap.values.length) {
+              midi.masterTrack.newMasterMap.add(midi.masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
+              midi.masterTrack.newMasterMap.add(midi.masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  void handleMidiComplete() {
+    print("Track finished"); //sonifier.playAllTracks();
+  }
+
+  double calcMoveDistance(Move move) {
+    return sqrt(pow((move.from.x - move.to.x),2) + pow((move.from.y - move.to.y),2));
+  }
+
+  void toggleAudio() {
+    midi.muted = !midi.muted;
+    if (!midi.muted && !midi.audioReady) {
+      initAudio();
+    } else {
+      client.updateView();
+    }
+  }
+
+  void toggleDrums() {
+    midi.muteDrums = !midi.muteDrums;
+    client.updateView();
+  }
+
+  Future<void> initAudio() async {
+    print("Loading audio");
+    await midi.init(defaultEnsembles.first);
+    midi.loopTrack(midi.masterTrack);
+    client.updateView();
+  }
+
+  void loadInstrument(MidiPerformer perf, MidiInstrument patch) async {
+    await midi.loadInstrument(perf, Instrument(iPatch: patch)); //TODO: levels
+    client.updateView(); //todo: avoid redundancy when calling via initAudio?
+  }
+
+  Future<void> loadRandomEnsemble() async {
+    await midi.loadEnsemble(midi.randomEnsemble(MidiChessPlayer.values.map((v) => v.name).toList()));
+    client.updateView();
+  }
+
+  void keyChange() { //print("Key change!");
+    midi.currentChord = KeyChord(
+        MidiManager.getNewNote(midi.currentChord.key),
+        MidiManager.getNewScale(midi.currentChord.scale));
+    client.updateView();
+  }
 
 }

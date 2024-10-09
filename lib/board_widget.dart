@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as chessboard;
 import 'package:provider/provider.dart';
 import 'board_state.dart';
+import 'chess.dart';
 
 class BoardWidget extends StatelessWidget {
   final int slot;

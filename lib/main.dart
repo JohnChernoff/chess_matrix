@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:chess_matrix/board_widget.dart';
 import 'package:chess_matrix/chess_sonifier.dart';
@@ -114,8 +115,8 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
           return Container(color: Colors.black, child: Column(children: [
             SizedBox(width: constraints.maxWidth, height: 40, child: getGeneralControls(client)),
             const SizedBox(height: 32),
-            client.sonifier.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
-            client.sonifier.audioReady ? const SizedBox(height: 32) : const SizedBox.shrink(),
+            client.sonifier.midi.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
+            client.sonifier.midi.audioReady ? const SizedBox(height: 32) : const SizedBox.shrink(),
             Expanded(child: getMatrixView(client),
             )
           ]));
@@ -202,18 +203,20 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 Row( // Right-aligned widget (with multiple children)
                   children: [
                     IconButton(
-                        onPressed: () => client.toggleAudio(),
+                        onPressed: () => client.sonifier.toggleAudio(),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
-                        icon: Icon(client.sonifier.muted ? Icons.audiotrack : Icons.volume_mute)),
+                        icon: Icon(client.sonifier.midi.muted ? Icons.audiotrack : Icons.volume_mute)),
                     const SizedBox(width: 20),
-                    client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.loadRandomEnsemble(),
+                    client.sonifier.midi.audioReady ? ElevatedButton(onPressed: () => client.sonifier.loadRandomEnsemble(),
                         child: Text("Randomize",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
                     const SizedBox(width: 20),
-                    client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.toggleDrums(),
-                        child: Text("Toggle Drums",style: client.sonifier.muteDrums ? MatrixApp.getTextStyle(color2) : MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
+                    client.sonifier.midi.audioReady ? ElevatedButton(onPressed: () => client.sonifier.toggleDrums(),
+                        child: Text("Toggle Drums",style: client.sonifier.midi.muteDrums ? MatrixApp.getTextStyle(color2) : MatrixApp.getTextStyle(color3)))
+                        : const SizedBox.shrink(),
                     const SizedBox(width: 20),
-                    client.sonifier.audioReady ? ElevatedButton(onPressed: () => client.keyChange(),
-                        child: Text("New Key",style:MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
+                    client.sonifier.midi.audioReady ? ElevatedButton(onPressed: () => client.sonifier.keyChange(),
+                        child: Text("New Key",style:MatrixApp.getTextStyle(color3)))
+                        : const SizedBox.shrink(),
                     const SizedBox(width: 20),
                     testing ? ElevatedButton(onPressed: () => MatrixTest().rhythmTest(client), child: Text("Test",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
                   ],
@@ -231,36 +234,36 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     ListView(scrollDirection: Axis.horizontal, shrinkWrap: true,
         children: List.generate(MidiChessPlayer.values.length, (i) {
           MidiChessPlayer track = MidiChessPlayer.values.elementAt(i);
-          Instrument? instrument = client.sonifier.orchMap[track.name];
+          Instrument? instrument = client.sonifier.midi.orchMap[track.name];
           return instrument != null ? Container(
-              color: client.sonifier.muted ? Colors.brown : MidiChessPlayer.values.elementAt(i).color,
+              color: client.sonifier.midi.muted ? Colors.brown : MidiChessPlayer.values.elementAt(i).color,
               child: Column(children: [
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.brown, shape: const BeveledRectangleBorder()),
                       onPressed: () => setState(() {
-                        client.sonifier.toggleSolo(instrument);
+                        client.sonifier.midi.toggleSolo(instrument);
                       }),
                       child: Text("solo",style: TextStyle(backgroundColor: Colors.black, color: instrument.solo ? Colors.amberAccent : Colors.cyan))
                   ),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.brown, shape: const BeveledRectangleBorder()),
                       onPressed: () => setState(() {
-                        client.sonifier.toggleMute(instrument);
+                        client.sonifier.midi.toggleMute(instrument);
                       }),
                       child: Text("mute",style:TextStyle(backgroundColor: Colors.black, color: instrument.mute ? Colors.amberAccent : Colors.cyan))
                   ),
                 ]
                 ),
                 Text(MidiChessPlayer.values.elementAt(i).name),
-                DropdownButton<MidiInstrument>(value: client.sonifier.orchMap[MidiChessPlayer.values.elementAt(i).name]?.iPatch, alignment: AlignmentDirectional.center,
+                DropdownButton<MidiInstrument>(value: client.sonifier.midi.orchMap[MidiChessPlayer.values.elementAt(i).name]?.iPatch, alignment: AlignmentDirectional.center,
                     items: List.generate(MidiInstrument.values.length, (index) {
                       MidiInstrument patch = MidiInstrument.values.elementAt(index);
                       return DropdownMenuItem(
                           alignment: AlignmentDirectional.center,
                           value: patch,
                           child: Text(patch.name));
-                    }), onChanged: (value) => client.loadInstrument(track.name,value!)) ,
+                    }), onChanged: (value) => client.sonifier.loadInstrument(track.name,value!)) ,
               ],
               )) : const SizedBox.shrink();
         })
@@ -277,3 +280,8 @@ class WebScrollBehavior extends MaterialScrollBehavior {
     PointerDeviceKind.mouse,
   };
 }
+
+Color rndCol() {
+  return Colors.primaries[Random().nextInt(Colors.primaries.length)];
+}
+
