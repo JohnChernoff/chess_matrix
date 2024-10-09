@@ -1,7 +1,7 @@
 import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chess_board/flutter_chess_board.dart' as chessboard;
+import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'package:provider/provider.dart';
 import 'board_state.dart';
 import 'chess.dart';
@@ -71,9 +71,9 @@ class BoardWidget extends StatelessWidget {
     MatrixClient client = Provider.of(context, listen: false);
     String? from =  state.board?.lastMove?.moveStr.substring(0,2);
     String? to =  state.board?.lastMove?.moveStr.substring(2,4);
-    final arrow = (showMove && from != null && to != null) ? chessboard.BoardArrow(from: from, to: to, color: const Color(0x55ffffff)) : null;
-    final board = chessboard.ChessBoard(
-      boardOrientation: state.blackPOV ? chessboard.PlayerColor.black : chessboard.PlayerColor.white,
+    final arrow = (showMove && from != null && to != null) ? cb.BoardArrow(from: from, to: to, color: const Color(0x55ffffff)) : null;
+    final board = cb.ChessBoard(
+      boardOrientation: state.blackPOV ? cb.PlayerColor.black : cb.PlayerColor.white,
       controller: state.controller,
       size: size,
       blackPieceColor: client.colorScheme.blackPieceBlendColor,

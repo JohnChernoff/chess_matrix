@@ -29,7 +29,6 @@ class MidiManager extends ChangeNotifier {
   Completer? initializing;
   Map<MidiPerformer,Instrument> orchMap = {};
   Map<MidiDrum,Instrument> drumMap = {};
-  MidiTrack masterTrack = MidiTrack("Master",maxLength: 2);
   KeyChord currentChord = KeyChord(MidiNote.noteA, MidiScale.majorScale);
 
   MidiManager();

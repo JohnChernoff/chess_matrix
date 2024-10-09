@@ -45,6 +45,7 @@ List<List<MidiAssignment>> defaultEnsembles = [
 class ChessSonifier {
   MatrixClient client;
   MidiManager midi = MidiManager();
+  MidiTrack masterTrack = MidiTrack("Master",maxLength: 2);
 
   ChessSonifier(this.client);
 
@@ -68,17 +69,17 @@ class ChessSonifier {
       double dur = (yDist+1)/4;
       int newPitch = midi.getNextPitch(pieceInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
 
-      midi.masterTrack.addNoteEvent(midi.masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
+      masterTrack.addNoteEvent(masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
       newPitch = midi.getNextPitch(mainInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
-      midi.masterTrack.addNoteEvent(midi.masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
+      masterTrack.addNoteEvent(masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
     }
   }
 
   void generatePawnRhythms(BoardMatrix board, bool realTime, ChessColor color, {drumVol = .25, compVol = .33, crossRhythm=false}) { //print("Generating pawn rhythm map...");
     Instrument? i = midi.orchMap[MidiChessPlayer.mainRhythm.name];
     if (i != null) {
-      midi.masterTrack.newMasterMap.clear();
-      double duration = midi.masterTrack.maxLength ?? 2;
+      masterTrack.newMasterMap.clear();
+      double duration = masterTrack.maxLength ?? 2;
       double halfDuration = duration / 2;
       double dur = duration / ranks;
       for (int beat = 0; beat < files; beat++) {
@@ -88,14 +89,14 @@ class ChessSonifier {
           if (compPiece.type == PieceType.pawn) { // && p.color == color) {
             double t = (beat/files) * duration;
             int pitch = midi.getNextPitch(midi.currentChord.key.index + (octave * 4), steps, midi.currentChord);
-            midi.masterTrack.newMasterMap.add(midi.masterTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
+            masterTrack.newMasterMap.add(masterTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
           }
           if (drumPiece.type == PieceType.pawn) {
             double t = (beat/files) * halfDuration;
             int pitch = 60;
             if (steps < midi.drumMap.values.length) {
-              midi.masterTrack.newMasterMap.add(midi.masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
-              midi.masterTrack.newMasterMap.add(midi.masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
+              masterTrack.newMasterMap.add(masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
+              masterTrack.newMasterMap.add(masterTrack.createNoteEvent(midi.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
             }
           }
         }
@@ -125,10 +126,9 @@ class ChessSonifier {
     client.updateView();
   }
 
-  Future<void> initAudio() async {
-    print("Loading audio");
+  Future<void> initAudio() async { print("Loading audio");
     await midi.init(defaultEnsembles.first);
-    midi.loopTrack(midi.masterTrack);
+    midi.loopTrack(masterTrack);
     client.updateView();
   }
 
