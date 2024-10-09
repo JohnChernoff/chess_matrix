@@ -38,7 +38,7 @@ class MatrixClient extends ChangeNotifier {
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
   MatrixClient(String host, {this.initialBoardNum = 1}) {
-    sonifier = MidiManager(this);
+    sonifier = MidiManager();
     tvHandler = TVHandler(this,sonifier);
     lichessClient = LichessClient(host: host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: tvHandler.handleMsg);
     oauthClient.checkRedirect(getClient);

@@ -1,7 +1,6 @@
 import 'dart:js' as js;
 import 'dart:async';
 import 'dart:math';
-import 'package:chess_matrix/client.dart';
 import 'package:flutter/material.dart';
 import 'matrix_fields.dart';
 
@@ -31,10 +30,9 @@ class MidiManager extends ChangeNotifier {
   Map<MidiPerformer,Instrument> orchMap = {};
   Map<MidiDrum,Instrument> drumMap = {};
   MidiTrack masterTrack = MidiTrack("Master",maxLength: 2);
-  MatrixClient client;
   KeyChord currentChord = KeyChord(MidiNote.noteA, MidiScale.majorScale);
 
-  MidiManager(this.client);
+  MidiManager();
 
   Future<void> init(List<MidiAssignment> ensemble) async {
     initializing = Completer();
@@ -115,12 +113,10 @@ class MidiManager extends ChangeNotifier {
 
   void toggleSolo(Instrument i) {
     i.solo = !i.solo;
-    client.notifyListeners();
   }
 
   void toggleMute(Instrument i) {
     i.mute = !i.mute;
-    client.notifyListeners();
   }
 
   bool isSoloed(Instrument i) {

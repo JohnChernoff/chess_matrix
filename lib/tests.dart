@@ -4,7 +4,7 @@ import 'midi_manager.dart';
 
 class MatrixTest {
   Future<void> rhythmTest(MatrixClient client) async {
-    MidiManager sonifier = MidiManager(client);
+    MidiManager sonifier = MidiManager();
     await sonifier.init(defaultEnsembles.first);
     sonifier.muted = false;
     double dur = .25;

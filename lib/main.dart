@@ -238,12 +238,16 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.brown, shape: const BeveledRectangleBorder()),
-                      onPressed: () => client.sonifier.toggleSolo(instrument),
+                      onPressed: () => setState(() {
+                        client.sonifier.toggleSolo(instrument);
+                      }),
                       child: Text("solo",style: TextStyle(backgroundColor: Colors.black, color: instrument.solo ? Colors.amberAccent : Colors.cyan))
                   ),
                   ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.brown, shape: const BeveledRectangleBorder()),
-                      onPressed: () => client.sonifier.toggleMute(instrument),
+                      onPressed: () => setState(() {
+                        client.sonifier.toggleMute(instrument);
+                      }),
                       child: Text("mute",style:TextStyle(backgroundColor: Colors.black, color: instrument.mute ? Colors.amberAccent : Colors.cyan))
                   ),
                 ]

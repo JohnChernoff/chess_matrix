@@ -38,4 +38,10 @@ List<List<MidiAssignment>> defaultEnsembles = [
   ],
 ];
 
+class ChessSonifier {
+  MidiManager midi;
 
+  ChessSonifier(this.midi);
+
+
+}
