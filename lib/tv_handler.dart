@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:chess_matrix/client.dart';
 import 'board_matrix.dart';
-import 'board_sonifier.dart';
 import 'board_state.dart';
+import 'chess_sonifier.dart';
+import 'midi_manager.dart';
 
 class TVHandler {
   final MatrixClient client;
-  final BoardSonifier sonifier;
+  final MidiManager sonifier;
 
   TVHandler(this.client, this.sonifier);
 
@@ -45,35 +46,35 @@ class TVHandler {
     }
   }
 
-  InstrumentType? getPieceInstrument(Piece piece) {
+  MidiChessPlayer? getPieceInstrument(Piece piece) {
     return switch(piece.type) {
       PieceType.none => null, //shouldn't occur
-      PieceType.pawn => InstrumentType.pawnMelody,
-      PieceType.knight => InstrumentType.knightMelody,
-      PieceType.bishop => InstrumentType.bishopMelody,
-      PieceType.rook => InstrumentType.rookMelody,
-      PieceType.queen => InstrumentType.queenMelody,
-      PieceType.king => InstrumentType.kingMelody,
+      PieceType.pawn => MidiChessPlayer.pawnMelody,
+      PieceType.knight => MidiChessPlayer.knightMelody,
+      PieceType.bishop => MidiChessPlayer.bishopMelody,
+      PieceType.rook => MidiChessPlayer.rookMelody,
+      PieceType.queen => MidiChessPlayer.queenMelody,
+      PieceType.king => MidiChessPlayer.kingMelody,
     };
   }
 
   void generatePieceNotes(Piece piece, int distance, int yDist) {
-    Instrument? pieceInstrument = sonifier.orchMap[getPieceInstrument(piece)];
-    Instrument? mainInstrument = sonifier.orchMap[InstrumentType.mainMelody];
+    Instrument? pieceInstrument = sonifier.orchMap[getPieceInstrument(piece)?.name];
+    Instrument? mainInstrument = sonifier.orchMap[MidiChessPlayer.mainMelody.name];
     if (pieceInstrument != null && mainInstrument != null) {
       double dur = (yDist+1)/4;
       int newPitch = sonifier.getNextPitch(pieceInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
 
-      sonifier.masterTrack.addNoteEvent(sonifier.masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),MusicalElement.harmony);
+      sonifier.masterTrack.addNoteEvent(sonifier.masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
       newPitch = sonifier.getNextPitch(mainInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, sonifier.currentChord);
-      sonifier.masterTrack.addNoteEvent(sonifier.masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),MusicalElement.harmony);
+      sonifier.masterTrack.addNoteEvent(sonifier.masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
     }
   }
 
   void generatePawnRhythms(BoardMatrix board, bool realTime, ChessColor color, {drumVol = .25, compVol = .33, crossRhythm=false}) { //print("Generating pawn rhythm map...");
-    Instrument? i = sonifier.orchMap[InstrumentType.mainRhythm];
+    Instrument? i = sonifier.orchMap[MidiChessPlayer.mainRhythm.name];
     if (i != null) {
-      sonifier.masterTrack.newRhythmMap.clear();
+      sonifier.masterTrack.newMasterMap.clear();
       double duration = sonifier.masterTrack.maxLength ?? 2;
       double halfDuration = duration / 2;
       double dur = duration / ranks;
@@ -84,14 +85,14 @@ class TVHandler {
           if (compPiece.type == PieceType.pawn) { // && p.color == color) {
             double t = (beat/files) * duration;
             int pitch = sonifier.getNextPitch(sonifier.currentChord.key.index + (octave * 4), steps, sonifier.currentChord);
-            sonifier.masterTrack.newRhythmMap.add(sonifier.masterTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
+            sonifier.masterTrack.newMasterMap.add(sonifier.masterTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
           }
           if (drumPiece.type == PieceType.pawn) {
             double t = (beat/files) * halfDuration;
             int pitch = 60;
             if (steps < sonifier.drumMap.values.length) {
-              sonifier.masterTrack.newRhythmMap.add(sonifier.masterTrack.createNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
-              sonifier.masterTrack.newRhythmMap.add(sonifier.masterTrack.createNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
+              sonifier.masterTrack.newMasterMap.add(sonifier.masterTrack.createNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: t));
+              sonifier.masterTrack.newMasterMap.add(sonifier.masterTrack.createNoteEvent(sonifier.drumMap.values.elementAt(steps), pitch, dur, drumVol, offset: halfDuration + t));
             }
           }
         }

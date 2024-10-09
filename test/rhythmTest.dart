@@ -10,7 +10,7 @@ void main() {
 
 Future<void> rhythmTest() async {
   MatrixClient client = MatrixClient('wss://socket.lichess.org/api/socket');
-  BoardSonifier sonifier = BoardSonifier(client);
+  MidiPlayer sonifier = MidiPlayer(client);
   await sonifier.init(1);
   double dur = .25;
   double vol = .25;

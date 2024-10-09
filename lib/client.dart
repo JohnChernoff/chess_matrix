@@ -2,8 +2,8 @@ import 'dart:collection';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:chess/chess.dart' as dc;
+import 'package:chess_matrix/chess_sonifier.dart';
 import 'package:chess_matrix/tv_handler.dart';
-import 'package:chess_matrix/board_sonifier.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_oauth/flutter_oauth.dart';
 import 'package:lichess_package/lichess_package.dart';
@@ -12,6 +12,7 @@ import 'board_state.dart';
 import 'board_matrix.dart';
 import 'matrix_fields.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'midi_manager.dart';
 
 class MatrixClient extends ChangeNotifier {
   int initialBoardNum;
@@ -30,14 +31,14 @@ class MatrixClient extends ChangeNotifier {
   dynamic userInfo;
   final OauthClient oauthClient = OauthClient("lichess.org","chessMatrix");
   late final LichessClient lichessClient;
-  late final BoardSonifier sonifier;
+  late final MidiManager sonifier;
   late final TVHandler tvHandler;
   late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot,false)));
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
   MatrixClient(String host, {this.initialBoardNum = 1}) {
-    sonifier = BoardSonifier(this);
+    sonifier = MidiManager(this);
     tvHandler = TVHandler(this,sonifier);
     lichessClient = LichessClient(host: host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: tvHandler.handleMsg);
     oauthClient.checkRedirect(getClient);
@@ -224,18 +225,18 @@ class MatrixClient extends ChangeNotifier {
 
   Future<void> initAudio() async {
     print("Loading audio");
-    await sonifier.init(0);
+    await sonifier.init(defaultEnsembles.first);
     sonifier.loopTrack(sonifier.masterTrack);
     updateView();
   }
 
-  void loadInstrument(InstrumentType type, MidiInstrument patch) async {
-    await sonifier.loadInstrument(type, Instrument(iPatch: patch)); //TODO: levels
+  void loadInstrument(MidiPerformer perf, MidiInstrument patch) async {
+    await sonifier.loadInstrument(perf, Instrument(iPatch: patch)); //TODO: levels
     updateView(); //todo: avoid redundancy when calling via initAudio?
   }
 
   Future<void> loadRandomEnsemble() async {
-    await sonifier.loadEnsemble(sonifier.randomEnsemble());
+    await sonifier.loadEnsemble(sonifier.randomEnsemble(MidiChessPlayer.values.map((v) => v.name).toList()));
     updateView();
   }
 
@@ -309,8 +310,8 @@ class MatrixClient extends ChangeNotifier {
 
   void keyChange() { //print("Key change!");
     sonifier.currentChord = KeyChord(
-        BoardSonifier.getNewNote(sonifier.currentChord.key),
-        BoardSonifier.getNewScale(sonifier.currentChord.scale));
+        MidiManager.getNewNote(sonifier.currentChord.key),
+        MidiManager.getNewScale(sonifier.currentChord.scale));
     updateView();
   }
 

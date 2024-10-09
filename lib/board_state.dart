@@ -1,12 +1,15 @@
+//import 'package:chess/chess.dart' as dc;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'dart:async';
 import 'board_matrix.dart';
 import 'client.dart';
 import 'dart:ui' as ui;
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   String? id;
+  String? initialFEN;
   Player? whitePlayer,blackPlayer;
   bool finished = false;
   bool replacable = true;
@@ -16,6 +19,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   int slot;
   bool live;
   ui.Image? buffImg;
+  IList<MoveState> moves = IList<MoveState>();
   cb.ChessBoardController controller = cb.ChessBoardController();
 
   BoardState(this.slot, this.live);
@@ -27,6 +31,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     this.whitePlayer = whitePlayer;
     this.blackPlayer = blackPlayer;
     updateBoard(fen, null, 0, 0, client);
+    moves = moves.clear();
+    initialFEN = fen;
   }
 
   @override
@@ -65,6 +71,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   }
 
   BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client) { //print("Updating: $id");
+    if (lastMove != null) moves = moves.add(MoveState(lastMove, wc, bc));
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
@@ -80,4 +87,11 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     return  slot - other.slot;
   }
 
+}
+
+class MoveState {
+  final Move move;
+  final int whiteClock, blackClock;
+  final bool isCheck, isCapture, isCastle, isEP, isProm;
+  MoveState(this.move,this.whiteClock,this.blackClock,{this.isCheck = false, this.isCapture = false, this.isCastle = false, this.isEP = false, this.isProm = false});
 }

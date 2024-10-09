@@ -1,6 +1,6 @@
 import 'dart:ui';
-import 'package:chess_matrix/board_sonifier.dart';
 import 'package:chess_matrix/board_widget.dart';
+import 'package:chess_matrix/chess_sonifier.dart';
 import 'package:chess_matrix/options.dart';
 import 'package:chess_matrix/tests.dart';
 import 'package:flutter/material.dart';
@@ -11,12 +11,14 @@ import 'game_seek.dart';
 import 'help_widget.dart';
 import 'matrix_fields.dart';
 import 'board_state.dart';
+import 'midi_manager.dart';
 
 /*
 
 You can make blueprint of single game (cumulative board control)
 
 TODO:
+ piece motion animation
  settings cookies
  game chat, etc.
  selectable keys,
@@ -227,11 +229,11 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   Widget getAudioControls(MatrixClient client) {
     return Center(child: SizedBox(height: 120, child:
     ListView(scrollDirection: Axis.horizontal, shrinkWrap: true,
-        children: List.generate(InstrumentType.values.length, (i) {
-          InstrumentType track = InstrumentType.values.elementAt(i);
-          Instrument? instrument = client.sonifier.orchMap[track];
+        children: List.generate(MidiChessPlayer.values.length, (i) {
+          MidiChessPlayer track = MidiChessPlayer.values.elementAt(i);
+          Instrument? instrument = client.sonifier.orchMap[track.name];
           return instrument != null ? Container(
-              color: client.sonifier.muted ? Colors.brown : InstrumentType.values.elementAt(i).color,
+              color: client.sonifier.muted ? Colors.brown : MidiChessPlayer.values.elementAt(i).color,
               child: Column(children: [
                 Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   ElevatedButton(
@@ -246,28 +248,22 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                   ),
                 ]
                 ),
-                Text(InstrumentType.values.elementAt(i).name),
-                DropdownButton(value: client.sonifier.orchMap[InstrumentType.values.elementAt(i)]?.iPatch, alignment: AlignmentDirectional.center,
+                Text(MidiChessPlayer.values.elementAt(i).name),
+                DropdownButton<MidiInstrument>(value: client.sonifier.orchMap[MidiChessPlayer.values.elementAt(i).name]?.iPatch, alignment: AlignmentDirectional.center,
                     items: List.generate(MidiInstrument.values.length, (index) {
                       MidiInstrument patch = MidiInstrument.values.elementAt(index);
                       return DropdownMenuItem(
                           alignment: AlignmentDirectional.center,
                           value: patch,
                           child: Text(patch.name));
-                    }), onChanged: (value) => client.loadInstrument(track,value!)) ,
+                    }), onChanged: (value) => client.loadInstrument(track.name,value!)) ,
               ],
               )) : const SizedBox.shrink();
         })
     )));
   }
 
-
-
-
-
 }
-
-//class MatrixColorDialog extends St
 
 class WebScrollBehavior extends MaterialScrollBehavior {
   // Override behavior methods and getters like dragDevices
