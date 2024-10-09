@@ -69,9 +69,9 @@ class ChessSonifier {
       double dur = (yDist+1)/4;
       int newPitch = midi.getNextPitch(pieceInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
 
-      masterTrack.addNoteEvent(masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
+      masterTrack.addNoteEvent(masterTrack.createNoteEvent(pieceInstrument,newPitch,dur,.5),elem: TrackElement.realtimeHarmony);
       newPitch = midi.getNextPitch(mainInstrument.currentPitch, piece.color == ChessColor.black ? -distance : distance, midi.currentChord);
-      masterTrack.addNoteEvent(masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),TrackElement.realtimeHarmony);
+      masterTrack.addNoteEvent(masterTrack.createNoteEvent(mainInstrument,newPitch,dur,.5),elem: TrackElement.realtimeHarmony);
     }
   }
 

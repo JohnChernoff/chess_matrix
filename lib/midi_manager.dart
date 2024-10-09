@@ -225,7 +225,7 @@ class MidiTrack implements Comparable<MidiTrack> {
     if (newMasterMap.isNotEmpty) {
       getSubTrack(TrackElement.master).clear();
       for (MidiEvent e in newMasterMap) {
-        addNoteEvent(e, TrackElement.master, updatePitch: false);
+        addNoteEvent(e, updatePitch: false);
       }
       newMasterMap.clear();
     }
@@ -261,7 +261,11 @@ class MidiTrack implements Comparable<MidiTrack> {
     return pitch < maxPitch && pitch > minPitch ? pitch : 60;
   }
 
-  void addNoteEvent(MidiEvent e,TrackElement elem,{bool updatePitch = true}) { //MidiEvent e = createNoteEvent(instrument,pitch,duration,volume,offset: offset);
+  MidiEvent createNoteEvent(Instrument instrument, int pitch, double duration, double volume, {double? offset}) {
+    return MidiEvent(instrument, trimPitch(pitch), offset ?? _currentLength, duration, volume);
+  }
+
+  void addNoteEvent(MidiEvent e,{elem = TrackElement.master, updatePitch = true}) { //MidiEvent e = createNoteEvent(instrument,pitch,duration,volume,offset: offset);
     if (elem == TrackElement.master) {
       double t2 = e.offset + e.duration;
       if (_currentLength < t2) _currentLength = t2;
@@ -273,15 +277,10 @@ class MidiTrack implements Comparable<MidiTrack> {
     getSubTrack(elem).add(e);
     if (updatePitch) e.instrument.currentPitch = e.pitch;
   }
-
-  MidiEvent createNoteEvent(Instrument instrument, int pitch, double duration, double volume, {double? offset}) {
-    return MidiEvent(instrument, trimPitch(pitch), offset ?? _currentLength, duration, volume);
-  }
-
-  void addChordEvent(Instrument instrument, List<int> pitches, double duration, double volume, TrackElement elem, {double? offset}) {
+  void addChordEvent(Instrument instrument, List<int> pitches, double duration, double volume, {elem = TrackElement.master, double? offset}) {
     double t = offset ?? _currentLength;
     for (int pitch in pitches) {
-      addNoteEvent(createNoteEvent(instrument, pitch, duration, volume, offset: t), elem, updatePitch: false);
+      addNoteEvent(createNoteEvent(instrument, pitch, duration, volume, offset: t), elem : elem, updatePitch: false);
     }
     if (pitches.isNotEmpty) instrument.currentPitch = trimPitch(pitches.first);
   }
