@@ -49,10 +49,17 @@ class BoardMatrix {
   }
 
   void loadImg(VoidCallback imgCall) {
-    ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
-      image = img;
-      imgCall();
-    });
+    try {
+      ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
+        image = img;
+        imgCall();
+      });
+    }
+    catch (e,s) {
+      print(e);
+      print(s);
+    }
+    //on TypeError catch (e) { print("Image Loading fail: $e"); }
   }
 
   void parseFEN() {
@@ -216,6 +223,8 @@ class BoardMatrix {
   }
 
   Uint8List getLinearInterpolation() {
+    Uint8List imgData =  Uint8List(width * height * 4); //ctx.createImageData(board_dim.board_width,board_dim.board_height);
+
     int squareWidth = (width / ranks).floor();
     int squareHeight = (height / files).floor();
     int paddedBoardWidth = squareWidth * 10, paddedBoardHeight = squareHeight * 10;
@@ -224,7 +233,7 @@ class BoardMatrix {
         paddedBoardHeight, (index) => ColorArray.fromFill(0), growable: false), growable: false);
 
     int w2 = (squareWidth/2).floor(), h2 = (squareHeight/2).floor();
-    ColorArray edgeCol = ColorArray(edgeColor.red,edgeColor.green,edgeColor.blue);
+    ColorArray edgeCol = ColorArray.fromColor(edgeColor);
 
     for (int my = -1; my < ranks; my++) {
       for (int mx = -1; mx < files; mx++) {
@@ -238,6 +247,7 @@ class BoardMatrix {
         ColorArray colorNE = coordNE.squareBounds(8) ? getSquare(coordNE).color : edgeCol;
         ColorArray colorSW = coordSW.squareBounds(8) ? getSquare(coordSW).color : edgeCol;
         ColorArray colorSE = coordSE.squareBounds(8) ? getSquare(coordSE).color : edgeCol;
+        if (colorSE == null) { print("WTF: $fen"); return imgData; }  //print("$colorSE , $colorSW, $colorNE, $colorNW");
 
         //TODO: unreverse this?
         int x = (((coordNW.y + 1) * squareWidth) + w2).floor();
@@ -248,24 +258,26 @@ class BoardMatrix {
             double v = x1 / squareWidth;
             int ly = y + squareHeight;
             int x2 = x + x1;
-            //interpolate right
-            pixArray[y][x2].values[i] =
-                lerp(v, colorNW.values[i], colorNE.values[i]).floor();
-            pixArray[ly][x2].values[i] =
-                lerp(v, colorSW.values[i], colorSE.values[i]).floor();
-            //interpolate down
-            for (int y1 = 0; y1 < squareHeight; y1++) {
-              int y2 = y + y1;
-              pixArray[y2][x2].values[i] = lerp(y1 / squareHeight,
-                      pixArray[y][x2].values[i], pixArray[ly][x2].values[i])
-                  .floor();
+            if (pixArray.isNotEmpty) {
+              //interpolate right
+              pixArray[y][x2].values[i] =
+                  lerp(v, colorNW.values[i], colorNE.values[i]).floor();
+              pixArray[ly][x2].values[i] =
+                  lerp(v, colorSW.values[i], colorSE.values[i]).floor();
+              //interpolate down
+              for (int y1 = 0; y1 < squareHeight; y1++) {
+                int y2 = y + y1;
+                pixArray[y2][x2].values[i] = lerp(y1 / squareHeight,
+                    pixArray[y][x2].values[i], pixArray[ly][x2].values[i]).floor();
+              }
             }
+
           }
         }
       }
     }
 
-    Uint8List imgData =  Uint8List(width * height * 4); //ctx.createImageData(board_dim.board_width,board_dim.board_height);
+
     for (int py = 0; py < height; py++) {
       for (int px = 0; px < width; px++) {
         int off = ((py * height) + px) * 4;

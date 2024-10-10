@@ -14,17 +14,19 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   Player? whitePlayer,blackPlayer;
   bool finished = false;
   bool replacable = true;
-  bool blackPOV = false;
+  bool blackPOV;
   BoardMatrix? board;
   Timer? clockTimer;
   int slot;
-  bool live;
+  ChessColor playing;
   ui.Image? buffImg;
   IList<MoveState> moves = IList<MoveState>();
   cb.ChessBoardController controller = cb.ChessBoardController();
   int? boardSize;
+  bool drawOffered = false, offeringDraw = false;
+  get isLive => playing != ChessColor.none;
 
-  BoardState(this.slot, this.live);
+  BoardState(this.slot, { this.playing = ChessColor.none, this.blackPOV = false } );
 
   void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixClient client) {
     replacable = false;

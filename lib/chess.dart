@@ -32,6 +32,10 @@ class ColorArray {
   ColorArray.fromFill(final int v) : values = List.filled(3, 0);
   ColorArray.fromColor(Color c) : values = [c.red,c.green,c.blue];
   ColorArray(final int red, final int green, final int blue) : values = List.of([red,green,blue]);
+  @override
+  String toString() {
+    return "[$red,$green,$blue]";
+  }
 }
 
 class MatrixColorScheme {

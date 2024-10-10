@@ -12,6 +12,8 @@ class BoardWidget extends StatelessWidget {
   final bool showID = false; //true;
   final MatrixClient client;
   final double size;
+  final double playerBarPercent = .05;
+  get playerBarHeight => size * playerBarPercent;
 
   const BoardWidget(this.slot, this.size, this.client, {super.key});
 
@@ -31,7 +33,7 @@ class BoardWidget extends StatelessWidget {
               Expanded(
                   child: InkWell( //onSecondaryTap: () { client.sonifier.playGame(state.moves); state.generateCumulativeControlBoard(); },
                     onLongPress: () {
-                      if (!state.live) {
+                      if (!state.isLive) {
                         state.replacable = true;
                         client.loadTVGames();
                       }
@@ -41,7 +43,7 @@ class BoardWidget extends StatelessWidget {
                       client.updateView(updateBoards: true);
                     },
                     onTap: () {
-                      if (state.live && state.finished) {
+                      if (state.isLive && state.finished) {
                         client.closeLiveGame(state);
                       } else {
                         client.setSingleState(state);
@@ -51,20 +53,35 @@ class BoardWidget extends StatelessWidget {
                   )
               ),
               getPlayerBar(state, false),
-              (state.live) ? Row(children: [
-                IconButton(onPressed: () => client.resign(state), icon: const Icon(Icons.flag)),
-                IconButton(onPressed: () => client.offerDraw(state), icon: const Icon(Icons.health_and_safety))
-              ]) : const SizedBox.shrink()
+
             ]);
   }
 
-  Text getPlayerBar(BoardState state, bool top) {
+  Widget getPlayerBar(BoardState state, bool top) {
     if (state.blackPOV) top = !top;
     ChessColor playerColor = top ? ChessColor.black : ChessColor.white;
     Player? player = playerColor == ChessColor.black ? state.blackPlayer : state.whitePlayer;
-    return Text(player.toString(), style: TextStyle(
-        color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
+    return Container(
+        color: Colors.black,
+        height: playerBarHeight,
+        child: FittedBox(child: Row(children: [
+              (state.playing == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
+              (state.playing == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
+              Text(player.toString(), style: TextStyle(
+                color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
+            )),
+          ],
+        )
     ));
+  }
+
+  Widget getResignButton(BoardState state) {
+    return IconButton(color: Colors.white, onPressed: () => client.resign(state), icon: const Icon(Icons.flag));
+  }
+
+  Widget getDrawButton(BoardState state) {
+    return IconButton(color: state.drawOffered ? Colors.lightGreenAccent : state.offeringDraw ? Colors.blue : Colors.grey,
+        onPressed: () => client.offerDraw(state), icon: const Icon(Icons.health_and_safety));
   }
 
   Widget getBoard(BuildContext context, BoardState state, {showMove = false, showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
@@ -75,7 +92,7 @@ class BoardWidget extends StatelessWidget {
     final board = cb.ChessBoard(
       boardOrientation: state.blackPOV ? cb.PlayerColor.black : cb.PlayerColor.white,
       controller: state.controller,
-      size: size,
+      size: size - (playerBarHeight * 2),
       blackPieceColor: client.colorScheme.blackPieceBlendColor,
       whitePieceColor: client.colorScheme.whitePieceBlendColor,
       gridColor: client.colorScheme.gridColor,

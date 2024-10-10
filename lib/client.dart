@@ -32,7 +32,7 @@ class MatrixClient extends ChangeNotifier {
   late final LichessClient lichessClient;
   late final ChessSonifier sonifier;
   late final TVHandler tvHandler;
-  late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot,false)));
+  late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
@@ -63,7 +63,10 @@ class MatrixClient extends ChangeNotifier {
   }
 
   int getRating(double minutes, int inc) {
-    String? ratingType = LichessClient.getRatingType(minutes, inc)?.name; //print("Rating type: $ratingType");
+    return getRatingByType(LichessClient.getRatingType(minutes, inc)?.name); //print("Rating type: $ratingType");
+  }
+
+  int getRatingByType(String? ratingType) {
     return (userInfo?['perfs']?[ratingType]?['rating']) ?? 1500;
   }
 
@@ -75,9 +78,9 @@ class MatrixClient extends ChangeNotifier {
         String type = json["type"];
         if (type == "gameStart") {
           dynamic game = json['game']; String id = game['gameId'];
-          BoardState state = BoardState(playBoards.length,true);
-          dynamic whitePlayer = game['color'] == 'white' ? {'id' : userInfo['username'], 'rating' : userInfo['perfs']['rapid']['rating']} : game['opponent'];
-          dynamic blackPlayer = game['color'] == 'black' ? {'id' : userInfo['username'], 'rating' : userInfo['perfs']['rapid']['rating']} : game['opponent'];
+          dynamic whitePlayer = game['color'] == 'white' ? {'id' : userInfo['username'], 'rating' : getRatingByType(game['speed'])} : game['opponent'];
+          dynamic blackPlayer = game['color'] == 'black' ? {'id' : userInfo['username'], 'rating' : getRatingByType(game['speed'])} : game['opponent'];
+          BoardState state = BoardState(playBoards.length,playing: game['color'] == 'white' ? ChessColor.white : ChessColor.black, blackPOV : (game['color'] == 'black'));
           state.initState(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),this);
           playBoards = playBoards.add(state);
           lichessClient.followGame(id,token,followGame);
@@ -101,21 +104,46 @@ class MatrixClient extends ChangeNotifier {
             String? lastMove = json['lm'];
             BoardState? board = playBoards.where((state) => state.id == gid).firstOrNull;
             if (board != null) {
-              String type = json['type'];
-              dynamic state = type == 'gameState' ? json : type == 'gameFull' ? json['state'] : null;
-              if (state != null) { //print("State: $state");
-                String moves = state['moves'].trim();
-                if (moves.length > 1) {
-                  dc.Chess chess = dc.Chess.fromFEN(startFEN);
-                  for (String m in moves.split(" ")) {
-                    if (m.length == 4) {
-                      chess.move({'from': m.substring(0,2), 'to': m.substring(2,4)});
-                    }
-                    else if (m.length == 5) {
-                      chess.move({'from': m.substring(0,2), 'to': m.substring(2,4), 'promotion': m[4]});
-                    }
+              String type = json['type']; //print("Game Event Type: $type : $json");
+
+              if (type == 'chatLine') {
+                  //board.drawOffered = true;
+              }
+              else {
+                bool? wdraw = json['wdraw'], bdraw = json['bdraw'];
+                if (wdraw ?? false) {
+                  if (board.playing == ChessColor.black) {
+                    board.drawOffered = true; //!board.drawOffered;
+                  } else {
+                    board.offeringDraw = true;
                   }
-                  board.updateBoard(chess.fen, lastMove != null ? Move(lastMove) : null, ((state['wtime'] ?? 0)/1000).floor(), ((state['btime'] ?? 0)/1000).floor(),this);
+                }
+                else if (bdraw ?? false) {
+                  if (board.playing == ChessColor.white) {
+                    board.drawOffered = true; //!board.drawOffered;
+                  } else {
+                    board.offeringDraw = true;
+                  }
+                }
+                else {
+                  board.offeringDraw = false; board.drawOffered = false;
+                }
+                //board.drawOffered = false;
+                dynamic state = type == 'gameState' ? json : type == 'gameFull' ? json['state'] : null;
+                if (state != null) { //print("State: $state");
+                  String moves = state['moves'].trim();
+                  if (moves.length > 1) {
+                    dc.Chess chess = dc.Chess.fromFEN(startFEN);
+                    for (String m in moves.split(" ")) {
+                      if (m.length == 4) {
+                        chess.move({'from': m.substring(0,2), 'to': m.substring(2,4)});
+                      }
+                      else if (m.length == 5) {
+                        chess.move({'from': m.substring(0,2), 'to': m.substring(2,4), 'promotion': m[4]});
+                      }
+                    }
+                    board.updateBoard(chess.fen, lastMove != null ? Move(lastMove) : null, ((state['wtime'] ?? 0)/1000).floor(), ((state['btime'] ?? 0)/1000).floor(),this);
+                  }
                   //updateView();
                 }
               }
@@ -151,6 +179,28 @@ class MatrixClient extends ChangeNotifier {
 
   void cancelSeek() {
     lichessClient.removeSeek();
+    notifyListeners();
+  }
+
+  void createChallenge(String player, int seconds, int inc, bool rated) {
+    String? token = lichessToken; if (token == null) { return; }
+    if (playBoards.isEmpty) {
+      if (seeking) {
+        cancelSeek();
+      }
+      else {
+        seeking = true;  //print("Seeking: $minutes,$inc"); //Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token, minRating: 2299, maxRating: 2301).then((statusCode) {
+        lichessClient.createChallenge(player,LichessVariant.standard,seconds,inc,rated,token).then((statusCode) {
+          print("Challenge Status: $statusCode");
+          seeking = false;
+        }, onError: (err) => print("Challenge error: $err"));
+      }
+      updateView();
+    }
+  }
+
+  void cancelChallenge() {
+    lichessClient.removeChallenge();
     notifyListeners();
   }
 
@@ -229,7 +279,7 @@ class MatrixClient extends ChangeNotifier {
     viewBoards = viewBoards.removeWhere((board) => board.slot > n);
     int diff = n - (viewBoards.length - 1);
     if (diff > 0) { //print("Adding $diff extra boards...");
-      viewBoards = viewBoards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i,false)));
+      viewBoards = viewBoards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
     }
   }
 
