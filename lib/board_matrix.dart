@@ -103,7 +103,19 @@ class BoardMatrix {
     return squares[p.x][p.y];
   }
 
+  int getMaxCumulativeControl() {
+    int mc = 0;
+    for (int y = 0; y < ranks; y++) {
+      for (int x = 0; x < files; x++) {
+        int tc = getSquare(Coord(x,y)).control.totalControl.abs();
+        if (tc > mc) mc = tc;
+      }
+    }
+    return mc;
+  }
+
   void updateControl({cumulative = false}) {
+    int mcc = getMaxCumulativeControl(); //if (cumulative && !offScreen) print("Max Control: $mc");
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
         if (cumulative) { //print("Current Control: ${squares[x][y].control}");
@@ -111,7 +123,7 @@ class BoardMatrix {
             squares[x][y].control = calcControl(Coord(x,y),cTab: squares[x][y].control); //ControlTable(squares[x][y].control.whiteControl,squares[x][y].control.blackControl)); // //
            }
           else {
-            squares[x][y].setControl(squares[x][y].control,colorScheme,mixStyle,maxControl);
+            squares[x][y].setControl(squares[x][y].control,colorScheme,MixStyle.add,mcc);
           }
         } else {
           squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme,mixStyle,maxControl);

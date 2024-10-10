@@ -99,8 +99,7 @@ class Square {
       colorMatrix.addRed = ((colorScheme.blackColor.red - colorScheme.voidColor.red) * controlGrad).floor();
       colorMatrix.addGreen = ((colorScheme.blackColor.green - colorScheme.voidColor.green) * controlGrad).floor();
       colorMatrix.addBlue = ((colorScheme.blackColor.blue - colorScheme.voidColor.blue) * controlGrad).floor();
-    }
-    //if (control != 0) print("${voidColor.red},${voidColor.green},${voidColor.blue} -> ${colorMatrix.values}");
+    } //if (control.totalControl != 0) print("${control.totalControl} -> ${colorMatrix.values}");
     return colorMatrix;
   }
 
