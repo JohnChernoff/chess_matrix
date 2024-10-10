@@ -82,6 +82,21 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     return board;
   }
 
+  void generateCumulativeControlBoard() {
+    final currentBoard = board;
+    if (currentBoard != null) {
+      BoardMatrix bm = BoardMatrix.fromSquares(moves.first.beforeFEN ?? initialFEN ?? startFEN, BoardMatrix.createSquares());
+      for (MoveState m in moves) {
+        bm = BoardMatrix.fromSquares(m.afterFEN, bm.squares);
+      }
+      board = BoardMatrix.fromSquares(bm.fen, bm.squares,
+        width: currentBoard.width, height: currentBoard.height, colorScheme: currentBoard.colorScheme,mixStyle: currentBoard.mixStyle, lastMove: currentBoard.lastMove,
+        imgCall: () => updateWidget(),
+      );
+      print("Cumulative Board: $board");
+    }
+  }
+
   @override
   int compareTo(BoardState other) {
     return  slot - other.slot;

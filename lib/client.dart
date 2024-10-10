@@ -266,8 +266,6 @@ class MatrixClient extends ChangeNotifier {
     updateView();
   }
 
-
-
   BoardState? getBoardByID(String id) {
     return activeBoards.where((state) => state.id == id).firstOrNull;
   }

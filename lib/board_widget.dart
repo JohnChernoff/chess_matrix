@@ -31,7 +31,8 @@ class BoardWidget extends StatelessWidget {
               Expanded(
                   child: InkWell(
                     onSecondaryTap: () {
-                      client.sonifier.playGame(state.moves);
+                      //client.sonifier.playGame(state.moves);
+                      state.generateCumulativeControlBoard();
                     },
                     onLongPress: () {
                       if (!state.live) {

@@ -7,11 +7,6 @@ class BoardMatrix {
   final String fen;
   final int width, height;
   final int maxControl;
-  final List<List<Square>> squares = List<List<Square>>.generate(
-      ranks, (i) => List<Square>.generate(
-      files, (index) => Square(
-        Piece(PieceType.none,ChessColor.none),
-      (index + i).isEven ? SquareShade.light : SquareShade.dark), growable: false), growable: false);
   final Color edgeColor;
   final MatrixColorScheme colorScheme;
   final MixStyle mixStyle;
@@ -19,17 +14,51 @@ class BoardMatrix {
   final bool blackPOV;
   final bool triColor = true;
   late final ChessColor turn;
+  late final List<List<Square>> squares;
+  late final bool offScreen;
   ui.Image? image;
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,imgCall,{this.blackPOV  = false, this.maxControl = 5, this.edgeColor = Colors.black}) {
-    List<String> fenStrs = fen.split(" ");
-    turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
-    _setPieces(fenStrs[0]);
+  static List<List<Square>> createSquares() {
+    return List<List<Square>>.generate(
+        ranks, (i) => List<Square>.generate(
+        files, (index) => Square(
+        Piece(PieceType.none,ChessColor.none),
+        (index + i).isEven ? SquareShade.light : SquareShade.dark), growable: false), growable: false);
+  }
+
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,VoidCallback imgCall,
+      { this.blackPOV  = false, this.maxControl = 5, this.edgeColor = Colors.black }) {
+    offScreen = false;
+    squares = createSquares();
+    parseFEN();
     updateControl();
+    loadImg(imgCall);
+  }
+
+  BoardMatrix.fromSquares(this.fen, this.squares, { this.width = 0, this.height = 0, this.colorScheme = const MatrixColorScheme(Colors.white, Colors.black, Colors.grey),
+    this.mixStyle = MixStyle.add, this.maxControl = 999999, this.edgeColor = Colors.black, this.blackPOV = false, this.lastMove, VoidCallback? imgCall}) {
+    offScreen = (imgCall == null);
+    for (int rank = 0; rank < ranks; rank++) {
+      for (int file = 0; file < files; file++) {
+        getSquare(Coord(file,rank)).piece = Piece(PieceType.none,ChessColor.none); //retain control values
+      }
+    }
+    parseFEN();
+    updateControl(cumulative: true);
+    if (!offScreen) loadImg(imgCall!);
+  }
+
+  void loadImg(VoidCallback imgCall) {
     ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
       image = img;
       imgCall();
     });
+  }
+
+  void parseFEN() {
+    List<String> fenStrs = fen.split(" ");
+    turn = fenStrs[1] == "w" ? ChessColor.white : ChessColor.black;
+    _setPieces(fenStrs[0]);
   }
 
   void _setPieces(String boardStr) {
@@ -74,20 +103,28 @@ class BoardMatrix {
     return squares[p.x][p.y];
   }
 
-  void updateControl() {
+  void updateControl({cumulative = false}) {
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
-        squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme,mixStyle,maxControl);
+        if (cumulative) { //print("Current Control: ${squares[x][y].control}");
+          if (offScreen) {
+            squares[x][y].control = calcControl(Coord(x,y),cTab: squares[x][y].control); //ControlTable(squares[x][y].control.whiteControl,squares[x][y].control.blackControl)); // //
+           }
+          else {
+            squares[x][y].setControl(squares[x][y].control,colorScheme,mixStyle,maxControl);
+          }
+        } else {
+          squares[x][y].setControl(calcControl(Coord(x,y)),colorScheme,mixStyle,maxControl);
+        }
       }
     }
   }
 
-  ControlTable calcControl(Coord p) {
-    ControlTable control = const ControlTable(0, 0);
-    control = control.add(knightControl(p));
-    control = control.add(diagControl(p));
-    control = control.add(lineControl(p));
-    return control;
+  ControlTable calcControl(Coord p, {cTab = const ControlTable(0, 0)}) { //ControlTable control = const ControlTable(0, 0);
+    cTab = cTab.add(knightControl(p));
+    cTab = cTab.add(diagControl(p));
+    cTab = cTab.add(lineControl(p)); //if (dummy) print("$p : $control");
+    return cTab;
   }
 
   ControlTable knightControl(Coord p) {
@@ -233,6 +270,17 @@ class BoardMatrix {
 
   double lerp(double v, int start, int end) {
     return (1 - v) * start + v * end;
+  }
+
+  @override
+  String toString() {
+    StringBuffer strBuff = StringBuffer();
+    for (int rank = 0; rank < ranks; rank++) {
+      for (int file = 0; file < files; file++) {
+        strBuff.write("$file,$rank = ${getSquare(Coord(file, rank)).control}");
+      }
+    }
+    return strBuff.toString();
   }
 
 }
