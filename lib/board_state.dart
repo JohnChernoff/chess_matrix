@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'dart:async';
@@ -21,6 +22,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   ui.Image? buffImg;
   IList<MoveState> moves = IList<MoveState>();
   cb.ChessBoardController controller = cb.ChessBoardController();
+  int? boardSize;
 
   BoardState(this.slot, this.live);
 
@@ -65,7 +67,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   void refreshBoard(MatrixClient client) {
     BoardMatrix? bm = board;
     if (bm != null) {
-      board = BoardMatrix(bm.fen,bm.lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),
+      int dim = min(client.matrixResolution,boardSize ?? 1000);
+      board = BoardMatrix(bm.fen,bm.lastMove,dim,dim,client.colorScheme,client.mixStyle,() => updateWidget(),
           blackPOV: blackPOV, maxControl: client.maxControl);
     }
   }
@@ -75,8 +78,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
-    board = BoardMatrix(fen,lastMove,client.matrixResolution,client.matrixResolution,client.colorScheme,client.mixStyle,() => updateWidget(),
-        blackPOV: blackPOV, maxControl: client.maxControl);
+    int dim = min(client.matrixResolution,boardSize ?? 1000); //print("Dim: $dim");
+    board = BoardMatrix(fen,lastMove,dim,dim,client.colorScheme,client.mixStyle,() => updateWidget(), blackPOV: blackPOV, maxControl: client.maxControl);
     clockTimer = countDown();
     controller.loadFen(fen);
     return board;

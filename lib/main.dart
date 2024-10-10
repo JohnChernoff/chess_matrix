@@ -146,6 +146,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                     int index = (row * horizonalBoards) + i; //print("Index: $index");
                     if (index < numBoards) { //there's probably something more elegant than this
                       BoardState? state = client.activeBoards.elementAt(index); //print("Viewing: $state");
+                      state.boardSize = maxSize.floor();
                       return ChangeNotifierProvider.value(
                           value: state,
                           child: SizedBox(width: maxSize, height: maxSize, child: BoardWidget(key: ObjectKey(state),index,maxSize,client)));

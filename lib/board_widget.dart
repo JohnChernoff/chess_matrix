@@ -29,11 +29,7 @@ class BoardWidget extends StatelessWidget {
               showID ? Text("$slot: ${state.toString()}",style: textStyle) : const SizedBox.shrink(),
               getPlayerBar(state, true),
               Expanded(
-                  child: InkWell(
-                    onSecondaryTap: () {
-                      //client.sonifier.playGame(state.moves);
-                      state.generateCumulativeControlBoard();
-                    },
+                  child: InkWell( //onSecondaryTap: () { client.sonifier.playGame(state.moves); state.generateCumulativeControlBoard(); },
                     onLongPress: () {
                       if (!state.live) {
                         state.replacable = true;
