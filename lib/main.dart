@@ -124,26 +124,27 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
     );
   }
 
-  Widget getMatrixView(MatrixClient client, {int minBoardSize = 200}) { //TODO: use minBoardSize
+  Widget getMatrixView(MatrixClient client, {double minBoardSize = 320}) {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         double w = constraints.constrainWidth();
         double h = constraints.constrainHeight();
         int numBoards = client.activeBoards.length;
-        double maxSize = ZugUtils.getMaxSizeOfSquaresInRect(w, h, numBoards) - 32;
-        int verticalBoards = (h / maxSize).floor();
-        int horizonalBoards = (w / maxSize).floor(); //print("$n -> $w,$h,$horizonalBoards,$verticalBoards"); print("Max Size: $maxSize");
+        double maxSize = max(ZugUtils.getMaxSizeOfSquaresInRect(w, h, numBoards) - 32, minBoardSize); //print("Max Size: $maxSize");
+        int horizontalBoards = (w / maxSize).floor();
+        int verticalBoards = (numBoards / horizontalBoards).ceil(); //may scroll down
         return Container(
           color: Colors.black,
           width: w,
           height: h,
-          child: client.seeking ? Text("Seeking...",style: MatrixApp.getTextStyle(Colors.white)) : Column(
+          child: client.seeking ? Text("Seeking...",style: MatrixApp.getTextStyle(Colors.white)) :
+          SingleChildScrollView(scrollDirection: Axis.vertical, child: Column(
             children: List.generate(verticalBoards, (row) {
               return Column(children: [
                 Row(
                   mainAxisAlignment : MainAxisAlignment.center,
-                  children: List.generate(horizonalBoards, (i) {
-                    int index = (row * horizonalBoards) + i; //print("Index: $index");
+                  children: List.generate(horizontalBoards, (i) {
+                    int index = (row * horizontalBoards) + i; //print("Index: $index");
                     if (index < numBoards) { //there's probably something more elegant than this
                       BoardState? state = client.activeBoards.elementAt(index); //print("Viewing: $state");
                       state.boardSize = maxSize.floor();
@@ -159,7 +160,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 ((row * verticalBoards) < numBoards) ? const Divider(height: 20) : const SizedBox.shrink(),
               ]);
             }),
-          )
+          )),
         );
       },
     );
@@ -285,4 +286,3 @@ class WebScrollBehavior extends MaterialScrollBehavior {
 Color rndCol() {
   return Colors.primaries[Random().nextInt(Colors.primaries.length)];
 }
-
