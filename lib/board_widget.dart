@@ -36,6 +36,23 @@ class BoardWidget extends StatelessWidget {
      : getBoardBox(context, state);
   }
 
+  void animatePlayback(BoardState state, {int speed = 50, int endPause = 1000}) async {
+    state.isAnimating = true;
+    int ply = 0;
+    MoveState? m;
+    while (state.moves.isNotEmpty && state.isAnimating) {
+      await Future.delayed(Duration(milliseconds: speed));
+      m = state.moves[ply]; //print("Updating board: $ply");
+      state.updateBoard(m.afterFEN, null, m.whiteClock, m.blackClock, client, freeze: true);
+      if (++ply >= state.moves.length) {
+        await Future.delayed(Duration(milliseconds: endPause));
+        ply = 0;
+      }
+    }
+    state.isAnimating = false;
+    state.updateBoardToLatestPosition(client, freeze: false);
+  }
+
   Widget getBoardBox(BuildContext context, BoardState state) {
     return SizedBox(width: state.currentSize as double, height: state.currentSize as double, child: Column(children: [
       showID ? Text("${state.slot}: ${state.toString()}",style: textStyle) : const SizedBox.shrink(),
@@ -44,8 +61,7 @@ class BoardWidget extends StatelessWidget {
           child: InkWell(
             onLongPress: () {
               if (!state.isLive) {
-                state.replacable = true;
-                client.loadTVGames();
+                animatePlayback(state); //state.replaceable = true; client.loadTVGames();
               }
             },
             onDoubleTap: () {
@@ -53,7 +69,10 @@ class BoardWidget extends StatelessWidget {
               client.updateView(updateBoards: true);
             },
             onTap: () {
-              if (state.isLive && state.finished) {
+              if (state.isAnimating) {
+                state.isAnimating = false;
+              }
+              else if (state.isLive && state.finished) {
                 client.closeLiveGame(state);
               } else {
                 client.setSingleState(state);
@@ -108,7 +127,7 @@ class BoardWidget extends StatelessWidget {
       pieceSet: client.pieceStyle.name,
       dummyBoard: true,
       arrows: arrow != null ? [arrow] : [],
-      backgroundImage: state.finished ? null : state.board?.image ?? state.buffImg, //TODO: hide when null
+      backgroundImage: state.board?.image ?? state.buffImg, //TODO: hide when null
       onMove: (from, to, prom) =>
           client.sendMove(state.id, from, to, prom),
     );

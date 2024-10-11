@@ -293,12 +293,12 @@ class MatrixClient extends ChangeNotifier {
     }
     if (reset) {
       for (var board in viewBoards) {
-        board.replacable = true;
+        board.replaceable = true;
       }
     }
     List<dynamic> games = await lichessClient.getTV(gameStyle.name,30);
     List<dynamic> availableGames = games.where((game) => viewBoards.where((b) => b.id == game['id']).isEmpty).toList(); //remove pre-existing games
-    List<BoardState> openBoards = viewBoards.where((board) => board.replacable || board.finished).toList(); //openBoards.sort(); //probably unnecessary
+    List<BoardState> openBoards = viewBoards.where((board) => board.isOpen).toList(); //openBoards.sort(); //probably unnecessary
     for (BoardState board in openBoards) {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);

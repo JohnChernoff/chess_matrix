@@ -11,17 +11,17 @@ import 'home_page.dart';
 You can make blueprint of single game (cumulative board control)
 
 TODO:
- logging
- music/chess libraries
- piece motion animation
- settings cookies
+ settings cookies,
  selectable keys,
+ piece motion animation,
  animate sounds,
  distance v. square pitches
  game chat, etc.
+  ~logging
  ~board reloading weirdness,
  ~optimize board drawing and minimum resolution
   ~lichess ping,
+  ?music/chess libraries
  */
 
 var mainLogger = Logger(

@@ -14,7 +14,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   String? initialFEN;
   Player? whitePlayer,blackPlayer;
   bool finished = false;
-  bool replacable = true;
+  bool replaceable = true;
   bool blackPOV;
   BoardMatrix? board;
   Timer? clockTimer;
@@ -25,14 +25,16 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   cb.ChessBoardController controller = cb.ChessBoardController();
   int? boardSize;
   bool isFrozen = false;
+  bool isAnimating = false;
   bool drawOffered = false, offeringDraw = false;
   bool get isLive => playing != ChessColor.none;
   int get currentSize => boardSize ?? 0;
+  bool get isOpen => !isAnimating && (replaceable || finished);
 
   BoardState(this.slot, { this.playing = ChessColor.none, this.blackPOV = false } );
 
   void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixClient client) {
-    replacable = false;
+    replaceable = false;
     finished = false;
     this.id = id;
     this.whitePlayer = whitePlayer;
@@ -44,7 +46,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
 
   @override
   String toString() {
-      return "$slot: $id, fin: $finished, rep: $replacable";
+      return "$slot: $id, fin: $finished, rep: $replaceable";
   }
 
   Timer countDown() {
@@ -76,6 +78,11 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
       board = BoardMatrix(bm.fen,bm.lastMove,dim,dim,client.colorScheme,client.mixStyle,() => updateWidget(),
           blackPOV: blackPOV, maxControl: client.maxControl);
     }
+  }
+
+  BoardMatrix? updateBoardToLatestPosition(MatrixClient client, {bool? freeze}) {
+    if (moves.isNotEmpty) return updateBoard(moves.last.afterFEN,null,moves.last.whiteClock,moves.last.blackClock, client, freeze: freeze);
+    return null;
   }
 
   BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client, {bool? freeze}) { //print("Updating: $id");
