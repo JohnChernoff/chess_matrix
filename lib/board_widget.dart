@@ -9,31 +9,40 @@ import 'package:provider/provider.dart';
 import 'board_state.dart';
 import 'chess.dart';
 
-class BoardWidget extends StatelessWidget {
-  final textStyle = const TextStyle(color: Colors.white);
-  final bool showID = false; //true;
+class BoardWidget extends StatefulWidget {
   final MatrixClient client;
-  final double playerBarPercent = .05;
   final double width,height;
   final bool singleBoard;
 
   const BoardWidget(this.client, this.width, this.height, {this.singleBoard = false, super.key});
 
   @override
+  State<StatefulWidget> createState() => _BoardWidgetState();
+
+}
+
+class _BoardWidgetState extends State<BoardWidget> {
+  TextStyle textStyle = const TextStyle(color: Colors.white);
+  bool showID = false; //true;
+  bool hidePieces = false;
+  double playerBarPercent = .05;
+
+
+  @override
   Widget build(BuildContext context) {
     BoardState state = context.watch<BoardState>(); //print(state); print(state.board); print("Building: $this");
-    Axis flexDirection = width > height ? Axis.horizontal : Axis.vertical;
-    Axis listDirection = height > width ? Axis.horizontal : Axis.vertical;
-    double span = listDirection == Axis.horizontal ? min(128,height - state.currentSize) : min(128,width - state.currentSize);
-    return state.board == null ? const SizedBox.shrink() : singleBoard ?
-      SizedBox(width: width, height: height, child:
-      Flex(direction: flexDirection, mainAxisAlignment: MainAxisAlignment.center,children: [
-            MoveListWidget(state.moves, orientation: listDirection, span: span,
-                onTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,client,freeze: false),
-                onDoubleTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,client,freeze: true)),
-            getBoardBox(context, state), //getBoardBox(context, state),
-          ]))
-     : getBoardBox(context, state);
+    Axis flexDirection = widget.width > widget.height ? Axis.horizontal : Axis.vertical;
+    Axis listDirection = widget.height > widget.width ? Axis.horizontal : Axis.vertical;
+    double span = listDirection == Axis.horizontal ? min(128,widget.height - state.currentSize) : min(128,widget.width - state.currentSize);
+    return state.board == null ? const SizedBox.shrink() : widget.singleBoard ?
+    SizedBox(width: widget.width, height: widget.height, child:
+    Flex(direction: flexDirection, mainAxisAlignment: MainAxisAlignment.center,children: [
+      MoveListWidget(state.moves, orientation: listDirection, span: span,
+          onTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: false),
+          onDoubleTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: true)),
+      getBoardBox(context, state), //getBoardBox(context, state),
+    ]))
+        : getBoardBox(context, state);
   }
 
   void animatePlayback(BoardState state, {int speed = 50, int endPause = 1000}) async {
@@ -43,14 +52,14 @@ class BoardWidget extends StatelessWidget {
     while (state.moves.isNotEmpty && state.isAnimating) {
       await Future.delayed(Duration(milliseconds: speed));
       m = state.moves[ply]; //print("Updating board: $ply");
-      state.updateBoard(m.afterFEN, null, m.whiteClock, m.blackClock, client, freeze: true);
+      state.updateBoard(m.afterFEN, null, m.whiteClock, m.blackClock, widget.client, freeze: true);
       if (++ply >= state.moves.length) {
         await Future.delayed(Duration(milliseconds: endPause));
         ply = 0;
       }
     }
     state.isAnimating = false;
-    state.updateBoardToLatestPosition(client, freeze: false);
+    state.updateBoardToLatestPosition(widget.client, freeze: false);
   }
 
   Widget getBoardBox(BuildContext context, BoardState state) {
@@ -63,26 +72,26 @@ class BoardWidget extends StatelessWidget {
               child: InkWell(
                 onLongPress: () {
                   if (!state.isLive) {
-                    state.replaceable = true; client.loadTVGames();
+                    state.replaceable = true; widget.client.loadTVGames();
                   }
                 },
                 onDoubleTap: () {
                   state.blackPOV = !state.blackPOV;
-                  client.updateView(updateBoards: true);
+                  widget.client.updateView(updateBoards: true);
                 },
                 onTap: () {
                   if (state.isLive && state.finished) {
-                    client.closeLiveGame(state);
+                    widget.client.closeLiveGame(state);
                   } else {
-                    client.setSingleState(state);
+                    widget.client.setSingleState(state);
                   }
                 },
-                child: getBoard(context, state, showMove: client.showMove),
+                child: getBoard(context, state, showMove: widget.client.showMove),
               )
           ),
           getPlayerBar(state, false),
         ])),
-        singleBoard ? getBoardControls(state) : const SizedBox.shrink(),
+        widget.singleBoard ? getBoardControls(state) : const SizedBox.shrink(),
       ],
     ));
   }
@@ -92,12 +101,16 @@ class BoardWidget extends StatelessWidget {
     return Column(children: [
       IconButton(color: Colors.white, icon: state.isAnimating ? const Icon(Icons.stop) : const Icon(Icons.cyclone),
           onPressed: () {
-        if (state.isAnimating) {
-          state.isAnimating = false;
-        } else {
-          animatePlayback(state);
-        }
-      }),
+            if (state.isAnimating) {
+              state.isAnimating = false;
+            } else {
+              animatePlayback(state);
+            }
+          }),
+      IconButton(color: Colors.white, icon: Icon(hidePieces ? Icons.add_location : Icons.hide_image_outlined),
+      onPressed: () => setState(() {
+        hidePieces = !hidePieces;
+      })),
       (state.playing == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
       (state.playing == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
     ]);
@@ -111,21 +124,21 @@ class BoardWidget extends StatelessWidget {
         color: Colors.black,
         height: state.currentSize * playerBarPercent,
         child: FittedBox(child: Row(children: [
-              Text(player.toString(), style: TextStyle(
-                color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
-            )),
-          ],
+          Text(player.toString(), style: TextStyle(
+              color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
+          )),
+        ],
         )
-    ));
+        ));
   }
 
   Widget getResignButton(BoardState state) {
-    return IconButton(color: Colors.white, onPressed: () => client.resign(state), icon: const Icon(Icons.flag));
+    return IconButton(color: Colors.white, onPressed: () => widget.client.resign(state), icon: const Icon(Icons.flag));
   }
 
   Widget getDrawButton(BoardState state) {
     return IconButton(color: state.drawOffered ? Colors.lightGreenAccent : state.offeringDraw ? Colors.blue : Colors.grey,
-        onPressed: () => client.offerDraw(state), icon: const Icon(Icons.health_and_safety));
+        onPressed: () => widget.client.offerDraw(state), icon: const Icon(Icons.health_and_safety));
   }
 
   Widget getBoard(BuildContext context, BoardState state, {showMove = false, showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
@@ -144,6 +157,7 @@ class BoardWidget extends StatelessWidget {
       dummyBoard: true,
       arrows: arrow != null ? [arrow] : [],
       backgroundImage: state.board?.image ?? state.buffImg, //TODO: hide when null
+      hidePieces: hidePieces,
       onMove: (from, to, prom) =>
           client.sendMove(state.id, from, to, prom),
     );
@@ -168,7 +182,6 @@ class BoardWidget extends StatelessWidget {
       }),
     );
   }
-
 }
 
 
