@@ -54,35 +54,53 @@ class BoardWidget extends StatelessWidget {
   }
 
   Widget getBoardBox(BuildContext context, BoardState state) {
-    return SizedBox(width: state.currentSize as double, height: state.currentSize as double, child: Column(children: [
-      showID ? Text("${state.slot}: ${state.toString()}",style: textStyle) : const SizedBox.shrink(),
-      getPlayerBar(state, true),
-      Expanded(
-          child: InkWell(
-            onLongPress: () {
-              if (!state.isLive) {
-                animatePlayback(state); //state.replaceable = true; client.loadTVGames();
-              }
-            },
-            onDoubleTap: () {
-              state.blackPOV = !state.blackPOV;
-              client.updateView(updateBoards: true);
-            },
-            onTap: () {
-              if (state.isAnimating) {
-                state.isAnimating = false;
-              }
-              else if (state.isLive && state.finished) {
-                client.closeLiveGame(state);
-              } else {
-                client.setSingleState(state);
-              }
-            },
-            child: getBoard(context, state, showMove: client.showMove),
-          )
-      ),
-      getPlayerBar(state, false),
-    ]));
+    return SizedBox(width: state.currentSize as double, height: state.currentSize as double, child: Row(
+      children: [
+        Expanded(child: Column(children: [
+          showID ? Text("${state.slot}: ${state.toString()}",style: textStyle) : const SizedBox.shrink(),
+          getPlayerBar(state, true),
+          Expanded(
+              child: InkWell(
+                onLongPress: () {
+                  if (!state.isLive) {
+                    state.replaceable = true; client.loadTVGames();
+                  }
+                },
+                onDoubleTap: () {
+                  state.blackPOV = !state.blackPOV;
+                  client.updateView(updateBoards: true);
+                },
+                onTap: () {
+                  if (state.isLive && state.finished) {
+                    client.closeLiveGame(state);
+                  } else {
+                    client.setSingleState(state);
+                  }
+                },
+                child: getBoard(context, state, showMove: client.showMove),
+              )
+          ),
+          getPlayerBar(state, false),
+        ])),
+        singleBoard ? getBoardControls(state) : const SizedBox.shrink(),
+      ],
+    ));
+  }
+
+  Widget getBoardControls(BoardState state) {
+    ChessColor playerColor = state.blackPOV ? ChessColor.black : ChessColor.white;
+    return Column(children: [
+      IconButton(color: Colors.white, icon: state.isAnimating ? const Icon(Icons.stop) : const Icon(Icons.cyclone),
+          onPressed: () {
+        if (state.isAnimating) {
+          state.isAnimating = false;
+        } else {
+          animatePlayback(state);
+        }
+      }),
+      (state.playing == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
+      (state.playing == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
+    ]);
   }
 
   Widget getPlayerBar(BoardState state, bool top) {
@@ -93,8 +111,6 @@ class BoardWidget extends StatelessWidget {
         color: Colors.black,
         height: state.currentSize * playerBarPercent,
         child: FittedBox(child: Row(children: [
-              (state.playing == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
-              (state.playing == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
               Text(player.toString(), style: TextStyle(
                 color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
             )),
