@@ -24,7 +24,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   cb.ChessBoardController controller = cb.ChessBoardController();
   int? boardSize;
   bool drawOffered = false, offeringDraw = false;
-  get isLive => playing != ChessColor.none;
+  bool get isLive => playing != ChessColor.none;
+  int get currentSize => boardSize ?? 0;
 
   BoardState(this.slot, { this.playing = ChessColor.none, this.blackPOV = false } );
 
@@ -76,7 +77,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   }
 
   BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client) { //print("Updating: $id");
-    if (lastMove != null) moves = moves.add(MoveState(lastMove, wc, bc, board?.fen, fen));
+    if (lastMove != null && board?.lastMove != lastMove) moves = moves.add(MoveState(lastMove, wc, bc, board?.fen, fen));
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;

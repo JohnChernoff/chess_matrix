@@ -10,6 +10,9 @@ import 'home_page.dart';
 You can make blueprint of single game (cumulative board control)
 
 TODO:
+ movelist navigation
+ logging
+ music/chess libraries
  piece motion animation
  settings cookies
  selectable keys,

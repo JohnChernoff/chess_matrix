@@ -56,11 +56,11 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
   }
 
   Widget getMatrixView(MatrixClient client, {double minBoardSize = 320}) {
+    int numBoards = client.activeBoards.length;
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         double w = constraints.constrainWidth();
         double h = constraints.constrainHeight();
-        int numBoards = client.activeBoards.length;
         double maxSize = max(ZugUtils.getMaxSizeOfSquaresInRect(w, h, numBoards) - 32, minBoardSize); //print("Max Size: $maxSize");
         int horizontalBoards = (w / maxSize).floor();
         int verticalBoards = (numBoards / horizontalBoards).ceil(); //may scroll down
@@ -75,13 +75,14 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 Row(
                   mainAxisAlignment : MainAxisAlignment.center,
                   children: List.generate(horizontalBoards, (i) {
-                    int index = (row * horizontalBoards) + i; //print("Index: $index");
+                    final index = (row * horizontalBoards) + i; //print("Index: $index");
                     if (index < numBoards) { //there's probably something more elegant than this
                       BoardState? state = client.activeBoards.elementAt(index); //print("Viewing: $state");
                       state.boardSize = maxSize.floor();
+                      final singleBoard = numBoards == 1;
                       return ChangeNotifierProvider.value(
                           value: state,
-                          child: SizedBox(width: maxSize, height: maxSize, child: BoardWidget(key: ObjectKey(state),index,maxSize,client)));
+                          child: BoardWidget(client, singleBoard ? w : maxSize, singleBoard ? h : maxSize, singleBoard: singleBoard));
                     }
                     else {
                       return const SizedBox.shrink();

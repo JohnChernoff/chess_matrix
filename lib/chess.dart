@@ -249,14 +249,22 @@ class MoveState {
   final String afterFEN;
   final Move move;
   final int whiteClock, blackClock;
-  late Piece? piece;
+  late Piece piece;
+  late ChessColor turn;
   //late final bool isCheck, isCapture, isCastle, isEP, isProm; //TODO: calc
 
   MoveState(this.move,this.whiteClock,this.blackClock,this.beforeFEN, this.afterFEN) {
     final game = dc.Chess.fromFEN(afterFEN);
     final p = game.get(move.toStr);
-    piece = p != null ? Piece.fromDartChess(p) : Piece(PieceType.none,ChessColor.none);
+    turn = getTurnFromFEN(afterFEN);
+    piece = p != null ? Piece.fromDartChess(p) : Piece(PieceType.king,turn);
   }
+}
+
+ChessColor getTurnFromFEN(String? fen) {
+  if (fen == null) return ChessColor.white;
+  final fenFields = fen.split(" ");
+  return fenFields.length > 1 ? (fenFields[1] == "w" ? ChessColor.black : ChessColor.white) : ChessColor.none;
 }
 
 class Player {
