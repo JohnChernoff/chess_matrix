@@ -3,6 +3,48 @@ import 'package:chess/chess.dart' as dc;
 import 'dart:math';
 import 'package:flutter/material.dart';
 
+enum PieceStyle  {
+  cburnett,
+  merida,
+  pirouetti,
+  chessnut,
+  chess7,
+  alpha,
+  reillycraig,
+  companion,
+  riohacha,
+  kosal,
+  leipzig,
+  fantasy,
+  spatial,
+  celtic,
+  california,
+  caliente,
+  pixel,
+  maestro,
+  fresca,
+  cardinal,
+  gioco,
+  tatiana,
+  staunty,
+  governor,
+  dubrovny,
+  icpieces,
+  libra,
+  mpchess,
+  shapes,
+  kiwenSuwi,
+  horsey,
+  anarcandy,
+  letter,
+  disguised,
+  symmetric;
+}
+
+enum GameStyle {
+  bullet,blitz,rapid,classical
+}
+
 const startFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const ranks = 8, files = 8;
 const Color deepBlue = Color(0xFF0000FF);

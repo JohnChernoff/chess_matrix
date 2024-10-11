@@ -9,7 +9,6 @@ import 'client.dart';
 import 'game_seek.dart';
 import 'help_widget.dart';
 import 'main.dart';
-import 'matrix_fields.dart';
 import 'midi_manager.dart';
 import 'options.dart';
 

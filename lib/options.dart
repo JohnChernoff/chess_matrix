@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'chess.dart';
 import 'client.dart';
-import 'matrix_fields.dart';
 
 class OptionWidget extends StatefulWidget {
   const OptionWidget({super.key});

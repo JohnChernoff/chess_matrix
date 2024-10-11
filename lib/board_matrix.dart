@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'chess.dart';
+import 'main.dart';
 
 class BoardMatrix {
   final String fen;
@@ -55,10 +56,7 @@ class BoardMatrix {
         imgCall();
       });
     }
-    catch (e,s) {
-      print(e);
-      print(s);
-    }
+    catch (e,s) { mainLogger.w("$e : $s"); }
     //on TypeError catch (e) { print("Image Loading fail: $e"); }
   }
 
@@ -247,9 +245,9 @@ class BoardMatrix {
         ColorArray colorNE = coordNE.squareBounds(8) ? getSquare(coordNE).color : edgeCol;
         ColorArray colorSW = coordSW.squareBounds(8) ? getSquare(coordSW).color : edgeCol;
         ColorArray colorSE = coordSE.squareBounds(8) ? getSquare(coordSE).color : edgeCol;
-        if (colorSE == null) { print("WTF: $fen"); return imgData; }  //print("$colorSE , $colorSW, $colorNE, $colorNW");
+        if (colorSE == null) { mainLogger.w("WTF: $fen"); return imgData; }  //print("$colorSE , $colorSW, $colorNE, $colorNW");
 
-        //TODO: unreverse this?
+        //TODO: un-reverse this?
         int x = (((coordNW.y + 1) * squareWidth) + w2).floor();
         int y = (((coordNW.x + 1) * squareHeight) + h2).floor();
 

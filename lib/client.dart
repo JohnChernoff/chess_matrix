@@ -10,7 +10,7 @@ import 'package:lichess_package/lichess_package.dart';
 import 'package:oauth2/oauth2.dart';
 import 'board_state.dart';
 import 'chess.dart';
-import 'matrix_fields.dart';
+import 'main.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 
 class MatrixClient extends ChangeNotifier {
@@ -70,10 +70,10 @@ class MatrixClient extends ChangeNotifier {
     return (userInfo?['perfs']?[ratingType]?['rating']) ?? 1500;
   }
 
-  void followStream(Stream<String> eventStream) { print("Event: $eventStream");
+  void followStream(Stream<String> eventStream) { mainLogger.f("Event: $eventStream");
     String? token = lichessToken; if (token == null) { return; }
     eventStream.listen((data) {
-      if (data.trim().isNotEmpty) { print('Event Chunk: $data');
+      if (data.trim().isNotEmpty) { mainLogger.f('Event Chunk: $data');
         dynamic json = jsonDecode(data);
         String type = json["type"];
         if (type == "gameStart") {
@@ -95,7 +95,7 @@ class MatrixClient extends ChangeNotifier {
     });
   }
 
-  void followGame(String gid, Stream<String> gameStream) { print("Following Game: $gid");
+  void followGame(String gid, Stream<String> gameStream) { mainLogger.f("Following Game: $gid");
     gameStream.listen((data) {
       if (data.trim().isNotEmpty) { //print('Game Chunk: $data');
         for (String chunk in data.split("\n")) {
@@ -156,7 +156,7 @@ class MatrixClient extends ChangeNotifier {
 
   void sendMove(String? id, String from, String to, String? prom) { //lichSock.send(jsonEncode({ 't': 'move', 'd':   { 'u': uci, }}));
     String? token = lichessToken; if (token == null) { return; }
-    String uci = prom != null ? "$from$to$prom" : "$from$to"; print("Sending move: $uci");
+    String uci = prom != null ? "$from$to$prom" : "$from$to"; mainLogger.f("Sending move: $uci");
     lichessClient.makeMove(uci, id ?? "", token);
   }
 
@@ -169,9 +169,9 @@ class MatrixClient extends ChangeNotifier {
       else {
         seeking = true;  //print("Seeking: $minutes,$inc"); //Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token, minRating: 2299, maxRating: 2301).then((statusCode) {
         lichessClient.createSeek(LichessVariant.standard, minutes, inc, rated, token, minRating: min, maxRating: max).then((statusCode) {
-          print("Seek Status: $statusCode");
+          mainLogger.f("Seek Status: $statusCode");
           seeking = false;
-        }, onError: (err) => print("Seek error: $err"));
+        }, onError: (err) => mainLogger.w("Seek error: $err"));
       }
       updateView();
     }
@@ -191,9 +191,9 @@ class MatrixClient extends ChangeNotifier {
       else {
         seeking = true;  //print("Seeking: $minutes,$inc"); //Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token, minRating: 2299, maxRating: 2301).then((statusCode) {
         lichessClient.createChallenge(player,LichessVariant.standard,seconds,inc,rated,token).then((statusCode) {
-          print("Challenge Status: $statusCode");
+          mainLogger.f("Challenge Status: $statusCode");
           seeking = false;
-        }, onError: (err) => print("Challenge error: $err"));
+        }, onError: (err) => mainLogger.w("Challenge error: $err"));
       }
       updateView();
     }
@@ -258,15 +258,13 @@ class MatrixClient extends ChangeNotifier {
     updateView(updateBoards: true);
   }
 
-
-
   void connected() {
-    print("Connected");
+    mainLogger.i("Connected");
     loadTVGames();
   }
 
   void disconnected() {
-    print("Disconnected");
+    mainLogger.i("Disconnected");
   }
 
   void closeLiveGame(BoardState state) {
@@ -308,11 +306,11 @@ class MatrixClient extends ChangeNotifier {
         board.initState(id, getFen(game['moves']), Player.fromTV(game['players']['white']), Player.fromTV(game['players']['black']),this);
         lichessClient.addSockMsg({ 't': 'startWatching', 'd': id });
       } else {
-        print("Error: no available game for slot: ${board.slot}");
+        mainLogger.w("Error: no available game for slot: ${board.slot}");
         break;
       }
     } //boards = boards.sort();
-    print("Loaded: $viewBoards");
+    mainLogger.f("Loaded: $viewBoards");
     updateView();
   }
 

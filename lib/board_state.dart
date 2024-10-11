@@ -7,6 +7,7 @@ import 'chess.dart';
 import 'client.dart';
 import 'dart:ui' as ui;
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'main.dart';
 
 class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   String? id;
@@ -105,7 +106,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
         width: currentBoard.width, height: currentBoard.height, colorScheme: currentBoard.colorScheme,mixStyle: currentBoard.mixStyle, lastMove: currentBoard.lastMove,
         imgCall: () => updateWidget(),
       );
-      print("Cumulative Board: $board");
+      mainLogger.f("Cumulative Board: $board");
     }
   }
 

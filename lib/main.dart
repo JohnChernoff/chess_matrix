@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'client.dart';
 import 'home_page.dart';
@@ -10,7 +11,6 @@ import 'home_page.dart';
 You can make blueprint of single game (cumulative board control)
 
 TODO:
- movelist navigation
  logging
  music/chess libraries
  piece motion animation
@@ -24,10 +24,14 @@ TODO:
   ~lichess ping,
  */
 
+var mainLogger = Logger(
+  printer: PrettyPrinter(),
+);
 bool testing = false;
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MatrixApp());
+
 }
 
 class MatrixApp extends StatelessWidget {

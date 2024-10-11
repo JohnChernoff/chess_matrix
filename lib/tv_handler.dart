@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:chess_matrix/client.dart';
+import 'package:chess_matrix/main.dart';
 import 'board_matrix.dart';
 import 'board_state.dart';
 import 'chess.dart';
@@ -37,7 +38,7 @@ class TVHandler {
             }
           }
         }
-      } else if (type == 'finish') { print("Finished: $id");
+      } else if (type == 'finish') { mainLogger.i("Finished: $id");
         board.finished = true;
         client.loadTVGames();
       }

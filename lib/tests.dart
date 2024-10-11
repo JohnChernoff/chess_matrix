@@ -17,7 +17,7 @@ class MatrixTest {
     masterTrack.addChordEvent(i, [61], dur, vol);
     masterTrack.addChordEvent(i, [59,64], dur, vol);
     masterTrack.addChordEvent(i, [59], dur, vol);
-    masterTrack.play(sonifier,looping: true); //sonifier.loopTrack(masterTrack);
+    masterTrack.play(sonifier,looping: true);
   }
 }
 

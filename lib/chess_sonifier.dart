@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'board_matrix.dart';
 import 'chess.dart';
 import 'client.dart';
-import 'matrix_fields.dart';
+import 'main.dart';
 import 'midi_manager.dart';
 
 enum MidiChessPlayer {
@@ -126,7 +126,7 @@ class ChessSonifier {
   }
 
   void handleMidiComplete() {
-    print("Track finished"); //sonifier.playAllTracks();
+    mainLogger.i("Track finished");
   }
 
   double calcMoveDistance(Move move) {
@@ -147,7 +147,7 @@ class ChessSonifier {
     client.updateView();
   }
 
-  Future<void> initAudio() async { print("Loading audio");
+  Future<void> initAudio() async { mainLogger.i("Loading audio");
     await midi.init(defaultEnsembles.first);
     loopTrack.play(midi,looping: true); //midi.loopTrack(loopTrack);
     client.updateView();
@@ -173,9 +173,9 @@ class ChessSonifier {
   Future<void> playGame(IList<MoveState> moves) async {
     loopTrack.stop();
     for (MoveState move in moves) { //final MidiChessPlayer? player = getPieceInstrument(move.piece);
-      print("${move.piece} -> ${move.move}");
+      mainLogger.d("${move.piece} -> ${move.move}");
       for (MidiEvent e in getMoveMidiEvents(gameTrack, MidiChessPlayer.mainRhythm, move.piece, move.move, tempo: .05, yRest: true)) {
-        print("Note Event: $e");
+        mainLogger.d("Note Event: $e");
         gameTrack.addNoteEvent(e);
       }
     }

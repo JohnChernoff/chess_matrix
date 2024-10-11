@@ -47,6 +47,7 @@ dependencies:
   fast_immutable_collections: ^10.2.4
   cyclop: ^0.7.0
   oauth2: ^2.0.2
+  logger: ^2.4.0
   #awesome_dialog: ^3.2.1
 
 dev_dependencies:
