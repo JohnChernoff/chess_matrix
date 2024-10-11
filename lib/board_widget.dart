@@ -28,7 +28,9 @@ class BoardWidget extends StatelessWidget {
     return state.board == null ? const SizedBox.shrink() : singleBoard ?
       SizedBox(width: width, height: height, child:
       Flex(direction: flexDirection, mainAxisAlignment: MainAxisAlignment.center,children: [
-            MoveListWidget(state.moves, orientation: listDirection, span: span),
+            MoveListWidget(state.moves, orientation: listDirection, span: span,
+                onTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,client,freeze: false),
+                onDoubleTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,client,freeze: true)),
             getBoardBox(context, state), //getBoardBox(context, state),
           ]))
      : getBoardBox(context, state);

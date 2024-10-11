@@ -23,6 +23,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   IList<MoveState> moves = IList<MoveState>();
   cb.ChessBoardController controller = cb.ChessBoardController();
   int? boardSize;
+  bool isFrozen = false;
   bool drawOffered = false, offeringDraw = false;
   bool get isLive => playing != ChessColor.none;
   int get currentSize => boardSize ?? 0;
@@ -67,7 +68,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     notifyListeners();
   }
 
-  void refreshBoard(MatrixClient client) {
+  void refreshBoard(MatrixClient client) { //todo: check when needed (if ever)
     BoardMatrix? bm = board;
     if (bm != null) {
       int dim = min(client.matrixResolution,boardSize ?? 1000);
@@ -76,8 +77,13 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     }
   }
 
-  BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client) { //print("Updating: $id");
+  BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client, {bool? freeze}) { //print("Updating: $id");
     if (lastMove != null && board?.lastMove != lastMove) moves = moves.add(MoveState(lastMove, wc, bc, board?.fen, fen));
+    if (freeze != null) {
+      isFrozen = freeze;
+    } else if (isFrozen) {
+      return board;
+    }
     clockTimer?.cancel();
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
