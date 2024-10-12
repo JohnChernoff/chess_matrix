@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'chess.dart';
 import 'main.dart';
 
+typedef ImageCallBack = void Function(ui.Image image);
+
 class BoardMatrix {
   final String fen;
   final int width, height;
@@ -27,7 +29,7 @@ class BoardMatrix {
         (index + i).isEven ? SquareShade.light : SquareShade.dark), growable: false), growable: false);
   }
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,VoidCallback imgCall,
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,ImageCallBack imgCall,
       { this.blackPOV  = false, this.maxControl = 5, this.edgeColor = Colors.black }) {
     offScreen = false;
     squares = createSquares();
@@ -37,7 +39,7 @@ class BoardMatrix {
   }
 
   BoardMatrix.fromSquares(this.fen, this.squares, { this.width = 0, this.height = 0, this.colorScheme = const MatrixColorScheme(Colors.white, Colors.black, Colors.grey),
-    this.mixStyle = MixStyle.add, this.maxControl = 999999, this.edgeColor = Colors.black, this.blackPOV = false, this.lastMove, VoidCallback? imgCall}) {
+    this.mixStyle = MixStyle.add, this.maxControl = 999999, this.edgeColor = Colors.black, this.blackPOV = false, this.lastMove, ImageCallBack? imgCall}) {
     offScreen = (imgCall == null);
     for (int rank = 0; rank < ranks; rank++) {
       for (int file = 0; file < files; file++) {
@@ -49,11 +51,11 @@ class BoardMatrix {
     if (!offScreen) loadImg(imgCall!);
   }
 
-  void loadImg(VoidCallback imgCall) {
+  void loadImg(ImageCallBack imgCall) {
     try {
       ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
         image = img;
-        imgCall();
+        imgCall(img);
       });
     }
     catch (e,s) { mainLogger.w("$e : $s"); }

@@ -48,6 +48,9 @@ dependencies:
   cyclop: ^0.7.0
   oauth2: ^2.0.2
   logger: ^2.4.0
+  image: ^4.2.0
+  universal_html: ^2.2.4
+  file_saver: ^0.2.14
   #awesome_dialog: ^3.2.1
 
 dev_dependencies:

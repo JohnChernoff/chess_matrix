@@ -8,9 +8,10 @@ import 'home_page.dart';
 
 /*
 
-You can make blueprint of single game (cumulative board control)
-
 TODO:
+ cluechess 2.0?
+ GIF generation?
+ version history/auto browser refresh?
  settings cookies,
  selectable keys,
  piece motion animation,

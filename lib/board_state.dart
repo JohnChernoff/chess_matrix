@@ -1,13 +1,17 @@
 import 'dart:math';
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'dart:async';
 import 'board_matrix.dart';
 import 'chess.dart';
 import 'client.dart';
-import 'dart:ui' as ui;
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'main.dart';
+import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
+import 'package:image/image.dart' as img;
+import 'dart:ui' as ui;
+//import 'package:universal_html/html.dart' as html;
 
 class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   String? id;
@@ -75,7 +79,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     BoardMatrix? bm = board;
     if (bm != null) {
       int dim = min(client.matrixResolution,boardSize ?? 1000);
-      board = BoardMatrix(bm.fen,bm.lastMove,dim,dim,client.colorScheme,client.mixStyle,() => updateWidget(),
+      board = BoardMatrix(bm.fen,bm.lastMove,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(),
           blackPOV: blackPOV, maxControl: client.maxControl);
     }
   }
@@ -96,7 +100,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
     int dim = min(client.matrixResolution,boardSize ?? 1000); //print("Dim: $dim");
-    board = BoardMatrix(fen,lastMove,dim,dim,client.colorScheme,client.mixStyle,() => updateWidget(), blackPOV: blackPOV, maxControl: client.maxControl);
+    board = BoardMatrix(fen,lastMove,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(), blackPOV: blackPOV, maxControl: client.maxControl);
     clockTimer = countDown();
     controller.loadFen(fen);
     return board;
@@ -111,7 +115,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
       }
       board = BoardMatrix.fromSquares(bm.fen, bm.squares,
         width: currentBoard.width, height: currentBoard.height, colorScheme: currentBoard.colorScheme,mixStyle: currentBoard.mixStyle, lastMove: currentBoard.lastMove,
-        imgCall: () => updateWidget(),
+        imgCall: (img) => updateWidget(),
       );
       mainLogger.f("Cumulative Board: $board");
     }
@@ -122,5 +126,45 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     return  slot - other.slot;
   }
 
+  Future<Uint8List?> generateGIF(MatrixClient client, int resolution) async {
+      if (moves.isEmpty) return null;
+      final encoder = img.GifEncoder();
+      for (MoveState m in moves) {
+        Completer completer = Completer();
+        final bm = BoardMatrix(m.afterFEN,null,resolution,resolution,client.colorScheme,client.mixStyle,(boardImg) async {
+          final bytes = await boardImg.toByteData();
+          encoder.addFrame(img.Image.fromBytes(width: resolution, height: resolution, bytes: bytes!.buffer));
+          completer.complete();
+        });
+        await completer.future; //print("Added Image: ${bm.image}");
+      }
+      return encoder.finish();
+  }
+
+  Future<void> createGifFile(MatrixClient client, int resolution) async {
+    final data = await generateGIF(client, resolution);
+
+    await FileSaver.instance.saveFile(
+      name: "zenchess.gif",
+      bytes: data,
+      mimeType: MimeType.gif,
+    );
+  }
+
 }
 
+/*
+
+    final blob = html.Blob([data],"image/gif");
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final anchor = html.document.createElement('a') as html.AnchorElement
+      ..href = url
+      ..style.display = 'none'
+      ..download = 'zenchess.gif';
+    html.document.body?.children.add(anchor);
+    // download
+    anchor.click();
+    // cleanup
+    html.document.body?.children.remove(anchor);
+    html.Url.revokeObjectUrl(url);
+ */

@@ -76,6 +76,7 @@ class _BoardWidgetState extends State<BoardWidget> {
                   }
                 },
                 onDoubleTap: () {
+                  state.createGifFile(widget.client, 500);
                   state.blackPOV = !state.blackPOV;
                   widget.client.updateView(updateBoards: true);
                 },
