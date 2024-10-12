@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'chess.dart';
 import 'main.dart';
 
-typedef ImageCallBack = void Function(ui.Image image);
+typedef UIImageCallback = void Function(ui.Image image);
+typedef RawImageCallback = void Function(Uint8List data);
 
 class BoardMatrix {
   final String fen;
@@ -29,17 +30,13 @@ class BoardMatrix {
         (index + i).isEven ? SquareShade.light : SquareShade.dark), growable: false), growable: false);
   }
 
-  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,ImageCallBack imgCall,
+  BoardMatrix(this.fen,this.lastMove,this.width,this.height,this.colorScheme,this.mixStyle,UIImageCallback imgCall,
       { this.blackPOV  = false, this.maxControl = 5, this.edgeColor = Colors.black }) {
-    offScreen = false;
-    squares = createSquares();
-    parseFEN();
-    updateControl();
     loadImg(imgCall);
   }
 
   BoardMatrix.fromSquares(this.fen, this.squares, { this.width = 0, this.height = 0, this.colorScheme = const MatrixColorScheme(Colors.white, Colors.black, Colors.grey),
-    this.mixStyle = MixStyle.add, this.maxControl = 999999, this.edgeColor = Colors.black, this.blackPOV = false, this.lastMove, ImageCallBack? imgCall}) {
+    this.mixStyle = MixStyle.add, this.maxControl = 999999, this.edgeColor = Colors.black, this.blackPOV = false, this.lastMove, UIImageCallback? imgCall}) {
     offScreen = (imgCall == null);
     for (int rank = 0; rank < ranks; rank++) {
       for (int file = 0; file < files; file++) {
@@ -51,15 +48,25 @@ class BoardMatrix {
     if (!offScreen) loadImg(imgCall!);
   }
 
-  void loadImg(ImageCallBack imgCall) {
+  BoardMatrix.fromFEN(this.fen, {required this.colorScheme, this.width = 480, this.height = 480,
+  this.mixStyle = MixStyle.pigment, this.maxControl = 2, this.edgeColor = Colors.black, this.blackPOV = false, this.lastMove});
+
+  Uint8List generateRawImage() {
+    offScreen = false;
+    squares = createSquares();
+    parseFEN();
+    updateControl();
+    return getLinearInterpolation();
+  }
+
+  void loadImg(UIImageCallback imgCall) {
     try {
-      ui.decodeImageFromPixels(getLinearInterpolation(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
+      ui.decodeImageFromPixels(generateRawImage(), width, height, ui.PixelFormat.rgba8888, (ui.Image img) {
         image = img;
         imgCall(img);
       });
     }
     catch (e,s) { mainLogger.w("$e : $s"); }
-    //on TypeError catch (e) { print("Image Loading fail: $e"); }
   }
 
   void parseFEN() {
@@ -122,12 +129,12 @@ class BoardMatrix {
   }
 
   void updateControl({cumulative = false}) {
-    int mcc = getMaxCumulativeControl(); //if (cumulative && !offScreen) print("Max Control: $mc");
+    int mcc = (cumulative && !offScreen) ? getMaxCumulativeControl() : 0;  //print("Max Control: $mc");
     for (int y = 0; y < ranks; y++) {
       for (int x = 0; x < files; x++) {
         if (cumulative) { //print("Current Control: ${squares[x][y].control}");
           if (offScreen) {
-            squares[x][y].control = calcControl(Coord(x,y),cTab: squares[x][y].control); //ControlTable(squares[x][y].control.whiteControl,squares[x][y].control.blackControl)); // //
+            squares[x][y].control = calcControl(Coord(x,y),cTab: squares[x][y].control);
            }
           else {
             squares[x][y].setControl(squares[x][y].control,colorScheme,MixStyle.add,mcc);
@@ -139,7 +146,7 @@ class BoardMatrix {
     }
   }
 
-  ControlTable calcControl(Coord p, {cTab = const ControlTable(0, 0)}) { //ControlTable control = const ControlTable(0, 0);
+  ControlTable calcControl(Coord p, {cTab = const ControlTable(0, 0)}) {
     cTab = cTab.add(knightControl(p));
     cTab = cTab.add(diagControl(p));
     cTab = cTab.add(lineControl(p)); //if (dummy) print("$p : $control");

@@ -1,6 +1,4 @@
 import 'dart:math';
-import 'dart:typed_data';
-import 'package:file_saver/file_saver.dart';
 import 'package:flutter/cupertino.dart';
 import 'dart:async';
 import 'board_matrix.dart';
@@ -9,9 +7,7 @@ import 'client.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'main.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
-import 'package:image/image.dart' as img;
 import 'dart:ui' as ui;
-//import 'package:universal_html/html.dart' as html;
 
 class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   String? id;
@@ -126,45 +122,4 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     return  slot - other.slot;
   }
 
-  Future<Uint8List?> generateGIF(MatrixClient client, int resolution) async {
-      if (moves.isEmpty) return null;
-      final encoder = img.GifEncoder();
-      for (MoveState m in moves) {
-        Completer completer = Completer();
-        final bm = BoardMatrix(m.afterFEN,null,resolution,resolution,client.colorScheme,client.mixStyle,(boardImg) async {
-          final bytes = await boardImg.toByteData();
-          encoder.addFrame(img.Image.fromBytes(width: resolution, height: resolution, bytes: bytes!.buffer));
-          completer.complete();
-        });
-        await completer.future; //print("Added Image: ${bm.image}");
-      }
-      return encoder.finish();
-  }
-
-  Future<void> createGifFile(MatrixClient client, int resolution) async {
-    final data = await generateGIF(client, resolution);
-
-    await FileSaver.instance.saveFile(
-      name: "zenchess.gif",
-      bytes: data,
-      mimeType: MimeType.gif,
-    );
-  }
-
 }
-
-/*
-
-    final blob = html.Blob([data],"image/gif");
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    final anchor = html.document.createElement('a') as html.AnchorElement
-      ..href = url
-      ..style.display = 'none'
-      ..download = 'zenchess.gif';
-    html.document.body?.children.add(anchor);
-    // download
-    anchor.click();
-    // cleanup
-    html.document.body?.children.remove(anchor);
-    html.Url.revokeObjectUrl(url);
- */

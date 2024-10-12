@@ -67,8 +67,9 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
           color: Colors.black,
           width: w,
           height: h,
-          child: client.seeking ? Text("Seeking...",style: MatrixApp.getTextStyle(Colors.white)) :
-          SingleChildScrollView(scrollDirection: Axis.vertical, child: Column(
+          child: client.seeking ? Text("Seeking...",style: MatrixApp.getTextStyle(Colors.white))
+              : client.creatingGIF ? Text("Creating GIF...", style: MatrixApp.getTextStyle(Colors.green))
+              : SingleChildScrollView(scrollDirection: Axis.vertical, child: Column(
             children: List.generate(verticalBoards, (row) {
               return Column(children: [
                 Row(

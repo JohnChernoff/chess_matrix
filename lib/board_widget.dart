@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:chess_matrix/move_list.dart';
@@ -25,8 +24,8 @@ class _BoardWidgetState extends State<BoardWidget> {
   TextStyle textStyle = const TextStyle(color: Colors.white);
   bool showID = false; //true;
   bool hidePieces = false;
+  bool creatingGIF = false;
   double playerBarPercent = .05;
-
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +39,9 @@ class _BoardWidgetState extends State<BoardWidget> {
       MoveListWidget(state.moves, orientation: listDirection, span: span,
           onTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: false),
           onDoubleTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: true)),
-      getBoardBox(context, state), //getBoardBox(context, state),
+      getBoardBox(state),
     ]))
-        : getBoardBox(context, state);
+        : getBoardBox(state);
   }
 
   void animatePlayback(BoardState state, {int speed = 50, int endPause = 1000}) async {
@@ -62,7 +61,7 @@ class _BoardWidgetState extends State<BoardWidget> {
     state.updateBoardToLatestPosition(widget.client, freeze: false);
   }
 
-  Widget getBoardBox(BuildContext context, BoardState state) {
+  Widget getBoardBox(BoardState state) {
     return SizedBox(width: state.currentSize as double, height: state.currentSize as double, child: Row(
       children: [
         Expanded(child: Column(children: [
@@ -76,7 +75,6 @@ class _BoardWidgetState extends State<BoardWidget> {
                   }
                 },
                 onDoubleTap: () {
-                  state.createGifFile(widget.client, 500);
                   state.blackPOV = !state.blackPOV;
                   widget.client.updateView(updateBoards: true);
                 },
@@ -87,7 +85,7 @@ class _BoardWidgetState extends State<BoardWidget> {
                     widget.client.setSingleState(state);
                   }
                 },
-                child: getBoard(context, state, showMove: widget.client.showMove),
+                child: getBoard(state, showMove: widget.client.showMove),
               )
           ),
           getPlayerBar(state, false),
@@ -109,9 +107,31 @@ class _BoardWidgetState extends State<BoardWidget> {
             }
           }),
       IconButton(color: Colors.white, icon: Icon(hidePieces ? Icons.add_location : Icons.hide_image_outlined),
-      onPressed: () => setState(() {
-        hidePieces = !hidePieces;
-      })),
+          onPressed: () => setState(() {
+            hidePieces = !hidePieces;
+          })),
+      IconButton(color: Colors.white, icon: Icon(creatingGIF ? Icons.run_circle_outlined : Icons.gif),
+          onPressed: () {
+            showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return SimpleDialog(
+                    children: [
+                      SimpleDialogOption(
+                          onPressed: () {
+                            widget.client.createGifFile(state, 500);
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Create GIF (could take awhile)')),
+                      SimpleDialogOption(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Cancel')),
+                    ],
+                  );
+                });
+          }),
       (state.playing == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
       (state.playing == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
     ]);
@@ -142,7 +162,7 @@ class _BoardWidgetState extends State<BoardWidget> {
         onPressed: () => widget.client.offerDraw(state), icon: const Icon(Icons.health_and_safety));
   }
 
-  Widget getBoard(BuildContext context, BoardState state, {showMove = false, showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
+  Widget getBoard(BoardState state, {showMove = false, showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
     MatrixClient client = Provider.of(context, listen: false);
     String? from =  state.board?.lastMove?.moveStr.substring(0,2);
     String? to =  state.board?.lastMove?.moveStr.substring(2,4);

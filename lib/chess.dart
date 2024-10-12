@@ -51,6 +51,25 @@ const Color deepBlue = Color(0xFF0000FF);
 const Color deepRed = Color(0xFFFF0000);
 const Color deepYellow = Color(0xFFFFFF00);
 
+enum ChessColor {
+  none("x"),
+  white("w"),
+  black("b");
+  final String fileLetter;
+  const ChessColor(this.fileLetter);
+}
+enum PieceType {
+  none("X"),
+  pawn("P"),
+  knight("N"),
+  bishop("B"),
+  rook("R"),
+  queen("Q"),
+  king("K");
+  final String fileLetter;
+  const PieceType(this.fileLetter);
+}
+
 enum ColorComponent {red,green,blue}
 enum ColorStyle {
   heatmap(MatrixColorScheme(deepBlue,deepRed,Colors.black)),
@@ -63,8 +82,6 @@ enum ColorStyle {
   const ColorStyle(this.colorScheme);
 }
 enum MixStyle {pigment,checker,add}
-enum ChessColor {none,white,black}
-enum PieceType {none,pawn,knight,bishop,rook,queen,king}
 
 class ColorArray {
   final List<int> values;
