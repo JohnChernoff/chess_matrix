@@ -42,11 +42,12 @@ class MatrixClient extends ChangeNotifier {
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
-  MatrixClient(String host, {this.initialBoardNum = 1, token}) {
+  MatrixClient(String host, {this.initialBoardNum = 1, String? token}) {
     sonifier = ChessSonifier(this);
     gameHandler = GameHandler(this,sonifier);
     lichessClient = LichessClient(host: host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: gameHandler.handleMsg);
-    if (token != null) {
+    if (token?.isNotEmpty ?? false) {
+      mainLogger.i("Setting token from environment");
       setToken(token);
     } else {
       oauthClient.checkRedirect(handleOauthClient);
