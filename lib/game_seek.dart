@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'client.dart';
+import 'dialogs.dart';
 import 'main.dart';
 
 class SeekWidget extends StatefulWidget {
@@ -112,7 +113,12 @@ class _SeekWidgetState extends State<SeekWidget> {
         widget.client.seekGame(minutes,inc: inc,rated: rated, min: ratingRanges ? minRating : null, max: ratingRanges ? maxRating : null);
         Navigator.of(context).pop();
       }, child: Text("Seek ${LichessClient.getRatingType(minutes as double, inc)?.name}",style: MatrixApp.getTextStyle(Colors.black))),
-      ElevatedButton(onPressed: () => widget.client.createChallenge("Zugaddict",3000,20,false),
+      const Divider(height: 32),
+      ElevatedButton(onPressed: () {
+        ChallengeDialog(context,widget.client,minutes * 60,inc,rated).raise().then((b) {
+          if (context.mounted && (b ?? false)) InfoDialog(context,"Challege Created!").raise();
+        });
+      },
         child: Text("Challenge",style: MatrixApp.getTextStyle(Colors.black))),
     ],
     )));

@@ -120,7 +120,7 @@ class GameHandler {
                       Move move = Move(m);
                       String beforeFEN = chess.fen;
                       chess.move(move.toJson());
-                      if (refreshMoves) board.moves = board.moves.add(MoveState(move, 0, 0, beforeFEN, chess.fen));
+                      if (refreshMoves) board.moves = board.moves.add(MoveState(move, 0, 0, beforeFEN, chess.fen)); //TODO: create move add method
                     }
                     String lastMove = moves[moves.length - 1];
                     board.updateBoard(

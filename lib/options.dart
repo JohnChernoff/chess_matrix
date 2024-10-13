@@ -1,10 +1,9 @@
 import 'package:chess_matrix/main.dart';
-import 'package:cyclop/cyclop.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:zug_utils/zug_utils.dart';
 import 'chess.dart';
 import 'client.dart';
+import 'dialogs.dart';
 
 class OptionWidget extends StatefulWidget {
   const OptionWidget({super.key});
@@ -56,7 +55,7 @@ class _OptionWidgetState extends State<OptionWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ElevatedButton(
-                onPressed: () => MatrixApp.menuBuilder(context, ChangeNotifierProvider.value(value: client, child: const ColorMenu())),
+                onPressed: () => MatrixApp.menuBuilder(context, ChangeNotifierProvider.value(value: client, child: const ColorDialog())),
                 child: Text("Set Colors",style: MatrixApp.getTextStyle(Colors.black)),
               ),
               ElevatedButton(
@@ -122,50 +121,5 @@ class _OptionWidgetState extends State<OptionWidget> {
           ),
         ],
     ));
-  }
-}
-
-class ColorMenu extends StatelessWidget {
-  const ColorMenu({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    MatrixClient client = context.watch<MatrixClient>();
-    final dims = ZugUtils.getScreenDimensions(context); //Axis axis = dims.getMainAxis();
-    return Container(
-        color: Colors.brown,
-        width: dims.width /2,
-        height: dims.height / 3,
-        child: GridView.extent(
-          scrollDirection: Axis.vertical, //axis,
-          maxCrossAxisExtent: 200,
-          mainAxisSpacing: 8.0,
-          crossAxisSpacing: 8.0,
-          padding: const EdgeInsets.all(8.0),
-          children: [
-            getColorPicker(client, "White Control ", client.colorScheme.whiteColor, (color) => client.setColorScheme(whiteControl: color)),
-            getColorPicker(client, "Black Control ", client.colorScheme.blackColor, (color) => client.setColorScheme(blackControl: color)),
-            getColorPicker(client, "Void: ", client.colorScheme.voidColor, (color) => client.setColorScheme(voidColor: color)),
-            getColorPicker(client, "Grid: ", client.colorScheme.gridColor, (color) => client.setColorScheme(grid: color)),
-            getColorPicker(client, "White Blend ", client.colorScheme.whitePieceBlendColor, (color) => client.setColorScheme(whiteBlend: color)),
-            getColorPicker(client, "Black Blend ", client.colorScheme.blackPieceBlendColor, (color) => client.setColorScheme(blackBlend: color)),
-          ],
-        ));
-  }
-
-  Widget getColorPicker(MatrixClient client, String title, Color colorProvider, dynamic onSelect) {
-    return Column(
-      children: [
-        Text(title, style: MatrixApp.getTextStyle(colorProvider)),
-        ColorButton(
-          size: 100,
-          boxShape: BoxShape.rectangle,
-          color: colorProvider,
-          onColorChanged: (Color color) => onSelect(color),
-          config: const ColorPickerConfig(enableLibrary: false, enableEyePicker: false),
-          darkMode: true,
-        ),
-      ],
-    );
   }
 }

@@ -7,6 +7,7 @@ import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'package:provider/provider.dart';
 import 'board_state.dart';
 import 'chess.dart';
+import 'dialogs.dart';
 
 class BoardWidget extends StatefulWidget {
   final MatrixClient client;
@@ -111,27 +112,8 @@ class _BoardWidgetState extends State<BoardWidget> {
             hidePieces = !hidePieces;
           })),
       IconButton(color: Colors.white, icon: Icon(creatingGIF ? Icons.run_circle_outlined : Icons.gif),
-          onPressed: () {
-            showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return SimpleDialog(
-                    children: [
-                      SimpleDialogOption(
-                          onPressed: () {
-                            widget.client.createGifFile(state, 500);
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Create GIF (could take awhile)')),
-                      SimpleDialogOption(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Cancel')),
-                    ],
-                  );
-                });
-          }),
+          onPressed: () => GifDialog(context,widget.client,state).raise(),
+          ),
       (state.playing == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
       (state.playing == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
     ]);

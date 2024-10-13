@@ -29,10 +29,9 @@ var mainLogger = Logger(
   printer: PrettyPrinter(),
 );
 bool testing = false;
-void main() {
+void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MatrixApp());
-
 }
 
 class MatrixApp extends StatelessWidget {
@@ -47,7 +46,7 @@ class MatrixApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-        create: (context) => MatrixClient("lichess.org"),
+        create: (context) => MatrixClient("lichess.org",token: const String.fromEnvironment("TOKEN")),
         child: MaterialApp(
             title: 'Chess Matrix 1.0',
             theme: ThemeData(

@@ -11,7 +11,8 @@ class MoveListWidget extends StatefulWidget {
   final MoveSelectionCallback? onTap;
   final MoveSelectionCallback? onDoubleTap;
   final MoveSelectionCallback? onLongPress;
-  const MoveListWidget(this.moves,{this.orientation = Axis.vertical,this.span = 128, this.onTap, this.onDoubleTap, this.onLongPress, super.key});
+  final Color voidColor;
+  const MoveListWidget(this.moves,{this.orientation = Axis.vertical,this.span = 128, this.voidColor = Colors.black, this.onTap, this.onDoubleTap, this.onLongPress, super.key});
 
   @override
   State<StatefulWidget> createState() => _MoveListWidgeState();
@@ -30,7 +31,7 @@ class _MoveListWidgeState extends State<MoveListWidget> {
             ? widget.span
             : null,
         child: widget.moves.isEmpty
-            ? Container(color: Colors.brown)
+            ? Container(color: widget.voidColor)
             : GridView.count(
                 scrollDirection: widget.orientation,
                 crossAxisCount: 2,

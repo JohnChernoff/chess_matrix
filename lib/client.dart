@@ -42,28 +42,32 @@ class MatrixClient extends ChangeNotifier {
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
-  MatrixClient(String host, {this.initialBoardNum = 1}) {
+  MatrixClient(String host, {this.initialBoardNum = 1, token}) {
     sonifier = ChessSonifier(this);
     gameHandler = GameHandler(this,sonifier);
     lichessClient = LichessClient(host: host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: gameHandler.handleMsg);
-    oauthClient.checkRedirect(getClient);
+    if (token != null) {
+      setToken(token);
+    } else {
+      oauthClient.checkRedirect(handleOauthClient);
+    }
   }
 
   void lichessLogin() {
     authenticating = true;
-    oauthClient.authenticate(getClient,scopes: ["board:play"]);
+    oauthClient.authenticate(handleOauthClient,scopes: ["board:play"]);
   }
 
-  void getClient(Client? client) {
+  void handleOauthClient(Client? client) {
     setToken(client?.credentials.accessToken);
     authenticating = false;
   }
 
   Future<void> setToken(String? accessToken) async {
     if (accessToken != null) { //print("Access Token: $accessToken");
-      lichessToken = accessToken;
       userInfo = await lichessClient.getAccount(accessToken);
       lichessClient.getEventStream(accessToken, gameHandler.followStream);
+      lichessToken = accessToken;
       updateView();
     }
   }
@@ -112,8 +116,7 @@ class MatrixClient extends ChangeNotifier {
       if (seeking) {
         cancelSeek();
       }
-      else {
-        seeking = true;  //print("Seeking: $minutes,$inc"); //Lichess.createSeek(LichessVariant.standard, minutes, inc, rated, token, minRating: 2299, maxRating: 2301).then((statusCode) {
+      else { //seeking = true;
         lichessClient.createChallenge(player,LichessVariant.standard,seconds,inc,rated,token).then((statusCode) {
           mainLogger.f("Challenge Status: $statusCode");
           seeking = false;
