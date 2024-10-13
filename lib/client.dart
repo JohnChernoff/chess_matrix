@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
-import 'dart:convert';
 import 'package:chess_matrix/chess_sonifier.dart';
-import 'package:chess_matrix/tv_handler.dart';
+import 'package:chess_matrix/game_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_oauth/flutter_oauth.dart';
@@ -38,15 +37,15 @@ class MatrixClient extends ChangeNotifier {
   final OauthClient oauthClient = OauthClient("lichess.org","chessMatrix");
   late final LichessClient lichessClient;
   late final ChessSonifier sonifier;
-  late final TVHandler tvHandler;
+  late final GameHandler gameHandler;
   late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
   MatrixClient(String host, {this.initialBoardNum = 1}) {
     sonifier = ChessSonifier(this);
-    tvHandler = TVHandler(this,sonifier);
-    lichessClient = LichessClient(host: host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: tvHandler.handleMsg);
+    gameHandler = GameHandler(this,sonifier);
+    lichessClient = LichessClient(host: host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: gameHandler.handleMsg);
     oauthClient.checkRedirect(getClient);
   }
 
@@ -64,7 +63,7 @@ class MatrixClient extends ChangeNotifier {
     if (accessToken != null) { //print("Access Token: $accessToken");
       lichessToken = accessToken;
       userInfo = await lichessClient.getAccount(accessToken);
-      lichessClient.getEventStream(accessToken, followStream);
+      lichessClient.getEventStream(accessToken, gameHandler.followStream);
       updateView();
     }
   }
@@ -77,89 +76,7 @@ class MatrixClient extends ChangeNotifier {
     return (userInfo?['perfs']?[ratingType]?['rating']) ?? 1500;
   }
 
-  void followStream(Stream<String> eventStream) { mainLogger.f("Event: $eventStream");
-    String? token = lichessToken; if (token == null) { return; }
-    eventStream.listen((data) {
-      if (data.trim().isNotEmpty) { mainLogger.f('Event Chunk: $data');
-        dynamic json = jsonDecode(data);
-        String type = json["type"];
-        if (type == "gameStart") {
-          dynamic game = json['game']; String id = game['gameId'];
-          dynamic whitePlayer = game['color'] == 'white' ? {'id' : userInfo['username'], 'rating' : getRatingByType(game['speed'])} : game['opponent'];
-          dynamic blackPlayer = game['color'] == 'black' ? {'id' : userInfo['username'], 'rating' : getRatingByType(game['speed'])} : game['opponent'];
-          BoardState state = BoardState(playBoards.length,playing: game['color'] == 'white' ? ChessColor.white : ChessColor.black, blackPOV : (game['color'] == 'black'));
-          state.initState(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),this);
-          playBoards = playBoards.add(state);
-          lichessClient.followGame(id,token,followGame);
-          updateView();
-        }
-        else if (type == 'gameFinish') {
-          dynamic game = json['game']; String id = game['gameId'];
-          BoardState? state = playBoards.where((state) => state.id == id).firstOrNull;
-          state?.finished = true;
-        }
-      }
-    });
-  }
 
-  void followGame(String gid, Stream<String> gameStream) { mainLogger.f("Following Game: $gid");
-    gameStream.listen((data) {
-      if (data.trim().isNotEmpty) { //print('Game Chunk: $data');
-        for (String chunk in data.split("\n")) {
-          if (chunk.isNotEmpty) {
-            dynamic json = jsonDecode(chunk.trim()); //print('JSON Chunk: $json');
-            String? lastMove = json['lm'];
-            BoardState? board = playBoards.where((state) => state.id == gid).firstOrNull;
-            if (board != null) {
-              String type = json['type']; //print("Game Event Type: $type : $json");
-
-              if (type == 'chatLine') {
-                  //board.drawOffered = true;
-              }
-              else {
-                bool? wdraw = json['wdraw'], bdraw = json['bdraw'];
-                if (wdraw ?? false) {
-                  if (board.playing == ChessColor.black) {
-                    board.drawOffered = true; //!board.drawOffered;
-                  } else {
-                    board.offeringDraw = true;
-                  }
-                }
-                else if (bdraw ?? false) {
-                  if (board.playing == ChessColor.white) {
-                    board.drawOffered = true; //!board.drawOffered;
-                  } else {
-                    board.offeringDraw = true;
-                  }
-                }
-                else {
-                  board.offeringDraw = false; board.drawOffered = false;
-                }
-                //board.drawOffered = false;
-                dynamic state = type == 'gameState' ? json : type == 'gameFull' ? json['state'] : null;
-                if (state != null) { //print("State: $state");
-                  String moves = state['moves'].trim();
-                  if (moves.length > 1) {
-                    dc.Chess chess = dc.Chess.fromFEN(startFEN);
-                    for (String m in moves.split(" ")) {
-                      if (m.length == 4) {
-                        chess.move({'from': m.substring(0,2), 'to': m.substring(2,4)});
-                      }
-                      else if (m.length == 5) {
-                        chess.move({'from': m.substring(0,2), 'to': m.substring(2,4), 'promotion': m[4]});
-                      }
-                    }
-                    board.updateBoard(chess.fen, lastMove != null ? Move(lastMove) : null, ((state['wtime'] ?? 0)/1000).floor(), ((state['btime'] ?? 0)/1000).floor(),this);
-                  }
-                  //updateView();
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-  }
 
   void sendMove(String? id, String from, String to, String? prom) { //lichSock.send(jsonEncode({ 't': 'move', 'd':   { 'u': uci, }}));
     String? token = lichessToken; if (token == null) { return; }

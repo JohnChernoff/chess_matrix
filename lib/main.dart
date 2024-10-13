@@ -10,7 +10,6 @@ import 'home_page.dart';
 
 TODO:
  cluechess 2.0?
- GIF generation?
  version history/auto browser refresh?
  settings cookies,
  selectable keys,
@@ -18,6 +17,7 @@ TODO:
  animate sounds,
  distance v. square pitches
  game chat, etc.
+  ~GIF generation
   ~logging
  ~board reloading weirdness,
  ~optimize board drawing and minimum resolution

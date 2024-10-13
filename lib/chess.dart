@@ -260,6 +260,7 @@ class Piece {
 
 class Move {
   final String moveStr;
+  late final PieceType prom;
   late final Coord from, to;
   get fromStr => moveStr.substring(0,2);
   get toStr => moveStr.substring(2,4);
@@ -267,10 +268,19 @@ class Move {
   Move(this.moveStr) {
     from = Coord(moveStr.codeUnitAt(0) - "a".codeUnitAt(0),7 - (moveStr.codeUnitAt(1) - "1".codeUnitAt(0)));
     to = Coord(moveStr.codeUnitAt(2) - "a".codeUnitAt(0),7 - (moveStr.codeUnitAt(3) - "1".codeUnitAt(0)));
+    prom = (moveStr.length == 5) ? Piece.fromChar(moveStr[4]).type : PieceType.none;
   }
-  static coord2Int(Coord c) {
-    return c.x + (c.y * ranks);
+
+  dynamic toJson() {
+    if (moveStr.length == 4) {
+      return {'from': moveStr.substring(0,2), 'to': moveStr.substring(2,4)};
+    }
+    else if (moveStr.length == 5) {
+      return {'from': moveStr.substring(0,2), 'to': moveStr.substring(2,4), 'promotion': moveStr[4]};
+    }
+    return {};
   }
+
   bool eq(Move move) {
     return from.eq(move.from) && to.eq(move.to);
   }
@@ -278,6 +288,10 @@ class Move {
   @override
   String toString() {
     return moveStr;
+  }
+
+  static coord2Int(Coord c) {
+    return c.x + (c.y * ranks);
   }
 }
 

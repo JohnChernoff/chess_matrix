@@ -108,10 +108,12 @@ class _SeekWidgetState extends State<SeekWidget> {
         ],
       ),
       const Divider(height: 32),
-      ElevatedButton(onPressed: () { //widget.client.createChallenge("ZugAddict", 3000, 15, false);
+      ElevatedButton(onPressed: () {
         widget.client.seekGame(minutes,inc: inc,rated: rated, min: ratingRanges ? minRating : null, max: ratingRanges ? maxRating : null);
         Navigator.of(context).pop();
-      } , child: Text("Seek ${LichessClient.getRatingType(minutes as double, inc)?.name}",style: MatrixApp.getTextStyle(Colors.black))),
+      }, child: Text("Seek ${LichessClient.getRatingType(minutes as double, inc)?.name}",style: MatrixApp.getTextStyle(Colors.black))),
+      ElevatedButton(onPressed: () => widget.client.createChallenge("Zugaddict",3000,20,false),
+        child: Text("Challenge",style: MatrixApp.getTextStyle(Colors.black))),
     ],
     )));
   }
