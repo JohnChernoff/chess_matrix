@@ -16,7 +16,7 @@ enum BoardStatus {
 class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   final int slot;
   final String? id;
-  final String? initialFEN;
+  final String initialFEN;
   final Player? whitePlayer,blackPlayer;
   final int? whiteStartTime, blackStartTime;
   final cb.ChessBoardController controller = cb.ChessBoardController();
@@ -37,10 +37,10 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   bool get isOpen => !isAnimating && (replaceable || finished);
   bool get finished => (status != BoardStatus.playing);
 
-  BoardState.empty(this.slot, { this.id, this.initialFEN, this.whitePlayer, this.blackPlayer, this.whiteStartTime, this.blackStartTime, this.userSide = ChessColor.none} );
-  BoardState.newGame(this.slot,this.id,this.initialFEN, this.whitePlayer, this.blackPlayer, MatrixClient client, { this.userSide = ChessColor.none, this.blackPOV = false,
+  BoardState.empty(this.slot, { this.id, this.initialFEN = startFEN, this.whitePlayer, this.blackPlayer, this.whiteStartTime, this.blackStartTime, this.userSide = ChessColor.none} );
+  BoardState.newGame(this.slot,this.id, this.whitePlayer, this.blackPlayer, MatrixClient client, { this.initialFEN = startFEN, this.userSide = ChessColor.none, this.blackPOV = false,
     this.whiteStartTime, this.blackStartTime, this.replaceable = false, this.status = BoardStatus.playing, Move? lastMove }) {
-    updateBoard(initialFEN ?? startFEN, lastMove, whiteStartTime ?? 0, blackStartTime ?? 0, client);
+    updateBoard(initialFEN, lastMove, whiteStartTime ?? 0, blackStartTime ?? 0, client);
   }
 
   void setResult(bool whiteWin, bool blackWin) {
@@ -117,7 +117,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   void generateCumulativeControlBoard() {
     final currentBoard = board;
     if (currentBoard != null) {
-      BoardMatrix bm = BoardMatrix.fromSquares(moves.first.beforeFEN ?? initialFEN ?? startFEN, BoardMatrix.createSquares());
+      BoardMatrix bm = BoardMatrix.fromSquares(moves.first.beforeFEN ?? initialFEN, BoardMatrix.createSquares());
       for (MoveState m in moves) {
         bm = BoardMatrix.fromSquares(m.afterFEN, bm.squares);
       }

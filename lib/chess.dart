@@ -52,22 +52,24 @@ const Color deepRed = Color(0xFFFF0000);
 const Color deepYellow = Color(0xFFFFFF00);
 
 enum ChessColor {
-  none("x"),
-  white("w"),
-  black("b");
+  none("x",null),
+  white("w",dc.Color.WHITE),
+  black("b",dc.Color.BLACK);
   final String fileLetter;
-  const ChessColor(this.fileLetter);
+  final dc.Color? dartChessColor;
+  const ChessColor(this.fileLetter,this.dartChessColor);
 }
 enum PieceType {
-  none("X"),
-  pawn("P"),
-  knight("N"),
-  bishop("B"),
-  rook("R"),
-  queen("Q"),
-  king("K");
+  none("X",null),
+  pawn("P",dc.PieceType.PAWN),
+  knight("N",dc.PieceType.KNIGHT),
+  bishop("B",dc.PieceType.BISHOP),
+  rook("R",dc.PieceType.ROOK),
+  queen("Q",dc.PieceType.QUEEN),
+  king("K",dc.PieceType.KNIGHT);
   final String fileLetter;
-  const PieceType(this.fileLetter);
+  final dc.PieceType? dartChessType;
+  const PieceType(this.fileLetter, this.dartChessType);
 }
 
 enum ColorComponent {red,green,blue}

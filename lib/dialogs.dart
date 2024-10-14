@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'board_state.dart';
 import 'client.dart';
+import 'img_utils.dart';
 import 'main.dart';
 
 class ColorDialog extends StatelessWidget {
@@ -66,7 +67,7 @@ class GifDialog {
             children: [
               SimpleDialogOption(
                   onPressed: () {
-                    client.createGifFile(state, 500);
+                    ImgUtils.createGifFile(state, 500);
                     Navigator.pop(context);
                   },
                   child: const Text('Create GIF (could take awhile)')),

@@ -2,24 +2,20 @@ import 'dart:async';
 import 'dart:collection';
 import 'package:chess_matrix/chess_sonifier.dart';
 import 'package:chess_matrix/game_handler.dart';
+import 'package:chess_matrix/img_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_oauth/flutter_oauth.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:oauth2/oauth2.dart';
-import 'package:zug_utils/zug_utils.dart';
-import 'board_matrix.dart';
 import 'board_state.dart';
 import 'chess.dart';
 import 'main.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
-import 'package:file_saver/file_saver.dart';
 import 'package:chess/chess.dart' as dc;
-import 'package:image/image.dart' as img;
-import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 
 class MatrixClient extends ChangeNotifier {
-  final Map<String,img.Image?> pieceImages = {};
+
   int initialBoardNum;
   int matrixResolution = 300;
   PieceStyle pieceStyle = PieceStyle.caliente;
@@ -43,6 +39,7 @@ class MatrixClient extends ChangeNotifier {
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
   MatrixClient(String host, {this.initialBoardNum = 1, String? token}) {
+    ImgUtils.setPieces(pieceStyle);
     sonifier = ChessSonifier(this);
     gameHandler = GameHandler(this,sonifier);
     lichessClient = LichessClient(host: host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: gameHandler.handleMsg);
@@ -164,7 +161,8 @@ class MatrixClient extends ChangeNotifier {
     updateView(updateBoards: true);
   }
 
-  void setPieceStyle(PieceStyle style) { //setPieces();
+  void setPieceStyle(PieceStyle style) {
+    ImgUtils.setPieces(style);
     pieceStyle = style;
     updateView();
   }
@@ -229,7 +227,7 @@ class MatrixClient extends ChangeNotifier {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);
         String id = game['id']; //print("Adding: $id");
-        board = BoardState.newGame(board.slot, id, getFen(game['moves']), Player.fromTV(game['players']['white']), Player.fromTV(game['players']['black']),this);
+        board = BoardState.newGame(board.slot, id, Player.fromTV(game['players']['white']), Player.fromTV(game['players']['black']), this, initialFEN : getFen(game['moves']));
         viewBoards = viewBoards.replace(board.slot, board);
         lichessClient.addSockMsg({ 't': 'startWatching', 'd': id });
       } else {
@@ -249,67 +247,6 @@ class MatrixClient extends ChangeNotifier {
     dc.Chess chess = dc.Chess();
     chess.load_pgn(moves);
     return chess.fen;
-  }
-
-  void createGifFile(BoardState state, int resolution) async {
-    creatingGIF = true; updateView();
-    generateGIF(state, resolution).then((bytes) {
-      if (bytes?.isNotEmpty ?? false) {
-        FileSaver.instance.saveFile(
-          name: "zenchess.gif",
-          bytes: bytes,
-          mimeType: MimeType.gif,
-        );
-      }
-    });
-    creatingGIF = false;
-    updateView();
-  }
-
-  Future<Uint8List?> generateGIF(BoardState state, int resolution) async {
-    if (state.moves.isEmpty) return null;
-    await setPieces();
-    final encoder = img.GifEncoder();
-    for (MoveState m in state.moves) {
-      final matrix = BoardMatrix.fromFEN(m.afterFEN, width: resolution, height: resolution, colorScheme: colorScheme);
-      final data = matrix.generateRawImage();
-      img.Image image = img.Image.fromBytes(width: resolution, height: resolution, bytes: data.buffer, order: img.ChannelOrder.rgba, frameType: img.FrameType.animation);
-      image = drawPieces(matrix,image);
-      encoder.addFrame(image); updateView();
-      //print("Adding frame: $image");
-    }
-    mainLogger.i("Writing GIF");
-    return encoder.finish();
-  }
-
-  Future<void> setPieces() async {
-    for (PieceType t in PieceType.values) {
-      if (t != PieceType.none) {
-        final wPath = "${pieceStyle.name}/w${t.fileLetter}.png";
-        final bPath = "${pieceStyle.name}/b${t.fileLetter}.png";
-        final wPieceImg = await ZugUtils.imageToImgPkg(cb.ChessBoard.getPieceImage(wPath));
-        pieceImages.update(Piece(t,ChessColor.white).toString(), (i) => wPieceImg, ifAbsent: () => wPieceImg);
-        final bPieceImg = await ZugUtils.imageToImgPkg(cb.ChessBoard.getPieceImage(bPath));
-        pieceImages.update(Piece(t,ChessColor.black).toString(), (i) => bPieceImg, ifAbsent: () => bPieceImg);
-      }
-    }
-    mainLogger.i("Loaded Pieces");
-  }
-
-  img.Image drawPieces(BoardMatrix matrix, img.Image boardImg) {
-     double squareWidth = boardImg.width / files;
-     double squareHeight = boardImg.height / ranks;
-     for (int rank = 0; rank < ranks; rank++) {
-        for (int file = 0; file < files; file++) {
-          final ps = matrix.getSquare(Coord(file,rank)).piece.toString(); //print(ps);
-          final p = pieceImages[ps]; //print(p);
-          if (p != null) {
-            boardImg = img.compositeImage(boardImg, p,
-                dstX: (squareWidth * file).floor(), dstY: (squareHeight * rank).floor(), dstW: squareWidth.floor(), dstH: squareHeight.floor());
-          }
-        }
-      }
-     return boardImg;
   }
 
 }

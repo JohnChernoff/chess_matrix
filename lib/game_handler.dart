@@ -58,7 +58,8 @@ class GameHandler {
           dynamic game = json['game']; String id = game['gameId'];
           dynamic whitePlayer = game['color'] == 'white' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
           dynamic blackPlayer = game['color'] == 'black' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
-          BoardState state = BoardState.newGame(client.playBoards.length,id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),client,
+          BoardState state = BoardState.newGame(client.playBoards.length,id,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),client,
+              initialFEN: startFEN,
               userSide: game['color'] == 'white' ? ChessColor.white : ChessColor.black,
               blackPOV: (game['color'] == 'black'),
           );

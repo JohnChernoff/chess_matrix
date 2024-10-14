@@ -1,5 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
+import 'package:chess_matrix/img_utils.dart';
+import 'package:chess_matrix/tests/tests.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +9,6 @@ import 'client.dart';
 import 'home_page.dart';
 
 /*
-
 TODO:
  cluechess 2.0?
  version history/auto browser refresh?
@@ -29,10 +30,16 @@ TODO:
 var mainLogger = Logger(
   printer: PrettyPrinter(),
 );
-bool testing = false;
+
 void main(List<String> args) {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MatrixApp());
+  if (const String.fromEnvironment("GIFTEST") == "true") {
+    MatrixTests.gifTest();
+  }
+  else {
+    //ImgUtils.setPieces(pieceStyle)
+    runApp(const MatrixApp());
+  }
 }
 
 class MatrixApp extends StatelessWidget {
