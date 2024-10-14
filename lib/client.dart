@@ -38,7 +38,7 @@ class MatrixClient extends ChangeNotifier {
   late final LichessClient lichessClient;
   late final ChessSonifier sonifier;
   late final GameHandler gameHandler;
-  late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState(slot)));
+  late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState.empty(slot)));
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
 
@@ -80,8 +80,6 @@ class MatrixClient extends ChangeNotifier {
   int getRatingByType(String? ratingType) {
     return (userInfo?['perfs']?[ratingType]?['rating']) ?? 1500;
   }
-
-
 
   void sendMove(String? id, String from, String to, String? prom) { //lichSock.send(jsonEncode({ 't': 'move', 'd':   { 'u': uci, }}));
     String? token = lichessToken; if (token == null) { return; }
@@ -205,7 +203,7 @@ class MatrixClient extends ChangeNotifier {
     viewBoards = viewBoards.removeWhere((board) => board.slot > n);
     int diff = n - (viewBoards.length - 1);
     if (diff > 0) { //print("Adding $diff extra boards...");
-      viewBoards = viewBoards.addAll(List.generate(diff, (i) => BoardState(prevBoards + i)));
+      viewBoards = viewBoards.addAll(List.generate(diff, (i) => BoardState.empty(prevBoards + i)));
     }
   }
 
@@ -231,7 +229,8 @@ class MatrixClient extends ChangeNotifier {
       if (availableGames.isNotEmpty) {
         dynamic game = availableGames.removeAt(0);
         String id = game['id']; //print("Adding: $id");
-        board.initState(id, getFen(game['moves']), Player.fromTV(game['players']['white']), Player.fromTV(game['players']['black']),this);
+        board = BoardState.newGame(board.slot, id, getFen(game['moves']), Player.fromTV(game['players']['white']), Player.fromTV(game['players']['black']),this);
+        viewBoards = viewBoards.replace(board.slot, board);
         lichessClient.addSockMsg({ 't': 'startWatching', 'd': id });
       } else {
         mainLogger.w("Error: no available game for slot: ${board.slot}");

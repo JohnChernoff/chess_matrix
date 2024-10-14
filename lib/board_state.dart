@@ -9,39 +9,49 @@ import 'main.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'dart:ui' as ui;
 
+enum BoardStatus {
+  whiteWon,blackWon,draw,abort,playing,none
+}
+
 class BoardState extends ChangeNotifier implements Comparable<BoardState> {
-  String? id;
-  String? initialFEN;
-  Player? whitePlayer,blackPlayer;
-  bool finished = false;
+  final int slot;
+  final String? id;
+  final String? initialFEN;
+  final Player? whitePlayer,blackPlayer;
+  final int? whiteStartTime, blackStartTime;
+  final cb.ChessBoardController controller = cb.ChessBoardController();
+  final ChessColor userSide;
+  IList<MoveState> moves = IList<MoveState>();
+  BoardStatus status = BoardStatus.none;
   bool replaceable = true;
-  bool blackPOV;
+  bool blackPOV = false;
   BoardMatrix? board;
   Timer? clockTimer;
-  int slot;
-  ChessColor playing;
   ui.Image? buffImg;
-  IList<MoveState> moves = IList<MoveState>();
-  cb.ChessBoardController controller = cb.ChessBoardController();
   int? boardSize;
   bool isFrozen = false;
   bool isAnimating = false;
   bool drawOffered = false, offeringDraw = false;
-  bool get isLive => playing != ChessColor.none;
+  bool get isLive => userSide != ChessColor.none;
   int get currentSize => boardSize ?? 0;
   bool get isOpen => !isAnimating && (replaceable || finished);
+  bool get finished => (status != BoardStatus.playing);
 
-  BoardState(this.slot, { this.playing = ChessColor.none, this.blackPOV = false } );
+  BoardState.empty(this.slot, { this.id, this.initialFEN, this.whitePlayer, this.blackPlayer, this.whiteStartTime, this.blackStartTime, this.userSide = ChessColor.none} );
+  BoardState.newGame(this.slot,this.id,this.initialFEN, this.whitePlayer, this.blackPlayer, MatrixClient client, { this.userSide = ChessColor.none, this.blackPOV = false,
+    this.whiteStartTime, this.blackStartTime, this.replaceable = false, this.status = BoardStatus.playing, Move? lastMove }) {
+    updateBoard(initialFEN ?? startFEN, lastMove, whiteStartTime ?? 0, blackStartTime ?? 0, client);
+  }
 
-  void initState(String id,String fen, Player whitePlayer,Player blackPlayer, MatrixClient client) {
-    replaceable = false;
-    finished = false;
-    this.id = id;
-    this.whitePlayer = whitePlayer;
-    this.blackPlayer = blackPlayer;
-    updateBoard(fen, null, 0, 0, client);
-    moves = moves.clear();
-    initialFEN = fen;
+  void setResult(bool whiteWin, bool blackWin) {
+    if (whiteWin) {
+      status = BoardStatus.whiteWon;
+    } else if (blackWin) {
+      status = BoardStatus.blackWon;
+    }
+    else {
+      status =  BoardStatus.draw;
+    }
   }
 
   @override

@@ -12,6 +12,7 @@ TODO:
  cluechess 2.0?
  version history/auto browser refresh?
  settings cookies,
+ gameover notification/indication
  selectable keys,
  piece motion animation,
  animate sounds,

@@ -114,8 +114,8 @@ class _BoardWidgetState extends State<BoardWidget> {
       IconButton(color: Colors.white, icon: Icon(creatingGIF ? Icons.run_circle_outlined : Icons.gif),
           onPressed: () => GifDialog(context,widget.client,state).raise(),
           ),
-      (state.playing == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
-      (state.playing == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
+      (state.userSide == playerColor) ? getResignButton(state) : const SizedBox.shrink(),
+      (state.userSide == playerColor) ? getDrawButton(state) : const SizedBox.shrink(),
     ]);
   }
 

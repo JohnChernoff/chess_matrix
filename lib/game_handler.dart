@@ -39,36 +39,41 @@ class GameHandler {
             }
           }
         }
-      } else if (type == 'finish') { mainLogger.i("Finished: $id");
-        board.finished = true;
+      } else if (type == 'finish') { mainLogger.i("Finished: $id"); //print(json);
+        board.setResult(json['win'] == 'w', json['win'] == 'b');
         client.loadTVGames();
       }
     }
   }
 
-  void followStream(Stream<String> eventStream) { mainLogger.f("Event: $eventStream");
-  String? token = client.lichessToken; if (token == null) { return; }
-  eventStream.listen((data) {
-    if (data.trim().isNotEmpty) { mainLogger.f('Event Chunk: $data');
-    dynamic json = jsonDecode(data);
-    String type = json["type"];
-    if (type == "gameStart") {
-      dynamic game = json['game']; String id = game['gameId'];
-      dynamic whitePlayer = game['color'] == 'white' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
-      dynamic blackPlayer = game['color'] == 'black' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
-      BoardState state = BoardState(client.playBoards.length,playing: game['color'] == 'white' ? ChessColor.white : ChessColor.black, blackPOV : (game['color'] == 'black'));
-      state.initState(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),client);
-      client.playBoards = client.playBoards.add(state);
-      client.lichessClient.followGame(id,token,followLiveGame);
-      client.updateView();
-    }
-    else if (type == 'gameFinish') {
-      dynamic game = json['game']; String id = game['gameId'];
-      BoardState? state = client.playBoards.where((state) => state.id == id).firstOrNull;
-      state?.finished = true;
-    }
-    }
-  });
+  void followStream(Stream<String> eventStream) {
+    mainLogger.f("Event: $eventStream");
+    String? token = client.lichessToken; if (token == null) { return; }
+    eventStream.listen((data) {
+      if (data.trim().isNotEmpty) {
+        mainLogger.f('Event Chunk: $data');
+        dynamic json = jsonDecode(data);
+        String type = json["type"];
+        if (type == "gameStart") {
+          dynamic game = json['game']; String id = game['gameId'];
+          dynamic whitePlayer = game['color'] == 'white' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
+          dynamic blackPlayer = game['color'] == 'black' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
+          BoardState state = BoardState.newGame(client.playBoards.length,id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),client,
+              userSide: game['color'] == 'white' ? ChessColor.white : ChessColor.black,
+              blackPOV: (game['color'] == 'black'),
+          );
+          //state.newGame(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),client);
+          client.playBoards = client.playBoards.add(state);
+          client.lichessClient.followGame(id,token,followLiveGame);
+          client.updateView();
+        }
+        else if (type == 'gameFinish') {
+          dynamic game = json['game']; String id = game['gameId'];
+          BoardState? state = client.playBoards.where((state) => state.id == id).firstOrNull;
+          //state?.drawn = true;
+        }
+      }
+    });
   }
 
   void followLiveGame(String gid, Stream<String> gameStream) {
@@ -90,13 +95,13 @@ class GameHandler {
               } else {
                 bool? wdraw = json['wdraw'], bdraw = json['bdraw'];
                 if (wdraw ?? false) {
-                  if (board.playing == ChessColor.black) {
+                  if (board.userSide == ChessColor.black) {
                     board.drawOffered = true; //!board.drawOffered;
                   } else {
                     board.offeringDraw = true;
                   }
                 } else if (bdraw ?? false) {
-                  if (board.playing == ChessColor.white) {
+                  if (board.userSide == ChessColor.white) {
                     board.drawOffered = true; //!board.drawOffered;
                   } else {
                     board.offeringDraw = true;
@@ -130,6 +135,11 @@ class GameHandler {
                         ((state['btime'] ?? 0) / 1000).floor(),
                         client);
                   }
+                }
+                if (json['status'] == 'draw') {
+                  board.status = BoardStatus.draw;
+                } else if (json['winner'] != null) {
+                  board.setResult(json['winner'] == 'white', json['winner'] == 'black');
                 }
               }
             }
