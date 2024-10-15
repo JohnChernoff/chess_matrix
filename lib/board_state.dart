@@ -110,7 +110,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   }
 
   BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client, {bool? freeze}) { //print("Updating: $id");
-    if (lastMove != null && board?.lastMove != lastMove) { //print("Adding move: $lastMove");
+    if (lastMove != null && board?.lastMove?.moveStr != lastMove.moveStr) { //print("Adding move: $lastMove");
       moves = moves.add(MoveState(lastMove, wc, bc, board?.fen, fen));
     }
     if (freeze != null) {

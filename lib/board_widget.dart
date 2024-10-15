@@ -80,7 +80,7 @@ class _BoardWidgetState extends State<BoardWidget> {
                 },
                 onTap: () {
                   if (state.isLive && state.finished) {
-                    widget.client.closeLiveGame(state);
+                    widget.client.closeLiveFinishedGames();
                   } else {
                     widget.client.setSingleState(state);
                   }

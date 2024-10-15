@@ -107,18 +107,15 @@ class MatrixClient extends ChangeNotifier {
 
   void createChallenge(String player, int seconds, int inc, bool rated) {
     String? token = lichessToken; if (token == null) { return; }
-    if (playBoards.isEmpty) {
-      if (seeking) {
-        cancelSeek();
-      }
-      else { //seeking = true;
-        lichessClient.createChallenge(player,LichessVariant.standard,seconds,inc,rated,token).then((statusCode) {
-          mainLogger.f("Challenge Status: $statusCode");
-          seeking = false;
-        }, onError: (err) => mainLogger.w("Challenge error: $err"));
-      }
-      updateView();
+    if (seeking) {
+      cancelSeek();
     }
+    else { //seeking = true;
+      lichessClient.createChallenge(player,LichessVariant.standard,seconds,inc,rated,token).then((statusCode) {
+        mainLogger.f("Challenge Status: $statusCode"); //seeking = false;
+      }, onError: (err) => mainLogger.w("Challenge error: $err"));
+    }
+    updateView();
   }
 
   void cancelChallenge() {
@@ -190,8 +187,10 @@ class MatrixClient extends ChangeNotifier {
     mainLogger.i("Disconnected");
   }
 
-  void closeLiveGame(BoardState state) {
-    playBoards = playBoards.remove(state);
+  void closeLiveFinishedGames() {
+    for (BoardState state in playBoards) {
+      playBoards = playBoards.remove(state);
+    }
     updateView(updateBoards: true);
   }
 

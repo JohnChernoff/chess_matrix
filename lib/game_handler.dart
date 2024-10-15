@@ -50,10 +50,11 @@ class GameHandler {
     mainLogger.f("Event: $eventStream");
     String? token = client.lichessToken; if (token == null) { return; }
     eventStream.listen((data) {
-      if (data.trim().isNotEmpty) { mainLogger.f('Event Chunk: $data');
+      if (data.trim().isNotEmpty) { //print('Stream Chunk: $data');
         dynamic json = jsonDecode(data);
         String type = json["type"];
         if (type == "gameStart") {
+          client.closeLiveFinishedGames();
           dynamic game = json['game']; String id = game['gameId'];
           dynamic whitePlayer = game['color'] == 'white' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
           dynamic blackPlayer = game['color'] == 'black' ? {'id' : client.userInfo['username'], 'rating' : client.getRatingByType(game['speed'])} : game['opponent'];
@@ -62,7 +63,6 @@ class GameHandler {
               userSide: game['color'] == 'white' ? ChessColor.white : ChessColor.black,
               blackPOV: (game['color'] == 'black'),
           );
-          //state.newGame(id,startFEN,Player.fromSeek(whitePlayer),Player.fromSeek(blackPlayer),client);
           client.playBoards = client.playBoards.add(state);
           client.lichessClient.followGame(id,token,followLiveGame);
           client.updateView();
@@ -70,11 +70,10 @@ class GameHandler {
         else if (type == 'gameFinish') { //mainLogger.i("Game over: $data");
           dynamic game = json['game']; String id = game['gameId'];
           BoardState? state = client.playBoards.where((state) => state.id == id).firstOrNull;
-          //state?.drawn = true;
-          if (json['status'] == 'draw') {
+          if (game['status']['name'] == 'draw') {
             state?.setStatus(BoardStatus.draw,client);
-          } else if (json['winner'] != null) {
-            state?.setResult(json['winner'] == 'white', json['winner'] == 'black',client);
+          } else if (game['winner'] != null) {
+            state?.setResult(game['winner'] == 'white', game['winner'] == 'black',client);
           }
         }
       }
@@ -84,8 +83,7 @@ class GameHandler {
   void followLiveGame(String gid, Stream<String> gameStream) {
     mainLogger.f("Following Game: $gid");
     gameStream.listen((data) {
-      if (data.trim().isNotEmpty) {
-        //print('Game Chunk: $data');
+      if (data.trim().isNotEmpty) { //print('Game Chunk: $data');
         for (String chunk in data.split("\n")) {
           if (chunk.isNotEmpty) {
             dynamic json =
@@ -97,7 +95,7 @@ class GameHandler {
                   json['type']; //print("Game Event Type: $type : $json");
               if (type == 'chatLine') {
                 //board.drawOffered = true;
-              } else {
+              } else if (type == "gameState") {
                 bool? wdraw = json['wdraw'], bdraw = json['bdraw'];
                 if (wdraw ?? false) {
                   if (board.userSide == ChessColor.black) {
@@ -121,25 +119,23 @@ class GameHandler {
                     : type == 'gameFull'
                         ? json['state']
                         : null;
-                if (state != null) { //print("State: $state");
+                if (state != null && state['moves'] != null && state['moves'] != "") { //print("State: $state");
                   List<String> moves = state['moves'].trim().split(" ");
-                  if (moves.length > 1) {
-                    bool refreshMoves = board.moves.isEmpty;
-                    dc.Chess chess = dc.Chess.fromFEN(startFEN);
-                    for (String m in moves) {
-                      Move move = Move(m);
-                      String beforeFEN = chess.fen;
-                      chess.move(move.toJson());
-                      if (refreshMoves) board.moves = board.moves.add(MoveState(move, 0, 0, beforeFEN, chess.fen)); //TODO: create move add method
-                    }
-                    String lastMove = moves[moves.length - 1];
-                    board.updateBoard(
-                        chess.fen,
-                        !refreshMoves && lastMove.length > 3 ? Move(lastMove) : null,
-                        ((state['wtime'] ?? 0) / 1000).floor(),
-                        ((state['btime'] ?? 0) / 1000).floor(),
-                        client);
+                  bool refreshMoves = board.moves.isEmpty;
+                  dc.Chess chess = dc.Chess.fromFEN(startFEN);
+                  for (String m in moves) {
+                    Move move = Move(m);
+                    String beforeFEN = chess.fen;
+                    chess.move(move.toJson());
+                    if (refreshMoves) board.moves = board.moves.add(MoveState(move, 0, 0, beforeFEN, chess.fen)); //TODO: create move add method
                   }
+                  String lastMove = moves[moves.length - 1];
+                  board.updateBoard(
+                      chess.fen,
+                      !refreshMoves ? Move(lastMove) : null, //&& lastMove.length > 3
+                      ((state['wtime'] ?? 0) / 1000).floor(),
+                      ((state['btime'] ?? 0) / 1000).floor(),
+                      client);
                 }
               }
             }
