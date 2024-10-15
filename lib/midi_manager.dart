@@ -222,10 +222,11 @@ class MidiManager extends ChangeNotifier {
   Map<MidiPerformer,Instrument> orchMap = {};
   Map<MidiDrum,Instrument> drumMap = {};
   KeyChord currentChord = KeyChord(MidiNote.noteA, MidiScale.majorScale);
+  bool get enabled => audioReady && !muted;
 
   MidiManager();
 
-  Future<void> init(List<MidiAssignment> ensemble) async {
+  Future<void> load(List<MidiAssignment> ensemble) async {
     initializing = Completer();
     js.context.callMethod("initAudio", [initialized]);
     await initializing?.future;

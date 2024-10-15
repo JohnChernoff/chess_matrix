@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cyclop/cyclop.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,8 @@ import 'board_state.dart';
 import 'client.dart';
 import 'img_utils.dart';
 import 'main.dart';
+
+final globalNavigatorKey = GlobalKey<NavigatorState>();
 
 class MenuDialog {
   final BuildContext ctx;
@@ -96,7 +100,7 @@ class GifDialog {
             children: [
               SimpleDialogOption(
                   onPressed: () {
-                    ImgUtils.createGifFile(state, 500);
+                    ImgUtils.createGifFile(state, 500, ctx: context);
                     Navigator.pop(context);
                   },
                   child: const Text('Create GIF (could take awhile)')),

@@ -73,7 +73,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
 
   Timer countDown() {
     return Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (hasListeners) {
+      if (hasListeners && !finished) {
         if (board?.turn == ChessColor.white) {
           whitePlayer?.nextTick();
         } else if (board?.turn == ChessColor.black) {

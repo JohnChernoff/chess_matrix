@@ -52,7 +52,7 @@ class GameHandler {
     eventStream.listen((data) {
       if (data.trim().isNotEmpty) { //print('Stream Chunk: $data');
         dynamic json = jsonDecode(data);
-        String type = json["type"];
+        String? type = json["type"];
         if (type == "gameStart") {
           client.closeLiveFinishedGames();
           dynamic game = json['game']; String id = game['gameId'];
@@ -91,7 +91,7 @@ class GameHandler {
             BoardState? board =
                 client.playBoards.where((state) => state.id == gid).firstOrNull;
             if (board != null) {
-              String type =
+              String? type =
                   json['type']; //print("Game Event Type: $type : $json");
               if (type == 'chatLine') {
                 //board.drawOffered = true;

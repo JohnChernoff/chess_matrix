@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:chess_matrix/chess_sonifier.dart';
+import 'package:chess_matrix/dialogs.dart';
 import 'package:chess_matrix/game_handler.dart';
 import 'package:chess_matrix/img_utils.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import 'package:chess/chess.dart' as dc;
 
 class MatrixClient extends ChangeNotifier {
 
+  int discoTime = 1;
   int initialBoardNum;
   int matrixResolution = 300;
   PieceStyle pieceStyle = PieceStyle.caliente;
@@ -30,9 +32,9 @@ class MatrixClient extends ChangeNotifier {
   String? lichessToken;
   dynamic userInfo;
   final OauthClient oauthClient = OauthClient("lichess.org","chessMatrix");
-  late final LichessClient lichessClient;
   late final ChessSonifier sonifier;
   late final GameHandler gameHandler;
+  late LichessClient lichessClient;
   late IList<BoardState> viewBoards = IList(List.generate(initialBoardNum, (slot) => BoardState.empty(slot)));
   IList<BoardState> playBoards = const IList.empty();
   IList<BoardState> get activeBoards => playBoards.isNotEmpty ? playBoards : viewBoards;
@@ -178,13 +180,24 @@ class MatrixClient extends ChangeNotifier {
     updateView(updateBoards: true);
   }
 
-  void connected() {
+  void connected() { //InfoDialog(globalNavigatorKey.currentContext!,"Connected").raise();
     mainLogger.i("Connected");
     loadTVGames();
+    discoTime = 1;
   }
 
-  void disconnected() {
-    mainLogger.i("Disconnected");
+  void disconnected() { //InfoDialog(globalNavigatorKey.currentContext!,"Disconnected").raise();
+    if (discoTime <= 32) {
+      mainLogger.i("Disconnected - Reconnecting in $discoTime seconds");
+      Future.delayed(Duration(seconds: discoTime)).then((v) {
+        discoTime = discoTime * 2;
+        lichessClient = LichessClient(host: lichessClient.host,web: true,onConnect: connected,onDisconnect: disconnected, onMsg: gameHandler.handleMsg);
+        loadTVGames(reset: true);
+      });
+    }
+    else {
+      InfoDialog(globalNavigatorKey.currentContext!,"Argh, cannot connect to server");
+    }
   }
 
   void closeLiveFinishedGames() {

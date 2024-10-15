@@ -46,8 +46,8 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
           return Container(color: Colors.black, child: Column(children: [
             SizedBox(width: constraints.maxWidth, height: 40, child: getGeneralControls(client)),
             const SizedBox(height: 32),
-            client.sonifier.midi.audioReady ? getAudioControls(client) : const SizedBox.shrink(),
-            client.sonifier.midi.audioReady ? const SizedBox(height: 32) : const SizedBox.shrink(),
+            client.sonifier.midi.enabled ? getAudioControls(client) : const SizedBox.shrink(),
+            client.sonifier.midi.enabled ? const SizedBox(height: 32) : const SizedBox.shrink(),
             Expanded(child: getMatrixView(client),
             )
           ]));
@@ -138,18 +138,18 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 Row( // Right-aligned widget (with multiple children)
                   children: [
                     IconButton(
-                        onPressed: () => client.sonifier.toggleAudio(),
+                        onPressed: () => client.sonifier.toggleAudio(context),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.white),
                         icon: Icon(client.sonifier.midi.muted ? Icons.audiotrack : Icons.volume_mute)),
                     const SizedBox(width: 20),
-                    client.sonifier.midi.audioReady ? ElevatedButton(onPressed: () => client.sonifier.loadRandomEnsemble(),
+                    client.sonifier.midi.enabled ? ElevatedButton(onPressed: () => client.sonifier.loadRandomEnsemble(),
                         child: Text("Randomize",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
                     const SizedBox(width: 20),
-                    client.sonifier.midi.audioReady ? ElevatedButton(onPressed: () => client.sonifier.toggleDrums(),
+                    client.sonifier.midi.enabled ? ElevatedButton(onPressed: () => client.sonifier.toggleDrums(),
                         child: Text("Toggle Drums",style: client.sonifier.midi.muteDrums ? MatrixApp.getTextStyle(color2) : MatrixApp.getTextStyle(color3)))
                         : const SizedBox.shrink(),
                     const SizedBox(width: 20),
-                    client.sonifier.midi.audioReady ? ElevatedButton(onPressed: () => client.sonifier.keyChange(),
+                    client.sonifier.midi.enabled ? ElevatedButton(onPressed: () => client.sonifier.keyChange(),
                         child: Text("New Key",style:MatrixApp.getTextStyle(color3)))
                         : const SizedBox.shrink(),
                   ],

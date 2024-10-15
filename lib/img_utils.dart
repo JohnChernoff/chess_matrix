@@ -1,5 +1,8 @@
 import 'dart:typed_data';
+import 'package:chess_matrix/chess_sonifier.dart';
 import 'package:file_saver/file_saver.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'board_matrix.dart';
 import 'board_state.dart';
@@ -24,7 +27,8 @@ class ImgUtils {
     mainLogger.i("Loaded Pieces");
   }
 
-  static void createGifFile(BoardState state, int resolution, {PieceStyle pieceStyle = PieceStyle.horsey, MatrixColorScheme? colorScheme}) async {
+  static void createGifFile(BoardState state, int resolution, {BuildContext? ctx, PieceStyle pieceStyle = PieceStyle.horsey, MatrixColorScheme? colorScheme}) async {
+    ctx?.loaderOverlay.show();
     generateGIF(state, resolution, pieceStyle: pieceStyle, colorScheme: colorScheme).then((bytes) {
       if (bytes?.isNotEmpty ?? false) {
         FileSaver.instance.saveFile(
@@ -33,6 +37,7 @@ class ImgUtils {
           mimeType: MimeType.gif,
         );
       }
+      ctx?.loaderOverlay.hide();
     });
   }
 

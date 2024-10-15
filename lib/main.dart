@@ -2,9 +2,11 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:chess_matrix/tests/tests.dart';
 import 'package:flutter/material.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'client.dart';
+import 'dialogs.dart';
 import 'home_page.dart';
 
 /*
@@ -17,6 +19,7 @@ TODO:
  animate sounds,
  distance v. square pitches
  game chat, etc.
+  ~reconnection
   ~gameover notification/indication
   ~GIF generation
   ~logging
@@ -54,13 +57,14 @@ class MatrixApp extends StatelessWidget {
     return ChangeNotifierProvider(
         create: (context) => MatrixClient("lichess.org",token: const String.fromEnvironment("TOKEN")),
         child: MaterialApp(
+            navigatorKey: globalNavigatorKey,
             title: 'Chess Matrix 1.0',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
               useMaterial3: true,
             ),
             scrollBehavior: WebScrollBehavior(),
-            home: const MatrixHomePage('Chess Matrix')));
+            home: const LoaderOverlay(child: MatrixHomePage('Chess Matrix'))));
   }
 }
 

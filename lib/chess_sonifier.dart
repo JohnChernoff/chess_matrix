@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
+import 'package:loader_overlay/loader_overlay.dart';
 import 'board_matrix.dart';
 import 'chess.dart';
 import 'client.dart';
@@ -133,10 +134,12 @@ class ChessSonifier {
     return sqrt(pow((move.from.x - move.to.x),2) + pow((move.from.y - move.to.y),2));
   }
 
-  void toggleAudio() {
+  Future<void> toggleAudio(BuildContext ctx) async {
     midi.muted = !midi.muted;
     if (!midi.muted && !midi.audioReady) {
-      initAudio();
+      ctx.loaderOverlay.show();
+      await initAudio();
+      if (ctx.mounted) ctx.loaderOverlay.hide();
     } else {
       client.updateView();
     }
@@ -148,7 +151,7 @@ class ChessSonifier {
   }
 
   Future<void> initAudio() async { mainLogger.i("Loading audio");
-    await midi.init(defaultEnsembles.first);
+    await midi.load(defaultEnsembles.first);
     loopTrack.play(midi,looping: true); //midi.loopTrack(loopTrack);
     client.updateView();
   }
