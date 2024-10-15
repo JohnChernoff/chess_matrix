@@ -4,7 +4,6 @@ import 'package:chess_matrix/chess_sonifier.dart';
 import 'package:chess_matrix/game_handler.dart';
 import 'package:chess_matrix/img_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_oauth/flutter_oauth.dart';
 import 'package:lichess_package/lichess_package.dart';
 import 'package:oauth2/oauth2.dart';
@@ -207,6 +206,7 @@ class MatrixClient extends ChangeNotifier {
 
   void setSingleState(BoardState state) {
     viewBoards = viewBoards.clear();
+    state.slot = 0;
     viewBoards = viewBoards.add(state);
     updateView();
   }
@@ -224,7 +224,7 @@ class MatrixClient extends ChangeNotifier {
     List<dynamic> availableGames = games.where((game) => viewBoards.where((b) => b.id == game['id']).isEmpty).toList(); //remove pre-existing games
     List<BoardState> openBoards = viewBoards.where((board) => board.isOpen).toList(); //openBoards.sort(); //probably unnecessary
     for (BoardState board in openBoards) {
-      if (availableGames.isNotEmpty) {
+      if (availableGames.isNotEmpty && board.slot < viewBoards.length) {
         dynamic game = availableGames.removeAt(0);
         String id = game['id']; //print("Adding: $id");
         board = BoardState.newGame(board.slot, id, Player.fromTV(game['players']['white']), Player.fromTV(game['players']['black']), this, initialFEN : getFen(game['moves']));

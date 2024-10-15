@@ -66,7 +66,7 @@ enum PieceType {
   bishop("B",dc.PieceType.BISHOP),
   rook("R",dc.PieceType.ROOK),
   queen("Q",dc.PieceType.QUEEN),
-  king("K",dc.PieceType.KNIGHT);
+  king("K",dc.PieceType.KING);
   final String fileLetter;
   final dc.PieceType? dartChessType;
   const PieceType(this.fileLetter, this.dartChessType);

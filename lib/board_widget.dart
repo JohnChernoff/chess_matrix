@@ -3,11 +3,11 @@ import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:chess_matrix/move_list.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'package:provider/provider.dart';
 import 'board_state.dart';
 import 'chess.dart';
 import 'dialogs.dart';
+import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 
 class BoardWidget extends StatefulWidget {
   final MatrixClient client;
@@ -36,13 +36,12 @@ class _BoardWidgetState extends State<BoardWidget> {
     double span = listDirection == Axis.horizontal ? min(128,widget.height - state.currentSize) : min(128,widget.width - state.currentSize);
     return state.board == null ? const SizedBox.shrink() : widget.singleBoard ?
     SizedBox(width: widget.width, height: widget.height, child:
-    Flex(direction: flexDirection, mainAxisAlignment: MainAxisAlignment.center,children: [
-      MoveListWidget(state.moves, orientation: listDirection, span: span,
-          onTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: false),
-          onDoubleTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: true)),
-      getBoardBox(state),
-    ]))
-        : getBoardBox(state);
+      Flex(direction: flexDirection, mainAxisAlignment: MainAxisAlignment.center,children: [
+        MoveListWidget(state.moves, orientation: listDirection, span: span,
+            onTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: false),
+            onDoubleTap: (m) => state.updateBoard(m.afterFEN,null,m.whiteClock,m.blackClock,widget.client,freeze: true)),
+        getBoardBox(state),
+      ])) : getBoardBox(state);
   }
 
   void animatePlayback(BoardState state, {int speed = 50, int endPause = 1000}) async {
@@ -145,30 +144,38 @@ class _BoardWidgetState extends State<BoardWidget> {
   }
 
   Widget getBoard(BoardState state, {showMove = false, showControl = false}) { //print("$slot -> Board FEN: ${state.board?.fen}");
-    MatrixClient client = Provider.of(context, listen: false);
-    String? from =  state.board?.lastMove?.moveStr.substring(0,2);
-    String? to =  state.board?.lastMove?.moveStr.substring(2,4);
-    final arrow = (showMove && from != null && to != null) ? cb.BoardArrow(from: from, to: to, color: const Color(0x55ffffff)) : null;
-    final board = cb.ChessBoard(
-      boardOrientation: state.blackPOV ? cb.PlayerColor.black : cb.PlayerColor.white,
-      controller: state.controller,
-      size: state.currentSize - (state.currentSize * playerBarPercent * 2),
-      blackPieceColor: client.colorScheme.blackPieceBlendColor,
-      whitePieceColor: client.colorScheme.whitePieceBlendColor,
-      gridColor: client.colorScheme.gridColor,
-      pieceSet: client.pieceStyle.name,
-      dummyBoard: true,
-      arrows: arrow != null ? [arrow] : [],
-      backgroundImage: state.board?.image ?? state.buffImg, //TODO: hide when null
-      hidePieces: hidePieces,
-      onMove: (from, to, prom) =>
-          client.sendMove(state.id, from, to, prom),
-    );
-    if (showControl) {
-      return Stack(fit: StackFit.expand, children: [board, getBoardControl(state.board!)]);
+    if (state.board?.fen == state.latestFEN && state.finalImage != null) {
+      return state.finalImage!;
     }
     else {
-      return board;
+      final client = Provider.of<MatrixClient>(context, listen: false);
+      final lastMoveFrom = state.board?.lastMove?.moveStr.substring(0,2);
+      final lastMoveTo = state.board?.lastMove?.moveStr.substring(2,4);
+      final arrow = (showMove && lastMoveFrom != null && lastMoveTo != null) ?
+        cb.BoardArrow(from: lastMoveFrom, to: lastMoveTo, color: const Color(0x55ffffff)) : null;
+      final boardImg = state.board?.image ?? state.buffImg;
+      final size = state.currentSize - (state.currentSize * playerBarPercent * 2);
+      final board = cb.ChessBoard(
+        boardOrientation: state.blackPOV ? cb.PlayerColor.black : cb.PlayerColor.white,
+        controller: state.controller,
+        size: size,
+        blackPieceColor: client.colorScheme.blackPieceBlendColor,
+        whitePieceColor: client.colorScheme.whitePieceBlendColor,
+        gridColor: client.colorScheme.gridColor,
+        pieceSet: client.pieceStyle.name,
+        dummyBoard: true,
+        arrows: arrow != null ? [arrow] : [],
+        backgroundImage: boardImg,
+        hidePieces: hidePieces,
+        onMove: (from, to, prom) =>
+            client.sendMove(state.id, from, to, prom),
+      );
+      if (showControl) {
+        return Stack(fit: StackFit.expand, children: [board, getBoardControl(state.board!)]);
+      }
+      else {
+        return board;
+      }
     }
   }
 
@@ -185,6 +192,7 @@ class _BoardWidgetState extends State<BoardWidget> {
       }),
     );
   }
+
 }
 
 

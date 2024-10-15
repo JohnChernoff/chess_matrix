@@ -51,9 +51,10 @@ class ImgUtils {
     return encoder.finish();
   }
 
-  static img.Image drawPieces(BoardMatrix matrix, img.Image boardImg, { BoardStatus status = BoardStatus.playing }) {
-    double squareWidth = boardImg.width / files;
-    double squareHeight = boardImg.height / ranks;
+  static img.Image drawPieces(BoardMatrix matrix, img.Image? boardImg, { int boardSize = 0, BoardStatus status = BoardStatus.playing }) {
+    img.Image destImg = boardImg ?? img.Image(width: boardSize, height: boardSize);
+    double squareWidth = destImg.width / files;
+    double squareHeight = destImg.height / ranks;
     for (int rank = 0; rank < ranks; rank++) {
       for (int file = 0; file < files; file++) {
         final piece = matrix.getSquare(Coord(file,rank)).piece;
@@ -62,11 +63,12 @@ class ImgUtils {
           if (status == BoardStatus.blackWon && (piece.color != ChessColor.black || piece.type != PieceType.king)) img.pixelate(pieceImg, size: 24);
           if (status == BoardStatus.whiteWon && (piece.color != ChessColor.white || piece.type != PieceType.king)) img.pixelate(pieceImg, size: 24);
           if (status == BoardStatus.draw) pieceImg = img.copyRotate(pieceImg, angle: 45);
-          boardImg = img.compositeImage(boardImg, pieceImg,
+          boardImg = img.compositeImage(destImg, pieceImg,
               dstX: (squareWidth * file).floor(), dstY: (squareHeight * rank).floor(), dstW: squareWidth.floor(), dstH: squareHeight.floor());
         }
       }
     }
-    return boardImg;
+    return destImg;
   }
+
 }

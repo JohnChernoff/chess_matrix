@@ -1,6 +1,5 @@
 import 'dart:math';
 import 'dart:ui';
-import 'package:chess_matrix/img_utils.dart';
 import 'package:chess_matrix/tests/tests.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
@@ -10,15 +9,16 @@ import 'home_page.dart';
 
 /*
 TODO:
+ live game movelist bug
  cluechess 2.0?
  version history/auto browser refresh?
  settings cookies,
- gameover notification/indication
  selectable keys,
  piece motion animation,
  animate sounds,
  distance v. square pitches
  game chat, etc.
+  ~gameover notification/indication
   ~GIF generation
   ~logging
  ~board reloading weirdness,
@@ -37,7 +37,6 @@ void main(List<String> args) {
     MatrixTests.gifTest();
   }
   else {
-    //ImgUtils.setPieces(pieceStyle)
     runApp(const MatrixApp());
   }
 }

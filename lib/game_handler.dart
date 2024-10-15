@@ -39,9 +39,9 @@ class GameHandler {
             }
           }
         }
-      } else if (type == 'finish') { mainLogger.i("Finished: $id"); //print(json);
-        board.setResult(json['win'] == 'w', json['win'] == 'b');
-        client.loadTVGames();
+      } else if (type == 'finish') { mainLogger.i("Finished: $id, result: ${json.toString()}"); //print(json);
+        board.setResult(data['win'] == 'w', data['win'] == 'b',client);
+        Future.delayed(const Duration(seconds: 5)).then((v) => client.loadTVGames()); //TODO: check for already queued reload
       }
     }
   }
@@ -50,8 +50,7 @@ class GameHandler {
     mainLogger.f("Event: $eventStream");
     String? token = client.lichessToken; if (token == null) { return; }
     eventStream.listen((data) {
-      if (data.trim().isNotEmpty) {
-        mainLogger.f('Event Chunk: $data');
+      if (data.trim().isNotEmpty) { mainLogger.f('Event Chunk: $data');
         dynamic json = jsonDecode(data);
         String type = json["type"];
         if (type == "gameStart") {
@@ -68,10 +67,15 @@ class GameHandler {
           client.lichessClient.followGame(id,token,followLiveGame);
           client.updateView();
         }
-        else if (type == 'gameFinish') {
+        else if (type == 'gameFinish') { //mainLogger.i("Game over: $data");
           dynamic game = json['game']; String id = game['gameId'];
           BoardState? state = client.playBoards.where((state) => state.id == id).firstOrNull;
           //state?.drawn = true;
+          if (json['status'] == 'draw') {
+            state?.setStatus(BoardStatus.draw,client);
+          } else if (json['winner'] != null) {
+            state?.setResult(json['winner'] == 'white', json['winner'] == 'black',client);
+          }
         }
       }
     });
@@ -136,11 +140,6 @@ class GameHandler {
                         ((state['btime'] ?? 0) / 1000).floor(),
                         client);
                   }
-                }
-                if (json['status'] == 'draw') {
-                  board.status = BoardStatus.draw;
-                } else if (json['winner'] != null) {
-                  board.setResult(json['winner'] == 'white', json['winner'] == 'black');
                 }
               }
             }
