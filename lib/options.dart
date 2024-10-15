@@ -55,7 +55,7 @@ class _OptionWidgetState extends State<OptionWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               ElevatedButton(
-                onPressed: () => MatrixApp.menuBuilder(context, ChangeNotifierProvider.value(value: client, child: const ColorDialog())),
+                onPressed: () => MenuDialog(context, ChangeNotifierProvider.value(value: client, child: const ColorDialog())).raise(),
                 child: Text("Set Colors",style: MatrixApp.getTextStyle(Colors.black)),
               ),
               ElevatedButton(

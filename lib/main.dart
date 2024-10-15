@@ -9,7 +9,6 @@ import 'home_page.dart';
 
 /*
 TODO:
- live game movelist bug
  cluechess 2.0?
  version history/auto browser refresh?
  settings cookies,
@@ -63,7 +62,22 @@ class MatrixApp extends StatelessWidget {
             scrollBehavior: WebScrollBehavior(),
             home: const MatrixHomePage('Chess Matrix')));
   }
+}
 
+class WebScrollBehavior extends MaterialScrollBehavior {
+  // Override behavior methods and getters like dragDevices
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+  };
+}
+
+Color rndCol() {
+  return Colors.primaries[Random().nextInt(Colors.primaries.length)];
+}
+
+/*
   static Future<void> menuBuilder(BuildContext context,Widget menuWidget) {
     return showDialog<void>(
         context: context,
@@ -85,17 +99,4 @@ class MatrixApp extends StatelessWidget {
           );
         });
   }
-}
-
-class WebScrollBehavior extends MaterialScrollBehavior {
-  // Override behavior methods and getters like dragDevices
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-    PointerDeviceKind.touch,
-    PointerDeviceKind.mouse,
-  };
-}
-
-Color rndCol() {
-  return Colors.primaries[Random().nextInt(Colors.primaries.length)];
-}
+ */

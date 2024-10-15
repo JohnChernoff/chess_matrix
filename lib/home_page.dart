@@ -6,6 +6,7 @@ import 'board_state.dart';
 import 'board_widget.dart';
 import 'chess_sonifier.dart';
 import 'client.dart';
+import 'dialogs.dart';
 import 'game_seek.dart';
 import 'help_widget.dart';
 import 'main.dart';
@@ -116,14 +117,14 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                 const SizedBox.shrink(), // Nothing to left-align
                 Row( // Center-aligned widget (with multiple children)
                   children: [
-                    IconButton(onPressed: () => MatrixApp.menuBuilder(context,const HelpWidget()), icon: const Icon(Icons.help)),
+                    IconButton(onPressed: () => MenuDialog(context,const HelpWidget()).raise(), icon: const Icon(Icons.help)),
                     client.lichessToken == null ? IconButton(onPressed: () => client.lichessLogin(), icon: const Icon(Icons.login))
                         : Text(client.userInfo['username'],style: MatrixApp.getTextStyle(Colors.white)),
                     client.lichessToken == null ? const SizedBox.shrink() : client.playBoards.isEmpty && client.seeking ?
                     IconButton(onPressed: () => client.cancelSeek(), icon: const Icon(Icons.cancel)) :
-                    IconButton(onPressed: () => MatrixApp.menuBuilder(context,SeekWidget(client)), icon: const Icon(Icons.send)),
-                    IconButton(onPressed: () => MatrixApp.menuBuilder(context,
-                        ChangeNotifierProvider.value(value: client,child: const OptionWidget())),
+                    IconButton(onPressed: () => MenuDialog(context,SeekWidget(client)).raise(), icon: const Icon(Icons.send)),
+                    IconButton(onPressed: () => MenuDialog(context,
+                        ChangeNotifierProvider.value(value: client,child: const OptionWidget())).raise(),
                         icon: const Icon(Icons.menu)),
                     Text("Boards: $numBoards",style: MatrixApp.getTextStyle(color2)),
                     Slider(value: numBoards as double, min: 1, max: 16,

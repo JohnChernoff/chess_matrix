@@ -7,6 +7,35 @@ import 'client.dart';
 import 'img_utils.dart';
 import 'main.dart';
 
+class MenuDialog {
+  final BuildContext ctx;
+  final Widget menuWidget;
+
+  MenuDialog(this.ctx, this.menuWidget);
+
+  Future<void> raise() {
+    return showDialog<void>(
+        context: ctx,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            backgroundColor: Colors.grey,
+            content: menuWidget,
+            actions: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  textStyle: Theme.of(context).textTheme.labelLarge,
+                ),
+                child: const Text('Return'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        });
+  }
+}
+
 class ColorDialog extends StatelessWidget {
   const ColorDialog({super.key});
 
