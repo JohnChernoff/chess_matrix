@@ -9,38 +9,38 @@ import 'main.dart';
 import 'midi_manager.dart';
 
 enum MidiChessPlayer {
-  pawnMelody(Colors.white),
-  knightMelody(Colors.orange),
-  bishopMelody(Colors.pink),
-  rookMelody(Colors.cyan),
-  queenMelody(Colors.blue),
-  kingMelody(Colors.amberAccent),
-  mainMelody(Colors.deepPurple),
-  mainRhythm(Colors.red);
+  pawnMoves(Colors.white),
+  knightMoves(Colors.orange),
+  bishopMoves(Colors.pink),
+  rookMoves(Colors.cyan),
+  queenMoves(Colors.blue),
+  kingMoves(Colors.amberAccent),
+  allPieces(Colors.deepPurple),
+  pawnStructure(Colors.red);
   final Color color;
   const MidiChessPlayer(this.color);
 }
 
 List<List<MidiAssignment>> defaultEnsembles = [
   [
-    MidiAssignment(MidiChessPlayer.pawnMelody.name,MidiInstrument.dulcimer,.25),
-    MidiAssignment(MidiChessPlayer.knightMelody.name,MidiInstrument.glockenspiel,.25),
-    MidiAssignment(MidiChessPlayer.bishopMelody.name,MidiInstrument.kalimba,.25),
-    MidiAssignment(MidiChessPlayer.rookMelody.name,MidiInstrument.marimba,.25),
-    MidiAssignment(MidiChessPlayer.queenMelody.name,MidiInstrument.celesta,.25),
-    MidiAssignment(MidiChessPlayer.kingMelody.name,MidiInstrument.ocarina,.25),
-    MidiAssignment(MidiChessPlayer.mainMelody.name,MidiInstrument.acousticGrandPiano,.25),
-    MidiAssignment(MidiChessPlayer.mainRhythm.name,MidiInstrument.pizzStrings,.25),
+    MidiAssignment(MidiChessPlayer.pawnMoves.name,MidiInstrument.dulcimer,.25),
+    MidiAssignment(MidiChessPlayer.knightMoves.name,MidiInstrument.glockenspiel,.25),
+    MidiAssignment(MidiChessPlayer.bishopMoves.name,MidiInstrument.kalimba,.25),
+    MidiAssignment(MidiChessPlayer.rookMoves.name,MidiInstrument.marimba,.25),
+    MidiAssignment(MidiChessPlayer.queenMoves.name,MidiInstrument.celesta,.25),
+    MidiAssignment(MidiChessPlayer.kingMoves.name,MidiInstrument.ocarina,.25),
+    MidiAssignment(MidiChessPlayer.allPieces.name,MidiInstrument.acousticGrandPiano,.25),
+    MidiAssignment(MidiChessPlayer.pawnStructure.name,MidiInstrument.pizzStrings,.25),
   ],
   [
-    MidiAssignment(MidiChessPlayer.pawnMelody.name,MidiInstrument.electricBassPick,0),
-    MidiAssignment(MidiChessPlayer.knightMelody.name,MidiInstrument.timpani,0),
-    MidiAssignment(MidiChessPlayer.bishopMelody.name,MidiInstrument.clarinet,0),
-    MidiAssignment(MidiChessPlayer.rookMelody.name,MidiInstrument.trumpet,0),
-    MidiAssignment(MidiChessPlayer.queenMelody.name,MidiInstrument.fx3Crystal,0),
-    MidiAssignment(MidiChessPlayer.kingMelody.name,MidiInstrument.pad8Sweep,0),
-    MidiAssignment(MidiChessPlayer.mainMelody.name,MidiInstrument.overdrivenGuitar,0),
-    MidiAssignment(MidiChessPlayer.mainRhythm.name,MidiInstrument.acousticGrandPiano,.25),
+    MidiAssignment(MidiChessPlayer.pawnMoves.name,MidiInstrument.electricBassPick,0),
+    MidiAssignment(MidiChessPlayer.knightMoves.name,MidiInstrument.timpani,0),
+    MidiAssignment(MidiChessPlayer.bishopMoves.name,MidiInstrument.clarinet,0),
+    MidiAssignment(MidiChessPlayer.rookMoves.name,MidiInstrument.trumpet,0),
+    MidiAssignment(MidiChessPlayer.queenMoves.name,MidiInstrument.fx3Crystal,0),
+    MidiAssignment(MidiChessPlayer.kingMoves.name,MidiInstrument.pad8Sweep,0),
+    MidiAssignment(MidiChessPlayer.allPieces.name,MidiInstrument.overdrivenGuitar,0),
+    MidiAssignment(MidiChessPlayer.pawnStructure.name,MidiInstrument.acousticGrandPiano,.25),
   ],
 ];
 
@@ -55,12 +55,12 @@ class ChessSonifier {
   MidiChessPlayer? getPieceInstrument(Piece? piece) {
     return switch(piece?.type ?? PieceType.none) {
       PieceType.none => null, //shouldn't occur
-      PieceType.pawn => MidiChessPlayer.pawnMelody,
-      PieceType.knight => MidiChessPlayer.knightMelody,
-      PieceType.bishop => MidiChessPlayer.bishopMelody,
-      PieceType.rook => MidiChessPlayer.rookMelody,
-      PieceType.queen => MidiChessPlayer.queenMelody,
-      PieceType.king => MidiChessPlayer.kingMelody,
+      PieceType.pawn => MidiChessPlayer.pawnMoves,
+      PieceType.knight => MidiChessPlayer.knightMoves,
+      PieceType.bishop => MidiChessPlayer.bishopMoves,
+      PieceType.rook => MidiChessPlayer.rookMoves,
+      PieceType.queen => MidiChessPlayer.queenMoves,
+      PieceType.king => MidiChessPlayer.kingMoves,
     };
   }
 
@@ -92,13 +92,13 @@ class ChessSonifier {
     if (!gameTrack.playing) {
       MidiEvent? e = getMoveMidiEvents(loopTrack,getPieceInstrument(piece),piece,move).firstOrNull;
       if (e != null) loopTrack.addNoteEvent(e,elem: TrackElement.realtimeHarmony);
-      MidiEvent? e2 = getMoveMidiEvents(loopTrack,MidiChessPlayer.mainMelody,piece,move).firstOrNull;
+      MidiEvent? e2 = getMoveMidiEvents(loopTrack,MidiChessPlayer.allPieces,piece,move).firstOrNull;
       if (e2 != null) loopTrack.addNoteEvent(e2,elem: TrackElement.realtimeHarmony);
     }
   }
 
-  void generatePawnRhythms(BoardMatrix board, bool realTime, ChessColor color, {drumVol = .25, compVol = .33, crossRhythm=false}) { //print("Generating pawn rhythm map...");
-    Instrument? i = midi.orchMap[MidiChessPlayer.mainRhythm.name];
+  void generatePawnRhythms(BoardMatrix board, {drumVol = .25, compVol = .33, crossRhythm=false}) { //print("Generating pawn rhythm map...");
+    Instrument? i = midi.orchMap[MidiChessPlayer.pawnStructure.name];
     if (!gameTrack.playing && i != null) {
       loopTrack.newMasterMap.clear();
       double duration = loopTrack.maxLength ?? 2;
@@ -107,7 +107,7 @@ class ChessSonifier {
         for (int steps = 0; steps < ranks; steps++) {
           Piece compPiece = crossRhythm ? board.getSquare(Coord(steps,beat)).piece : board.getSquare(Coord(beat,steps)).piece;
           Piece drumPiece = crossRhythm ? board.getSquare(Coord(beat,steps)).piece : board.getSquare(Coord(steps,beat)).piece;
-          if (compPiece.type == PieceType.pawn) { // && p.color == color) {
+          if (compPiece.type == PieceType.pawn) {
             double t = (beat/files) * duration;
             int pitch = midi.getNextPitch(midi.currentChord.key.index + (octave * 4), steps, midi.currentChord);
             loopTrack.newMasterMap.add(loopTrack.createNoteEvent(i, pitch, dur, compVol, offset: t));
@@ -140,6 +140,8 @@ class ChessSonifier {
       ctx.loaderOverlay.show();
       await initAudio();
       if (ctx.mounted) ctx.loaderOverlay.hide();
+      final board1 = client.activeBoards.first.board;
+      if (board1 != null) generatePawnRhythms(board1);
     } else {
       client.updateView();
     }
@@ -177,7 +179,7 @@ class ChessSonifier {
     loopTrack.stop();
     for (MoveState move in moves) { //final MidiChessPlayer? player = getPieceInstrument(move.piece);
       mainLogger.d("${move.piece} -> ${move.move}");
-      for (MidiEvent e in getMoveMidiEvents(gameTrack, MidiChessPlayer.mainRhythm, move.piece, move.move, tempo: .05, yRest: true)) {
+      for (MidiEvent e in getMoveMidiEvents(gameTrack, MidiChessPlayer.pawnStructure, move.piece, move.move, tempo: .05, yRest: true)) {
         mainLogger.d("Note Event: $e");
         gameTrack.addNoteEvent(e);
       }

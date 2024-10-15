@@ -133,6 +133,10 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                         newNumBoards = null; client.loadTVGames(numBoards: value.floor()-1);
                       },
                     ),
+                    IconButton(
+                      onPressed: () => client.loadTVGames(reset: false),
+                      icon: const Icon(Icons.refresh),
+                    ),
                   ],
                 ),
                 Row( // Right-aligned widget (with multiple children)
@@ -146,7 +150,7 @@ class _MatrixHomePageState extends State<MatrixHomePage> {
                         child: Text("Randomize",style: MatrixApp.getTextStyle(color3))) : const SizedBox.shrink(),
                     const SizedBox(width: 20),
                     client.sonifier.midi.enabled ? ElevatedButton(onPressed: () => client.sonifier.toggleDrums(),
-                        child: Text("Toggle Drums",style: client.sonifier.midi.muteDrums ? MatrixApp.getTextStyle(color2) : MatrixApp.getTextStyle(color3)))
+                        child: Text("Toggle Drums",style: client.sonifier.midi.muteDrums ? MatrixApp.getTextStyle(color1) : MatrixApp.getTextStyle(color3)))
                         : const SizedBox.shrink(),
                     const SizedBox(width: 20),
                     client.sonifier.midi.enabled ? ElevatedButton(onPressed: () => client.sonifier.keyChange(),

@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:chess_matrix/chess_sonifier.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -65,9 +64,13 @@ class ImgUtils {
         final piece = matrix.getSquare(Coord(file,rank)).piece;
         img.Image? pieceImg = pieceImages[piece.toString()];
         if (pieceImg != null) {
-          if (status == BoardStatus.blackWon && (piece.color != ChessColor.black || piece.type != PieceType.king)) img.pixelate(pieceImg, size: 24);
-          if (status == BoardStatus.whiteWon && (piece.color != ChessColor.white || piece.type != PieceType.king)) img.pixelate(pieceImg, size: 24);
-          if (status == BoardStatus.draw) pieceImg = img.copyRotate(pieceImg, angle: 45);
+          if ((status == BoardStatus.blackWon && (piece.color == ChessColor.white && piece.type == PieceType.king)) ||
+              (status == BoardStatus.whiteWon && (piece.color == ChessColor.black && piece.type == PieceType.king))) {
+              pieceImg = img.copyRotate(pieceImg, angle: 90);
+          }
+          else if (status == BoardStatus.draw)  {
+            pieceImg = img.copyRotate(pieceImg, angle: 45);
+          }
           boardImg = img.compositeImage(destImg, pieceImg,
               dstX: (squareWidth * file).floor(), dstY: (squareHeight * rank).floor(), dstW: squareWidth.floor(), dstH: squareHeight.floor());
         }

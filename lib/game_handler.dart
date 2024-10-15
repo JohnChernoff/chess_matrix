@@ -35,7 +35,7 @@ class GameHandler {
           else {
             sonifier.generatePieceNotes(piece,lastMove);
             if (piece.type == PieceType.pawn) {
-              sonifier.generatePawnRhythms(matrix,false,piece.color);
+              sonifier.generatePawnRhythms(matrix);
             }
           }
         }

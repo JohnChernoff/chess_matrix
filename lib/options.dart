@@ -28,7 +28,7 @@ class _OptionWidgetState extends State<OptionWidget> {
   @override
   Widget build(BuildContext context) {
     MatrixClient client = Provider.of(context, listen: false);
-    return Container(color: Colors.grey, height: 640, child: Flex(direction: Axis.vertical,
+    return Container(color: Colors.grey, height: 500, child: Flex(direction: Axis.vertical,
         children: [
           Row(
             children: [
@@ -114,10 +114,6 @@ class _OptionWidgetState extends State<OptionWidget> {
                   onChangeEnd: (double value) => client.setMaxControl((value.round() - 6).abs()),
                 ),
               ],
-          ),
-          ElevatedButton(
-            onPressed: () => client.loadTVGames(reset: false),
-            child: Text("Reload",style: MatrixApp.getTextStyle(Colors.black)),
           ),
         ],
     ));
