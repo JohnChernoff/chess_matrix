@@ -2,8 +2,8 @@ import 'dart:math';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
-import 'board_matrix.dart';
-import 'chess.dart';
+import 'package:zug_chess/board_matrix.dart';
+import 'package:zug_chess/zug_chess.dart';
 import 'client.dart';
 import 'main.dart';
 import 'midi_manager.dart';
@@ -55,6 +55,7 @@ class ChessSonifier {
   MidiChessPlayer? getPieceInstrument(Piece? piece) {
     return switch(piece?.type ?? PieceType.none) {
       PieceType.none => null, //shouldn't occur
+      PieceType.unknown => MidiChessPlayer.pawnMoves,
       PieceType.pawn => MidiChessPlayer.pawnMoves,
       PieceType.knight => MidiChessPlayer.knightMoves,
       PieceType.bishop => MidiChessPlayer.bishopMoves,

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:chess_matrix/client.dart';
 import 'package:chess_matrix/main.dart';
-import 'board_matrix.dart';
+import 'package:zug_chess/board_matrix.dart';
+import 'package:zug_chess/zug_chess.dart';
 import 'board_state.dart';
-import 'chess.dart';
 import 'chess_sonifier.dart';
 import 'package:chess/chess.dart' as dc;
 

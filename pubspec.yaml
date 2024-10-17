@@ -29,6 +29,8 @@ environment:
 # versions available, run `flutter pub outdated`.
 dependencies:
   provider: ^6.1.1
+  zug_chess:
+    path: "C:/Users/jac107/IdeaProjects/flutter/zug_chess"
   zug_utils:
     path: "C:/Users/jac107/IdeaProjects/flutter/zug_utils"
   lichess_package:
@@ -52,7 +54,6 @@ dependencies:
   universal_html: ^2.2.4
   file_saver: ^0.2.14
   loader_overlay: ^4.0.3
-  #awesome_dialog: ^3.2.1
 
 dev_dependencies:
   flutter_test:

@@ -1,13 +1,12 @@
 import 'dart:math';
 import 'package:flutter/cupertino.dart';
+import 'package:zug_chess/board_matrix.dart';
+import 'package:zug_chess/zug_chess.dart';
 import 'package:zug_utils/zug_utils.dart';
 import 'dart:async';
-import 'board_matrix.dart';
-import 'chess.dart';
 import 'client.dart';
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
 import 'img_utils.dart';
-import 'main.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'dart:ui' as ui;
 import 'package:image/image.dart' as img_pkg;
@@ -36,6 +35,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   bool isAnimating = false;
   bool drawOffered = false, offeringDraw = false;
   Image? finalImage;
+  ChessColor? get turn =>  moves.isNotEmpty ? moves.last.turn : null;
+  Move? get latestMove => moves.isNotEmpty ? moves.last.move : null;
   String get latestFEN => moves.isNotEmpty ? moves.last.afterFEN : initialFEN;
   bool get isLive => userSide != ChessColor.none;
   int get currentSize => boardSize ?? 0;
@@ -74,9 +75,9 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   Timer countDown() {
     return Timer.periodic(const Duration(seconds: 1), (timer) {
       if (hasListeners && !finished) {
-        if (board?.turn == ChessColor.white) {
+        if (turn == ChessColor.white) {
           whitePlayer?.nextTick();
-        } else if (board?.turn == ChessColor.black) {
+        } else if (turn == ChessColor.black) {
           blackPlayer?.nextTick();
         }
         notifyListeners(); //updateWidget();
@@ -100,7 +101,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     BoardMatrix? bm = board;
     if (bm != null) {
       int dim = min(client.matrixResolution,boardSize ?? 1000);
-      board = BoardMatrix(bm.fen,bm.lastMove,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(img),
+      board = BoardMatrix(bm.fen,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(img),
           blackPOV: blackPOV, maxControl: client.maxControl);
     }
   }
@@ -110,7 +111,7 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
   }
 
   BoardMatrix? updateBoard(final String fen, final Move? lastMove, final int wc, final int bc, MatrixClient client, {bool? freeze}) { //print("Updating: $id");
-    if (lastMove != null && board?.lastMove?.moveStr != lastMove.moveStr) { //print("Adding move: $lastMove");
+    if (lastMove != null && latestMove?.moveStr != lastMove.moveStr) { //print("Adding move: $lastMove");
       moves = moves.add(MoveState(lastMove, wc, bc, board?.fen, fen));
     }
     if (freeze != null) {
@@ -122,25 +123,10 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
     int dim = min(client.matrixResolution,boardSize ?? 1024); //print("Dim: $dim");
-    board = BoardMatrix(fen,lastMove,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(img), blackPOV: blackPOV, maxControl: client.maxControl);
+    board = BoardMatrix(fen,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(img), blackPOV: blackPOV, maxControl: client.maxControl);
     clockTimer = countDown();
     controller.loadFen(fen);
     return board;
-  }
-
-  void generateCumulativeControlBoard() {
-    final currentBoard = board;
-    if (currentBoard != null) {
-      BoardMatrix bm = BoardMatrix.fromSquares(moves.first.beforeFEN ?? initialFEN, BoardMatrix.createSquares());
-      for (MoveState m in moves) {
-        bm = BoardMatrix.fromSquares(m.afterFEN, bm.squares);
-      }
-      board = BoardMatrix.fromSquares(bm.fen, bm.squares,
-        width: currentBoard.width, height: currentBoard.height, colorScheme: currentBoard.colorScheme,mixStyle: currentBoard.mixStyle, lastMove: currentBoard.lastMove,
-        imgCall: (img) => updateWidget(img),
-      );
-      mainLogger.f("Cumulative Board: $board");
-    }
   }
 
   @override

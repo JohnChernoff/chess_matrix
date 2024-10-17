@@ -1,7 +1,7 @@
 import 'package:chess_matrix/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'chess.dart';
+import 'package:zug_chess/zug_chess.dart';
 import 'client.dart';
 import 'dialogs.dart';
 

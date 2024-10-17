@@ -12,6 +12,7 @@ import 'home_page.dart';
 /*
 TODO:
  cluechess 2.0?
+ last move move list bug
  version history/auto browser refresh?
  settings cookies,
  selectable keys,

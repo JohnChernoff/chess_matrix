@@ -1,7 +1,7 @@
 import 'package:chess/chess.dart' hide Move;
 import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'package:zug_chess/zug_chess.dart';
 import '../board_state.dart';
-import '../chess.dart';
 import '../img_utils.dart';
 
 class MatrixTests {

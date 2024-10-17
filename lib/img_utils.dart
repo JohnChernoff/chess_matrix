@@ -2,10 +2,10 @@ import 'dart:typed_data';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:zug_chess/board_matrix.dart';
+import 'package:zug_chess/zug_chess.dart';
 import 'package:zug_utils/zug_utils.dart';
-import 'board_matrix.dart';
 import 'board_state.dart';
-import 'chess.dart';
 import 'main.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 import 'package:image/image.dart' as img;
@@ -16,7 +16,7 @@ class ImgUtils {
 
   static Future<void> setPieces(PieceStyle pieceStyle) async {
     for (PieceType t in PieceType.values) {
-      if (t != PieceType.none) {
+      if (t != PieceType.none && t != PieceType.unknown) {
         final wPieceImg = await ZugUtils.imageToImgPkg(cb.ChessBoard.getPieceImage(pieceStyle.name,t.dartChessType,cb.Color.WHITE));
         pieceImages.update(Piece(t,ChessColor.white).toString(), (i) => wPieceImg, ifAbsent: () => wPieceImg);
         final bPieceImg = await ZugUtils.imageToImgPkg(cb.ChessBoard.getPieceImage(pieceStyle.name,t.dartChessType,cb.Color.BLACK));

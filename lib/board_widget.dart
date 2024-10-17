@@ -1,11 +1,11 @@
 import 'dart:math';
-import 'package:chess_matrix/board_matrix.dart';
 import 'package:chess_matrix/client.dart';
 import 'package:chess_matrix/move_list.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:zug_chess/board_matrix.dart';
+import 'package:zug_chess/zug_chess.dart';
 import 'board_state.dart';
-import 'chess.dart';
 import 'dialogs.dart';
 import 'package:flutter_chess_board/flutter_chess_board.dart' as cb;
 
@@ -127,7 +127,7 @@ class _BoardWidgetState extends State<BoardWidget> {
         height: state.currentSize * playerBarPercent,
         child: FittedBox(child: Row(children: [
           Text(player.toString(), style: TextStyle(
-              color: state.board?.turn == playerColor ? Colors.yellowAccent : Colors.white
+              color: state.turn == playerColor ? Colors.yellowAccent : Colors.white
           )),
         ],
         )
@@ -149,8 +149,8 @@ class _BoardWidgetState extends State<BoardWidget> {
     }
     else {
       final client = Provider.of<MatrixClient>(context, listen: false);
-      final lastMoveFrom = state.board?.lastMove?.moveStr.substring(0,2);
-      final lastMoveTo = state.board?.lastMove?.moveStr.substring(2,4);
+      final lastMoveFrom = state.latestMove?.moveStr.substring(0,2);
+      final lastMoveTo = state.latestMove?.moveStr.substring(2,4);
       final arrow = (showMove && lastMoveFrom != null && lastMoveTo != null) ?
         cb.BoardArrow(from: lastMoveFrom, to: lastMoveTo, color: const Color(0x55ffffff)) : null;
       final boardImg = state.board?.image ?? state.buffImg;
