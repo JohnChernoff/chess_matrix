@@ -101,7 +101,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     BoardMatrix? bm = board;
     if (bm != null) {
       int dim = min(client.matrixResolution,boardSize ?? 1000);
-      board = BoardMatrix(bm.fen,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(img),
+      board = BoardMatrix(fen: bm.fen, width: dim, height: dim, colorScheme: client.colorScheme, mixStyle: client.mixStyle,
+              imageCallback: (img) => updateWidget(img),
           blackPOV: blackPOV, maxControl: client.maxControl);
     }
   }
@@ -123,7 +124,8 @@ class BoardState extends ChangeNotifier implements Comparable<BoardState> {
     whitePlayer?.clock = wc;
     blackPlayer?.clock = bc;
     int dim = min(client.matrixResolution,boardSize ?? 1024); //print("Dim: $dim");
-    board = BoardMatrix(fen,dim,dim,client.colorScheme,client.mixStyle,(img) => updateWidget(img), blackPOV: blackPOV, maxControl: client.maxControl);
+    board = BoardMatrix(fen: fen,width: dim, height: dim, colorScheme: client.colorScheme, mixStyle: client.mixStyle,
+        imageCallback: (img) => updateWidget(img), blackPOV: blackPOV, maxControl: client.maxControl);
     clockTimer = countDown();
     controller.loadFen(fen);
     return board;

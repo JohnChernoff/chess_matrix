@@ -294,13 +294,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.1"
-  lichess_package:
-    dependency: "direct main"
-    description:
-      path: "C:\\Users\\jac107\\IdeaProjects\\flutter\\lichess_package"
-      relative: false
-    source: path
-    version: "0.0.1"
   lints:
     dependency: transitive
     description:
@@ -782,6 +775,13 @@ packages:
     dependency: "direct main"
     description:
       path: "C:\\Users\\jac107\\IdeaProjects\\flutter\\zug_chess"
+      relative: false
+    source: path
+    version: "0.0.1"
+  zug_net:
+    dependency: "direct main"
+    description:
+      path: "C:\\Users\\jac107\\IdeaProjects\\flutter\\zug_net"
       relative: false
     source: path
     version: "0.0.1"

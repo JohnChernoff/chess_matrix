@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lichess_package/lichess_package.dart';
+import 'package:zug_net/lichess_package.dart';
 import 'client.dart';
 import 'dialogs.dart';
 import 'main.dart';

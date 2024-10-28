@@ -81,27 +81,3 @@ class WebScrollBehavior extends MaterialScrollBehavior {
 Color rndCol() {
   return Colors.primaries[Random().nextInt(Colors.primaries.length)];
 }
-
-/*
-  static Future<void> menuBuilder(BuildContext context,Widget menuWidget) {
-    return showDialog<void>(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            backgroundColor: Colors.grey,
-            content: menuWidget,
-            actions: [
-              TextButton(
-                style: TextButton.styleFrom(
-                  textStyle: Theme.of(context).textTheme.labelLarge,
-                ),
-                child: const Text('Return'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        });
-  }
- */

@@ -33,8 +33,8 @@ dependencies:
     path: "C:/Users/jac107/IdeaProjects/flutter/zug_chess"
   zug_utils:
     path: "C:/Users/jac107/IdeaProjects/flutter/zug_utils"
-  lichess_package:
-    path: "C:/Users/jac107/IdeaProjects/flutter/lichess_package"
+  zug_net:
+    path: "C:/Users/jac107/IdeaProjects/flutter/zug_net"
   flutter_chess_board:
     path: "C:/Users/jac107/IdeaProjects/flutter/flutter_chess_board"
   flutter_oauth:
